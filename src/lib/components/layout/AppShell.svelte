@@ -9,6 +9,7 @@
   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
   import FolderSimpleIcon from 'phosphor-svelte/lib/FolderSimpleIcon';
   import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
+  import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
   import GearSixIcon from 'phosphor-svelte/lib/GearSixIcon';
   import SignOutIcon from 'phosphor-svelte/lib/SignOutIcon';
   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
@@ -21,6 +22,7 @@
     { href: '/today', label: 'Today', icon: HouseIcon },
     { href: '/inbox', label: 'Inbox', icon: TrayIcon },
     { href: '/projects', label: 'Projects', icon: FolderSimpleIcon },
+    { href: '/history', label: 'History', icon: ClockCounterClockwiseIcon },
     { href: '/analytics', label: 'Analytics', icon: ChartLineUpIcon }
   ];
 
@@ -97,7 +99,7 @@
     <main class="min-w-0 pb-24 lg:pb-0">{@render children?.()}</main>
   </div>
 
-  <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
+  <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
     {#each nav as item}
       <a
         href={item.href}

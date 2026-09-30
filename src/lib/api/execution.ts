@@ -1,5 +1,5 @@
 import type { components } from './generated/schema';
-import { api } from './client';
+import { api, taskillerJson } from './client';
 
 export type ExecutionSession = components['schemas']['ExecutionSession'];
 export type StartExecutionSessionInput = components['schemas']['StartExecutionSessionRequest'];
@@ -8,6 +8,20 @@ export type SessionEventType = components['schemas']['SessionEventType'];
 export type SessionEventInput = components['schemas']['CreateSessionEventRequest'];
 export type SessionReview = components['schemas']['SessionReview'];
 export type SessionReviewInput = components['schemas']['UpsertSessionReviewRequest'];
+
+export type ExecutionSessionPage = {
+  items: ExecutionSession[];
+  page: { hasMore: boolean; nextCursor: string | null };
+};
+
+export type ExecutionSessionFilters = {
+  limit?: number;
+  cursor?: string | null;
+  workItemId?: string | null;
+  state?: 'running' | 'paused' | 'completed' | 'abandoned' | null;
+  from?: string | null;
+  to?: string | null;
+};
 
 export class OpenSessionConflictError extends Error {
   activeSession: ExecutionSession | null;
@@ -147,4 +161,18 @@ export async function upsertSessionReview(id: string, input: SessionReviewInput)
   });
   if (error || !data) throw error ?? new Error('Session review returned no data.');
   return data;
+}
+
+
+export async function listExecutionSessions(filters: ExecutionSessionFilters = {}) {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 25));
+  if (filters.cursor) params.set('cursor', filters.cursor);
+  if (filters.workItemId) params.set('workItemId', filters.workItemId);
+  if (filters.state) params.set('state', filters.state);
+  if (filters.from) params.set('from', filters.from);
+  if (filters.to) params.set('to', filters.to);
+  return (
+    await taskillerJson<ExecutionSessionPage>(`/api/v1/execution-sessions?${params.toString()}`)
+  ).data;
 }

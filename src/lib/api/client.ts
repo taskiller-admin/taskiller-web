@@ -10,7 +10,7 @@ type AuthResponse = {
   user: unknown;
 };
 
-const apiBase = env.PUBLIC_TASKILLER_API_URL?.replace(/\/$/, '') ?? '';
+export const apiBase = env.PUBLIC_TASKILLER_API_URL?.replace(/\/$/, '') ?? '';
 if (!apiBase) {
   console.warn('PUBLIC_TASKILLER_API_URL is not configured. API calls will fail until it is set.');
 }
@@ -43,7 +43,7 @@ async function refreshAccessToken(): Promise<boolean> {
   return refreshPromise;
 }
 
-async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const initial = new Request(input, init);
   const first = new Request(initial);
   const token = getAccessToken();
@@ -60,6 +60,29 @@ async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Pro
   const nextToken = getAccessToken();
   if (nextToken) retry.headers.set('Authorization', `Bearer ${nextToken}`);
   return fetch(retry);
+}
+
+
+export async function taskillerJson<T>(path: string, init?: RequestInit): Promise<{ data: T; response: Response }> {
+  const response = await taskillerFetch(`${apiBase}${path}`, {
+    ...init,
+    headers: {
+      Accept: 'application/json',
+      ...init?.headers
+    }
+  });
+
+  if (!response.ok) {
+    let problem: unknown = null;
+    try {
+      problem = await response.json();
+    } catch {
+      // Preserve a useful HTTP error even if the response body is not JSON.
+    }
+    throw problem ?? new Error(`Taskiller API request failed with HTTP ${response.status}.`);
+  }
+
+  return { data: (await response.json()) as T, response };
 }
 
 export const api = createClient<paths>({

@@ -14,6 +14,7 @@
   import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
   import KindMark from '$lib/components/work/KindMark.svelte';
   import StatusBadge from '$lib/components/work/StatusBadge.svelte';
+  import WorkItemAnalyticsCard from '$lib/components/analytics/WorkItemAnalyticsCard.svelte';
   import {
     deleteWorkItem,
     flattenWorkTree,
@@ -247,6 +248,7 @@
             <div><dt class="text-xs text-tk-graphite">Deadline</dt><dd class="mt-1 font-semibold">{formatDate(item.deadlineAt)}</dd></div>
           </dl>
         </section>
+        <WorkItemAnalyticsCard workItemId={item.id} />
       </aside>
     </div>
   {/if}

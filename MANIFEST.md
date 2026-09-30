@@ -1,18 +1,29 @@
-# Taskiller Web Round 4 manifest
+# Taskiller Web Round 5 manifest
 
-## New / expanded Round-4 surfaces
+## New files
 
-- expanded `src/lib/api/execution.ts`
-- expanded `src/lib/api/query-keys.ts`
-- expanded bootstrap `src/lib/api/generated/schema.d.ts`
-- expanded `openapi/taskiller.json` execution/review subset
-- `src/lib/components/execution/SessionTimeline.svelte`
-- `src/lib/components/execution/SessionReviewForm.svelte`
-- upgraded `src/lib/components/execution/ActiveSessionCard.svelte`
-- upgraded `src/lib/components/layout/AppShell.svelte` with focus mode
-- rebuilt `src/routes/(app)/session/[id]/+page.svelte`
-- `docs/ROUND_4.md`
+- `src/lib/api/analytics.ts`
+- `src/lib/components/analytics/MetricCard.svelte`
+- `src/lib/components/analytics/ActivityChart.svelte`
+- `src/lib/components/analytics/HourPatternChart.svelte`
+- `src/lib/components/analytics/WorkItemAnalyticsCard.svelte`
+- `src/lib/components/history/SessionHistoryRow.svelte`
+- `src/routes/(app)/history/+page.svelte`
+- `docs/ROUND_5.md`
 
-## Round-4 behavior
+## Expanded files
 
-Plan & Start → live session → pause/resume → explicit segment/break progression → optional skip/work completion → finish/abandon → review, with reconnect and optimistic-concurrency recovery throughout.
+- `src/lib/api/client.ts` — reusable authenticated JSON request primitive
+- `src/lib/api/execution.ts` — execution-session history listing
+- `src/lib/api/query-keys.ts` — analytics + history cache keys
+- `src/lib/components/layout/AppShell.svelte` — History navigation
+- `src/routes/(app)/analytics/+page.svelte` — complete analytics workspace
+- `src/routes/(app)/work/[id]/+page.svelte` — work-item analytics drill-down
+- `package.json` — version `0.5.0`
+- `README.md`
+
+## Round-5 behavior
+
+Execution history and analytics now form one inspectable loop:
+
+work item → focused execution → immutable session record → review → global/work-item analytics → drill-down back to work/session.
