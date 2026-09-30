@@ -1,0 +1,1454 @@
+diff --git a/.env.example b/.env.example
+index 72939e3..6bd4a53 100644
+--- a/.env.example
++++ b/.env.example
+@@ -1,2 +1,5 @@
+ # No trailing slash.
+ PUBLIC_TASKILLER_API_URL=https://your-taskiller-api.onrender.com
++
++# Optional for contract tooling. CI can point this directly at backend main's committed OpenAPI.
++# TASKILLER_OPENAPI_URL=https://raw.githubusercontent.com/kmab5/taskiller-backend/main/openapi/current.json
+diff --git a/.github/dependabot.yml b/.github/dependabot.yml
+new file mode 100644
+index 0000000..f50a3e5
+--- /dev/null
++++ b/.github/dependabot.yml
+@@ -0,0 +1,22 @@
++version: 2
++updates:
++  - package-ecosystem: npm
++    directory: /
++    schedule:
++      interval: weekly
++    open-pull-requests-limit: 5
++    groups:
++      svelte:
++        patterns:
++          - svelte
++          - "@sveltejs/*"
++      testing:
++        patterns:
++          - "@playwright/*"
++          - "@axe-core/*"
++
++  - package-ecosystem: github-actions
++    directory: /
++    schedule:
++      interval: weekly
++    open-pull-requests-limit: 5
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..2f58479
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,69 @@
++name: Frontend CI
++
++on:
++  push:
++    branches: [main]
++  pull_request:
++
++permissions:
++  contents: read
++
++jobs:
++  quality:
++    runs-on: ubuntu-latest
++    timeout-minutes: 20
++    env:
++      PUBLIC_TASKILLER_API_URL: http://127.0.0.1:4173/__api
++      TASKILLER_OPENAPI_URL: https://raw.githubusercontent.com/kmab5/taskiller-backend/main/openapi/current.json
++
++    steps:
++      - uses: actions/checkout@v7
++        with:
++          persist-credentials: false
++
++      - uses: actions/setup-node@v7
++        with:
++          node-version: 22
++          package-manager-cache: false
++
++      - name: Install dependencies
++        shell: bash
++        run: |
++          if [[ -f package-lock.json ]]; then
++            npm ci --no-audit --no-fund
++          else
++            npm install --no-audit --no-fund
++          fi
++
++      - name: Check backend OpenAPI drift
++        run: npm run api:check
++
++      - name: Require generated API types
++        run: |
++          cp src/lib/api/generated/schema.d.ts /tmp/schema.d.ts
++          npm run api:generate
++          diff -u /tmp/schema.d.ts src/lib/api/generated/schema.d.ts
++
++      - name: Svelte and TypeScript check
++        run: npm run check
++
++      - name: Release contract
++        run: npm run release:check
++
++      - name: Production build
++        run: npm run build
++
++      - name: Install Playwright Chromium
++        run: npx playwright install --with-deps chromium
++
++      - name: End-to-end tests
++        run: npm run test:e2e
++
++      - name: Upload Playwright report
++        if: failure()
++        uses: actions/upload-artifact@v6
++        with:
++          name: playwright-report
++          path: playwright-report/
++          if-no-files-found: ignore
++          retention-days: 7
+diff --git a/.gitignore b/.gitignore
+index e6fc446..54434c9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -8,3 +8,5 @@ build
+ !.env.example
+ coverage
+ .DS_Store
++playwright-report
++test-results
+diff --git a/.npmrc b/.npmrc
+new file mode 100644
+index 0000000..727cdb2
+--- /dev/null
++++ b/.npmrc
+@@ -0,0 +1,2 @@
++engine-strict=true
++fund=false
+diff --git a/MANIFEST.md b/MANIFEST.md
+index 3a90a6b..5e3b4cb 100644
+--- a/MANIFEST.md
++++ b/MANIFEST.md
+@@ -1,30 +1,27 @@
+-# Taskiller Web Round 7 manifest
++# Taskiller Web — Round 8 manifest
+ 
+-## New files
++Frontend version: `0.8.0`
+ 
+-- `src/service-worker.js`
+-- `src/lib/pwa/connectivity.ts`
+-- `src/lib/pwa/install.ts`
+-- `src/lib/components/pwa/UpdateAvailable.svelte`
+-- `src/lib/components/pwa/InstallAppCard.svelte`
+-- `src/routes/offline/+page.svelte`
+-- `src/routes/offline/+page.ts`
+-- `docs/ROUND_7.md`
++Backend contract reference: `kmab5/taskiller-backend@7792c34c49e6a09e7e20380e8b6becf93c863c67`
+ 
+-## Expanded files
++## Round 8 release additions
+ 
+-- `src/routes/+layout.svelte` — PWA initialization, update UI, reconnect-aware Query defaults and mobile app metadata
+-- `src/routes/(app)/+layout.svelte` — cold-offline recovery instead of false anonymous/login redirect
+-- `src/lib/components/layout/AppShell.svelte` — skip link, connectivity announcement, navigation semantics and route-code preloading
+-- `src/lib/api/client.ts` — immediate rejection of offline mutations; no silent mutation queue
+-- `src/routes/(app)/settings/+page.svelte` — install-app section
+-- `src/lib/components/work/WorkComposer.svelte` — expandable-form ARIA state
+-- `src/lib/components/execution/ActiveSessionCard.svelte` — avoids unnecessary timer interval while paused and improves assistive text
+-- `src/lib/components/history/SessionHistoryRow.svelte` — content-visibility optimization
+-- `src/routes/(app)/analytics/+page.svelte` — accessible table metadata
+-- `src/routes/(app)/session/[id]/+page.svelte` — focus-mode skip link
+-- `src/app.css` — local system fonts, contrast/forced-colors and performance helpers
+-- `static/site.webmanifest` — install metadata and shortcuts
+-- `svelte.config.js` — version polling
+-- `package.json` — version `0.7.0`
+-- `README.md`
++- `.github/workflows/ci.yml` — frontend CI: contract, generated types, Svelte/TS check, build, Playwright.
++- `.github/dependabot.yml` — weekly npm and GitHub Actions dependency maintenance.
++- `.npmrc` — Node engine enforcement and reduced install noise.
++- `playwright.config.ts` — desktop + Pixel 7 Chromium release suite.
++- `tests/e2e/` — public, authentication, quick-capture, keyboard and axe smoke tests.
++- `src/app.html` — explicit production document shell and language.
++- `src/routes/+error.svelte` — global branded 404/error recovery.
++- `src/routes/healthz/+server.ts` — frontend deployment health endpoint.
++- `scripts/check-openapi.mjs` — frontend-used backend contract compatibility gate.
++- `scripts/release-check.mjs` — internal release artifact validation.
++- `scripts/smoke-production.mjs` — deployed Vercel + Render smoke verification.
++- `vercel.json` — production security headers.
++- SvelteKit CSP configuration in `svelte.config.js`.
++- `static/robots.txt` — prevents authenticated workspace routes from crawler indexing.
++- `docs/PRODUCTION.md`, `docs/RELEASE_RUNBOOK.md`, `docs/SECURITY.md`, `docs/ROUND_8.md`.
++
++## Existing application
++
++Rounds 1–7 remain intact: auth, work hierarchy, Focus Plans, execution, History, Analytics, account/privacy lifecycle and PWA/offline support.
+diff --git a/README.md b/README.md
+index 2a3fe76..830669c 100644
+--- a/README.md
++++ b/README.md
+@@ -2,34 +2,36 @@
+ 
+ SvelteKit/Svelte 5 frontend for the Taskiller API.
+ 
+-## Current implementation
+-
+-Round 7 is complete:
+-
+-- auth + refresh-cookie bootstrap;
+-- responsive application shell with dedicated full-screen focus mode;
+-- Today, Inbox, Projects and adaptive Project/Sprint/Chore workspaces;
+-- work CRUD, hierarchy, re-parenting, reorder, ETags and conflict recovery;
+-- Focus Plan recommendation generation, rationale and editable sequencing;
+-- saved-plan load/update + Save & Start;
+-- full execution state machine, reconnect recovery, event timeline and review;
+-- first-class History route with state/range/work-item filtering and pagination;
+-- analytics summary, activity timeseries and time-of-day execution view;
+-- work-type completion/focus/estimate comparisons;
+-- personalization-eligibility evidence without causal productivity claims;
+-- 30-day work-item analytics embedded directly in Project/Sprint/Chore detail;
+-- drill-down from analytics/history to the underlying work item and execution session.
+-
+-See `docs/ROUND_1.md` through `docs/ROUND_7.md`.
++## Release status
++
++Rounds 1–8 are implemented. The frontend now includes:
++
++- authentication and refresh-cookie bootstrap;
++- responsive Project/Sprint/Chore planning surfaces;
++- ETag conflict recovery and idempotent writes;
++- Focus Plan recommendation/edit/save/start;
++- full execution state machine + terminal review;
++- History and Analytics;
++- account/preferences/device/privacy/export/deletion flows;
++- installable PWA and conservative offline recovery;
++- accessibility/reduced-motion/high-contrast handling;
++- OpenAPI drift CI gate;
++- Playwright browser E2E + axe accessibility smoke;
++- SvelteKit CSP + Vercel security headers;
++- frontend health endpoint and production smoke command.
++
++See `docs/ROUND_1.md` through `docs/ROUND_8.md`.
+ 
+ ## Setup
+ 
+ ```bash
+ cp .env.example .env
+ npm install
++# Commit the generated package-lock.json once dependencies install successfully.
+ npm run api:update
+ npm run check
+ npm run build
++npm run test:e2e
+ npm run dev
+ ```
+ 
+@@ -41,22 +43,44 @@ PUBLIC_TASKILLER_API_URL=https://YOUR-API.onrender.com
+ 
+ The API URL must not end with `/`.
+ 
+-## Backend contract
++## Contract workflow
+ 
+-Round 7 was built against Taskiller backend main:
++Taskiller Web treats the backend OpenAPI document as a release contract.
++
++```bash
++npm run api:update
++npm run api:check
++```
++
++CI checks the committed frontend-used OpenAPI surface against backend `main` and also verifies that generated TypeScript types are committed.
++
++Round 8 was built against backend:
+ 
+ `7792c34c49e6a09e7e20380e8b6becf93c863c67`
+ 
+-Run `npm run api:update` against the deployed backend before release so `openapi/taskiller.json` and `src/lib/api/generated/schema.d.ts` match production exactly.
++## Quality
+ 
+-Analytics/history and account-lifecycle helpers deliberately keep explicit TypeScript response contracts at the centralized API layer. `api:update` remains the production source of truth for the generated OpenAPI client.
++```bash
++npm run check
++npm run release:check
++npm run build
++npm run test:e2e
++```
+ 
++Optional production-dependency audit:
+ 
+-## Round 6
++```bash
++npm run audit:prod
++```
+ 
+-Account and lifecycle surfaces are now implemented: profile/preferences, email verification, password recovery, device-session management, data export, logout-all and scheduled account deletion. See `docs/ROUND_6.md`.
++## Production smoke
+ 
++After Vercel deployment:
+ 
+-## Round 7
++```bash
++TASKILLER_WEB_URL=https://YOUR-WEB.vercel.app \
++TASKILLER_API_URL=https://YOUR-API.onrender.com \
++npm run smoke:prod
++```
+ 
+-Taskiller is now installable and production-PWA aware: native SvelteKit service worker, version/update handling, prerendered offline recovery, reconnect-aware queries, immediate offline mutation rejection, accessibility hardening, reduced-motion/high-contrast support and a lighter system-font performance profile. Authenticated API responses are intentionally never service-worker cached. See `docs/ROUND_7.md`.
++See `docs/PRODUCTION.md` and `docs/RELEASE_RUNBOOK.md`.
+diff --git a/VALIDATION.md b/VALIDATION.md
+index a996538..6490d5d 100644
+--- a/VALIDATION.md
++++ b/VALIDATION.md
+@@ -1,43 +1,61 @@
+-# Round 7 validation
++# Round 8 validation
+ 
+-Completed in the build workspace:
++## Passed in this environment
+ 
+-- backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`;
+-- native SvelteKit service-worker behavior verified against current SvelteKit documentation;
+-- service worker JavaScript syntax checked with `node --check`: OK;
+-- bundled `openapi/taskiller.json`: valid JSON;
+-- all `$lib` and relative local imports resolve;
+-- Svelte `{#if}`, `{#each}`, `{#await}`, and `{#key}` block counts balance;
+-- no authenticated/cross-origin API request is cached by the service worker;
+-- non-GET/HEAD API actions fail immediately while offline and are not queued;
+-- `/offline` is prerendered for service-worker fallback;
+-- PWA manifest parses and declares app scope/start URL/icons/shortcuts;
+-- Google Fonts network dependency removed;
+-- skip-link, navigation-current, live-region, reduced-motion/high-contrast checks applied;
+-- `git diff --check`: OK;
+-- ZIP integrity: checked during packaging.
++- JavaScript/MJS syntax:
++  - `svelte.config.js`
++  - `src/service-worker.js`
++  - OpenAPI/release/smoke scripts
++- `npm run release:check`
++- JSON parsing:
++  - `package.json`
++  - `static/site.webmanifest`
++  - `vercel.json`
++  - `openapi/taskiller.json`
++- explicit `src/app.html` SvelteKit placeholders + `lang="en"`
++- local `$lib` and relative import resolution
++- Svelte control-block balance
++- release-specific CI/script assertions
++- TypeScript syntax parse of 72 `.ts` files and Svelte `<script>` units using the installed TypeScript compiler
++- `git diff --check` for the Round 7 → Round 8 source diff
+ 
+-`npm install --ignore-scripts --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler, Vite build and browser PWA audit must be run locally.
++## Blocked by sandbox networking
+ 
+-Before commit/deploy:
++`npm install --no-audit --no-fund` timed out. The sandbox also cannot resolve `raw.githubusercontent.com`, so `npm run api:check` could not perform its network fetch here.
++
++Because dependencies could not install, the following release gates could not be executed in this sandbox:
++
++```bash
++npm run check
++npm run build
++npx playwright install chromium
++npm run test:e2e
++npm run audit:prod
++```
++
++Run them locally or let the included GitHub Actions workflow execute them.
++
++## Lockfile
++
++This artifact cannot include a truthful `package-lock.json` because npm dependency resolution is blocked here. After the first successful local `npm install`, commit the generated `package-lock.json`. The included CI automatically switches from `npm install` to deterministic `npm ci` when the lockfile exists.
++
++## Recommended local validation
+ 
+ ```bash
+ npm install
+ npm run api:update
++npm run api:check
+ npm run check
++npm run release:check
+ npm run build
+-npm run preview
++npx playwright install chromium
++npm run test:e2e
+ ```
+ 
+-Then validate in a production browser context:
+-
+-1. Application is installable from Chromium and can be added to Home Screen on supported mobile browsers.
+-2. DevTools Application panel shows an active Taskiller service worker and valid manifest.
+-3. Visit Today, Inbox and a work detail, then go offline; already-open UI stays visible and mutations fail immediately.
+-4. Reload an authenticated app route fully offline and confirm `/offline` recovery rather than `/login`.
+-5. Reconnect and return to the original route; queries refetch.
+-6. Start a session, lose connectivity, and confirm controls are disabled until reconnect while the visible timer/session snapshot remains understandable.
+-7. Deploy a new frontend version; wait for version polling and confirm the update banner reloads into the new worker/client together.
+-8. Keyboard-only: use the skip link, primary navigation, capture form, settings and focus controls.
+-9. Enable reduced motion and high-contrast/forced-colors modes and verify state remains understandable without animation/color alone.
+-10. Run Lighthouse/PWA/accessibility/performance checks against the deployed Vercel URL.
++After deployment:
++
++```bash
++TASKILLER_WEB_URL=https://YOUR-WEB.vercel.app \
++TASKILLER_API_URL=https://YOUR-API.onrender.com \
++npm run smoke:prod
++```
+diff --git a/docs/PRODUCTION.md b/docs/PRODUCTION.md
+new file mode 100644
+index 0000000..12d5328
+--- /dev/null
++++ b/docs/PRODUCTION.md
+@@ -0,0 +1,75 @@
++# Production deployment
++
++## Required Vercel environment
++
++```text
++PUBLIC_TASKILLER_API_URL=https://YOUR-RENDER-API.onrender.com
++```
++
++Use the exact production API origin with no trailing slash.
++
++## Required backend environment
++
++The Render backend must allow the frontend origin in `TASKILLER_CORS_ORIGINS`.
++
++For example:
++
++```json
++["https://taskiller-web.vercel.app"]
++```
++
++For cross-site refresh cookies keep:
++
++```text
++TASKILLER_REFRESH_COOKIE_SECURE=true
++TASKILLER_REFRESH_COOKIE_SAMESITE=none
++```
++
++If you later use same-site custom domains such as `app.example.com` and `api.example.com`, review whether `SameSite=lax` is appropriate.
++
++## Vercel
++
++Import the `taskiller-web` repository and keep the framework preset as SvelteKit.
++
++Build command:
++
++```text
++npm run build
++```
++
++The repository already uses `@sveltejs/adapter-vercel`.
++
++## Pre-deploy
++
++```bash
++npm install
++# Commit the generated package-lock.json once dependencies install successfully.
++npm run api:update
++npm run api:check
++npm run check
++npm run release:check
++npm run build
++npx playwright install chromium
++npm run test:e2e
++```
++
++## Post-deploy
++
++```bash
++TASKILLER_WEB_URL=https://YOUR-WEB.vercel.app \
++TASKILLER_API_URL=https://YOUR-API.onrender.com \
++npm run smoke:prod
++```
++
++Then manually validate:
++
++- login and refresh across a hard reload;
++- quick capture;
++- Project/Sprint/Chore edits;
++- recommendation → plan → start;
++- pause/resume/segment progression;
++- terminal review;
++- analytics/history;
++- device revocation;
++- export creation/download;
++- installable PWA behavior.
+diff --git a/docs/RELEASE_RUNBOOK.md b/docs/RELEASE_RUNBOOK.md
+new file mode 100644
+index 0000000..55f7717
+--- /dev/null
++++ b/docs/RELEASE_RUNBOOK.md
+@@ -0,0 +1,69 @@
++# Release runbook
++
++## 1. Backend
++
++Confirm Taskiller backend CI is green and `openapi/current.json` is committed on `main`.
++
++## 2. Contract sync
++
++```bash
++TASKILLER_OPENAPI_URL=https://raw.githubusercontent.com/kmab5/taskiller-backend/main/openapi/current.json npm run api:update
++npm run api:check
++```
++
++Review any contract change before committing generated frontend types.
++
++## 3. Frontend quality
++
++```bash
++npm run check
++npm run release:check
++npm run build
++npx playwright install chromium
++npm run test:e2e
++```
++
++Optional production dependency audit:
++
++```bash
++npm run audit:prod
++```
++
++## 4. Commit
++
++Commit the OpenAPI snapshot and generated types together whenever the contract changes.
++
++## 5. Deploy
++
++Push/merge `main`. Vercel should build the SvelteKit application automatically.
++
++## 6. Smoke
++
++```bash
++TASKILLER_WEB_URL=https://YOUR-WEB.vercel.app \
++TASKILLER_API_URL=https://YOUR-API.onrender.com \
++npm run smoke:prod
++```
++
++Do not call the release healthy until both frontend `/healthz` and backend `/health/ready` pass.
++
++## 7. Manual critical-path verification
++
++1. Log in.
++2. Hard reload `/today` and confirm refresh-cookie bootstrap.
++3. Capture a Chore.
++4. Build or load a Focus Plan.
++5. Start a Session.
++6. Pause/resume.
++7. Complete/advance a segment.
++8. Finish and save a review.
++9. Open History and Analytics.
++10. Open Settings → Devices.
++11. Request an export.
++12. Verify offline shell/update behavior in a production build.
++
++## Rollback
++
++If the frontend deploy is unhealthy, rollback the Vercel deployment without rolling back the backend unless the API contract itself caused the failure.
++
++If a backend rollback changes the OpenAPI contract, immediately rerun frontend `api:check` against the rolled-back backend state before declaring compatibility.
+diff --git a/docs/ROUND_8.md b/docs/ROUND_8.md
+new file mode 100644
+index 0000000..5065267
+--- /dev/null
++++ b/docs/ROUND_8.md
+@@ -0,0 +1,128 @@
++# Round 8 — production hardening and release
++
++Round 8 turns Taskiller Web into a release-managed frontend rather than only an application source tree.
++
++## Release gates
++
++### Contract gate
++
++`npm run api:check` checks every path and schema in committed `openapi/taskiller.json` against the configured backend OpenAPI source. Backend-only additions are allowed.
++
++For CI, the default workflow compares against:
++
++`https://raw.githubusercontent.com/kmab5/taskiller-backend/main/openapi/current.json`
++
++A mismatch fails CI and requires:
++
++```bash
++npm run api:update
++npm run api:generate
++```
++
++followed by committing both the OpenAPI snapshot and generated TypeScript schema.
++
++### Browser gate
++
++Playwright 1.63 runs deterministic browser tests against a production build with a mocked Taskiller API.
++
++The suite covers:
++
++- public landing and entry points;
++- global 404/error surface;
++- serious/critical axe accessibility violations on Login;
++- login and refresh bootstrap;
++- authenticated Today route;
++- quick Chore capture + query refresh;
++- keyboard access to the skip link;
++- desktop Chromium and Pixel 7 Chromium profiles.
++
++Service workers are blocked in E2E tests so network mocking remains deterministic. PWA behavior remains a separate preview/deployment validation concern.
++
++### Build gate
++
++CI requires:
++
++```bash
++npm run check
++npm run release:check
++npm run build
++npm run test:e2e
++```
++
++The workflow uses Node 22 and installs Playwright's Chromium dependencies on the GitHub runner.
++
++## Error handling
++
++A global `+error.svelte` now provides branded 404 and unexpected-error recovery instead of SvelteKit's default error page.
++
++Authenticated app routes also emit `noindex,nofollow`.
++
++## Security
++
++SvelteKit CSP is configured in `svelte.config.js`.
++
++The policy is intentionally restrictive:
++
++- default/script/font/form/manifest/worker sources are self-only;
++- frames and objects are blocked;
++- frame ancestors are denied;
++- API connections are limited to the configured Taskiller API origin;
++- inline styles remain allowed because the current UI uses runtime style attributes for progress bars, charts and hierarchy indentation.
++
++`vercel.json` adds deployment-level headers:
++
++- HSTS;
++- X-Content-Type-Options;
++- X-Frame-Options;
++- Referrer-Policy;
++- Permissions-Policy;
++- Cross-Origin-Opener-Policy.
++
++## Production health and smoke
++
++`GET /healthz` returns a no-store frontend health response.
++
++After deployment:
++
++```bash
++TASKILLER_WEB_URL=https://app.example.com \
++TASKILLER_API_URL=https://api.example.com \
++npm run smoke:prod
++```
++
++The smoke script verifies:
++
++- frontend health;
++- Login rendering;
++- PWA manifest;
++- backend readiness;
++- expected security headers including CSP.
++
++## PWA and caching
++
++Round 7's conservative cache policy remains unchanged:
++
++- frontend shell/static assets may be cached;
++- visited navigations may be used for offline shell recovery;
++- authenticated API responses are never service-worker cached;
++- mutations are never queued offline.
++
++## Release sequence
++
++```text
++backend CI green
++    ↓
++backend OpenAPI committed
++    ↓
++frontend api:check
++    ↓
++frontend check/build/E2E
++    ↓
++merge main
++    ↓
++Vercel production deploy
++    ↓
++smoke:prod against Vercel + Render
++    ↓
++release complete
++```
+diff --git a/docs/SECURITY.md b/docs/SECURITY.md
+new file mode 100644
+index 0000000..8fc1009
+--- /dev/null
++++ b/docs/SECURITY.md
+@@ -0,0 +1,25 @@
++# Frontend security notes
++
++Taskiller Web keeps the access token in memory and relies on the backend-owned HttpOnly refresh cookie for session continuity.
++
++## Browser storage
++
++Do not persist access or refresh credentials in localStorage, IndexedDB, Cache Storage or the service worker.
++
++## Service worker
++
++The service worker must not cache cross-origin Taskiller API responses.
++
++## CSP
++
++SvelteKit emits the CSP configured in `svelte.config.js`. The API origin is derived from `PUBLIC_TASKILLER_API_URL` at build/deploy time.
++
++Inline styles remain allowed because runtime chart/progress/hierarchy styles currently depend on style attributes. Inline scripts are not permitted by policy; SvelteKit handles required script hashes/nonces.
++
++## Framing
++
++Taskiller is not intended to run embedded in another site. Both CSP `frame-ancestors 'none'` and Vercel `X-Frame-Options: DENY` enforce that boundary.
++
++## Secrets
++
++No backend secret belongs in a `PUBLIC_` environment variable. The only public runtime environment value currently required is the Taskiller API URL.
+diff --git a/openapi/README.md b/openapi/README.md
+index 54a77c5..ea8a5a7 100644
+--- a/openapi/README.md
++++ b/openapi/README.md
+@@ -1,18 +1,32 @@
+ # OpenAPI in the frontend
+ 
+-`taskiller.json` is a **Round-2 bootstrap subset** matching the work/auth/session endpoints used before code generation is run.
++`taskiller.json` is the committed **frontend-used contract surface**. Earlier rounds intentionally kept this snapshot smaller than the complete backend specification.
+ 
+-The deployed backend remains authoritative. As soon as the API is reachable, run:
++The backend remains authoritative.
++
++## Compatibility gate
++
++```bash
++npm run api:check
++```
++
++The check fetches the configured backend OpenAPI and verifies every committed frontend path, operation, and schema still matches. Backend-only additions are allowed.
++
++CI points this at backend `main`'s committed `openapi/current.json`.
++
++## Full sync
++
++When the backend contract changes, or when you want to replace the reduced snapshot with the complete deployed contract:
+ 
+ ```bash
+ npm run api:update
+ ```
+ 
+-That command:
++This:
+ 
+-1. downloads `${PUBLIC_TASKILLER_API_URL}/openapi.json`;
++1. fetches `TASKILLER_OPENAPI_URL` when set, otherwise `${PUBLIC_TASKILLER_API_URL}/openapi.json`;
+ 2. replaces `openapi/taskiller.json`;
+ 3. runs `openapi-typescript`;
+-4. replaces `src/lib/api/generated/schema.d.ts` with the complete generated contract.
++4. replaces `src/lib/api/generated/schema.d.ts`.
+ 
+-Do not hand-edit generated output after that point. Keep handwritten behavior in `src/lib/api/*`.
++Review both files together and commit them together. Do not hand-edit generated schema output after synchronization.
+diff --git a/package.json b/package.json
+index 08a6547..b1f133a 100644
+--- a/package.json
++++ b/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "taskiller-web",
+   "private": true,
+-  "version": "0.7.0",
++  "version": "0.8.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite dev",
+@@ -12,7 +12,13 @@
+     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+     "api:sync": "node scripts/sync-openapi.mjs",
+     "api:generate": "openapi-typescript openapi/taskiller.json -o src/lib/api/generated/schema.d.ts",
+-    "api:update": "npm run api:sync && npm run api:generate"
++    "api:update": "npm run api:sync && npm run api:generate",
++    "test:e2e": "playwright test",
++    "test:e2e:ui": "playwright test --ui",
++    "api:check": "node scripts/check-openapi.mjs",
++    "release:check": "node scripts/release-check.mjs",
++    "smoke:prod": "node scripts/smoke-production.mjs",
++    "audit:prod": "npm audit --omit=dev --audit-level=high"
+   },
+   "dependencies": {
+     "@tanstack/svelte-query": "6.2.1",
+@@ -33,7 +39,9 @@
+     "tailwindcss": "4.3.3",
+     "tw-animate-css": "1.4.0",
+     "typescript": "5.9.3",
+-    "vite": "^7.1.0"
++    "vite": "^7.1.0",
++    "@playwright/test": "1.63.0",
++    "@axe-core/playwright": "4.13.0"
+   },
+   "engines": {
+     "node": ">=22"
+diff --git a/playwright.config.ts b/playwright.config.ts
+new file mode 100644
+index 0000000..ca800c9
+--- /dev/null
++++ b/playwright.config.ts
+@@ -0,0 +1,30 @@
++import { defineConfig, devices } from '@playwright/test';
++
++const baseURL = 'http://127.0.0.1:4173';
++process.env.PUBLIC_TASKILLER_API_URL ??= `${baseURL}/__api`;
++
++export default defineConfig({
++  testDir: './tests/e2e',
++  fullyParallel: true,
++  forbidOnly: !!process.env.CI,
++  retries: process.env.CI ? 2 : 0,
++  workers: process.env.CI ? 2 : undefined,
++  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
++  outputDir: 'test-results',
++  use: {
++    baseURL,
++    serviceWorkers: 'block',
++    trace: 'on-first-retry',
++    screenshot: 'only-on-failure'
++  },
++  projects: [
++    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
++    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }
++  ],
++  webServer: {
++    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
++    url: `${baseURL}/healthz`,
++    timeout: 180_000,
++    reuseExistingServer: !process.env.CI
++  }
++});
+diff --git a/scripts/check-openapi.mjs b/scripts/check-openapi.mjs
+new file mode 100644
+index 0000000..b3282e9
+--- /dev/null
++++ b/scripts/check-openapi.mjs
+@@ -0,0 +1,93 @@
++import { readFile } from 'node:fs/promises';
++import { existsSync } from 'node:fs';
++
++async function loadEnvFile() {
++  if (!existsSync('.env')) return;
++  const raw = await readFile('.env', 'utf8');
++  for (const line of raw.split(/\r?\n/)) {
++    const trimmed = line.trim();
++    if (!trimmed || trimmed.startsWith('#')) continue;
++    const i = trimmed.indexOf('=');
++    if (i < 1) continue;
++    const key = trimmed.slice(0, i).trim();
++    let value = trimmed.slice(i + 1).trim();
++    value = value.replace(/^['"]|['"]$/g, '');
++    process.env[key] ??= value;
++  }
++}
++
++function canonical(value) {
++  if (Array.isArray(value)) return value.map(canonical);
++  if (value && typeof value === 'object') {
++    return Object.fromEntries(
++      Object.keys(value)
++        .sort()
++        .map((key) => [key, canonical(value[key])])
++    );
++  }
++  return value;
++}
++
++function projectRemote(remote, local) {
++  const projected = {
++    openapi: remote.openapi,
++    paths: {},
++    components: { schemas: {} }
++  };
++
++  for (const [path, localItem] of Object.entries(local.paths ?? {})) {
++    const remoteItem = remote.paths?.[path];
++    if (!remoteItem) throw new Error(`Backend removed frontend path: ${path}`);
++
++    projected.paths[path] = {};
++    for (const [key, localValue] of Object.entries(localItem)) {
++      if (['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace', 'parameters'].includes(key)) {
++        if (!(key in remoteItem)) throw new Error(`Backend removed frontend operation: ${key.toUpperCase()} ${path}`);
++        projected.paths[path][key] = remoteItem[key];
++      } else {
++        projected.paths[path][key] = remoteItem[key];
++      }
++    }
++  }
++
++  for (const schemaName of Object.keys(local.components?.schemas ?? {})) {
++    const remoteSchema = remote.components?.schemas?.[schemaName];
++    if (!remoteSchema) throw new Error(`Backend removed frontend schema: ${schemaName}`);
++    projected.components.schemas[schemaName] = remoteSchema;
++  }
++
++  return projected;
++}
++
++await loadEnvFile();
++
++const direct = process.env.TASKILLER_OPENAPI_URL;
++const base = process.env.TASKILLER_API_URL ?? process.env.PUBLIC_TASKILLER_API_URL;
++if (!direct && !base) {
++  throw new Error('Set TASKILLER_OPENAPI_URL or TASKILLER_API_URL/PUBLIC_TASKILLER_API_URL.');
++}
++
++const url = direct
++  ? new URL(direct)
++  : new URL('/openapi.json', base.endsWith('/') ? base : `${base}/`);
++
++const response = await fetch(url, { headers: { Accept: 'application/json' } });
++if (!response.ok) throw new Error(`OpenAPI fetch failed: ${response.status} ${response.statusText}`);
++
++const remote = await response.json();
++const local = JSON.parse(await readFile('openapi/taskiller.json', 'utf8'));
++const projected = projectRemote(remote, local);
++
++const localComparable = {
++  openapi: local.openapi,
++  paths: local.paths ?? {},
++  components: { schemas: local.components?.schemas ?? {} }
++};
++
++if (JSON.stringify(canonical(projected)) !== JSON.stringify(canonical(localComparable))) {
++  throw new Error(
++    `Backend changed the OpenAPI surface Taskiller Web depends on. Run npm run api:update, regenerate types, review the diff, and commit it. Source: ${url}`
++  );
++}
++
++console.log(`Frontend OpenAPI surface is compatible with ${url}`);
+diff --git a/scripts/release-check.mjs b/scripts/release-check.mjs
+new file mode 100644
+index 0000000..57216e0
+--- /dev/null
++++ b/scripts/release-check.mjs
+@@ -0,0 +1,41 @@
++import { access, readFile } from 'node:fs/promises';
++import { constants } from 'node:fs';
++
++const required = [
++  'src/app.html',
++  'src/service-worker.js',
++  'static/site.webmanifest',
++  'static/icon-192.png',
++  'static/icon-512.png',
++  'openapi/taskiller.json',
++  'vercel.json',
++  'playwright.config.ts'
++];
++
++for (const path of required) await access(path, constants.R_OK);
++
++const pkg = JSON.parse(await readFile('package.json', 'utf8'));
++if (pkg.version !== '0.8.0') throw new Error(`Expected package version 0.8.0, got ${pkg.version}.`);
++
++const manifest = JSON.parse(await readFile('static/site.webmanifest', 'utf8'));
++if (manifest.start_url !== '/today?source=pwa') throw new Error('Unexpected PWA start_url.');
++if (!Array.isArray(manifest.icons) || manifest.icons.length < 2) {
++  throw new Error('PWA manifest must include both primary icon sizes.');
++}
++
++const vercel = JSON.parse(await readFile('vercel.json', 'utf8'));
++const headers = vercel.headers?.flatMap((entry) => entry.headers ?? []) ?? [];
++const keys = new Set(headers.map((entry) => entry.key.toLowerCase()));
++for (const key of [
++  'x-content-type-options',
++  'x-frame-options',
++  'referrer-policy',
++  'permissions-policy',
++  'strict-transport-security'
++]) {
++  if (!keys.has(key)) throw new Error(`Missing production header: ${key}`);
++}
++
++JSON.parse(await readFile('openapi/taskiller.json', 'utf8'));
++
++console.log('Taskiller Web release contract is internally consistent.');
+diff --git a/scripts/smoke-production.mjs b/scripts/smoke-production.mjs
+new file mode 100644
+index 0000000..f727118
+--- /dev/null
++++ b/scripts/smoke-production.mjs
+@@ -0,0 +1,45 @@
++const web = process.env.TASKILLER_WEB_URL?.replace(/\/$/, '');
++const api = process.env.TASKILLER_API_URL?.replace(/\/$/, '');
++
++if (!web || !api) {
++  throw new Error('Set TASKILLER_WEB_URL and TASKILLER_API_URL.');
++}
++
++for (const [name, value] of [['TASKILLER_WEB_URL', web], ['TASKILLER_API_URL', api]]) {
++  const url = new URL(value);
++  if (url.protocol !== 'https:') throw new Error(`${name} must use HTTPS for production smoke tests.`);
++}
++
++async function expectOk(url, label) {
++  const response = await fetch(url, { redirect: 'follow' });
++  if (!response.ok) throw new Error(`${label} failed: ${response.status} ${response.statusText}`);
++  return response;
++}
++
++const health = await expectOk(`${web}/healthz`, 'frontend health');
++const healthBody = await health.json();
++if (healthBody.status !== 'ok') throw new Error('frontend health payload is not ok');
++
++const login = await expectOk(`${web}/login`, 'frontend login page');
++const loginHtml = await login.text();
++if (!loginHtml.includes('Taskiller')) throw new Error('login page did not render Taskiller');
++
++await expectOk(`${web}/site.webmanifest`, 'PWA manifest');
++const ready = await expectOk(`${api}/health/ready`, 'backend readiness');
++const readyBody = await ready.json();
++if (readyBody.status !== 'ready') throw new Error(`backend is not ready: ${JSON.stringify(readyBody)}`);
++
++const securityHeaders = [
++  'x-content-type-options',
++  'x-frame-options',
++  'referrer-policy',
++  'permissions-policy',
++  'strict-transport-security',
++  'content-security-policy'
++];
++
++for (const header of securityHeaders) {
++  if (!login.headers.get(header)) throw new Error(`frontend is missing security header ${header}`);
++}
++
++console.log('Production smoke checks passed.');
+diff --git a/scripts/sync-openapi.mjs b/scripts/sync-openapi.mjs
+index 862c968..1fc3fa0 100644
+--- a/scripts/sync-openapi.mjs
++++ b/scripts/sync-openapi.mjs
+@@ -17,14 +17,23 @@ async function loadEnvFile() {
+ }
+ 
+ await loadEnvFile();
++
++const direct = process.env.TASKILLER_OPENAPI_URL;
+ const base = process.env.TASKILLER_API_URL ?? process.env.PUBLIC_TASKILLER_API_URL;
+-if (!base) {
+-  throw new Error('Set PUBLIC_TASKILLER_API_URL in .env or TASKILLER_API_URL in the shell.');
++
++if (!direct && !base) {
++  throw new Error(
++    'Set TASKILLER_OPENAPI_URL, PUBLIC_TASKILLER_API_URL in .env, or TASKILLER_API_URL in the shell.'
++  );
+ }
+ 
+-const url = new URL('/openapi.json', base.endsWith('/') ? base : `${base}/`);
++const url = direct
++  ? new URL(direct)
++  : new URL('/openapi.json', base.endsWith('/') ? base : `${base}/`);
++
+ const response = await fetch(url, { headers: { Accept: 'application/json' } });
+ if (!response.ok) throw new Error(`OpenAPI fetch failed: ${response.status} ${response.statusText}`);
++
+ const spec = await response.text();
+ JSON.parse(spec);
+ await writeFile('openapi/taskiller.json', `${spec.trim()}\n`);
+diff --git a/src/app.html b/src/app.html
+new file mode 100644
+index 0000000..92513ea
+--- /dev/null
++++ b/src/app.html
+@@ -0,0 +1,14 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <meta
++      name="viewport"
++      content="width=device-width, initial-scale=1, viewport-fit=cover"
++    />
++    %sveltekit.head%
++  </head>
++  <body data-sveltekit-preload-data="hover">
++    <div style="display: contents">%sveltekit.body%</div>
++  </body>
++</html>
+diff --git a/src/routes/(app)/+layout.svelte b/src/routes/(app)/+layout.svelte
+index 72ce570..5a47654 100644
+--- a/src/routes/(app)/+layout.svelte
++++ b/src/routes/(app)/+layout.svelte
+@@ -17,6 +17,10 @@
+   });
+ </script>
+ 
++<svelte:head>
++  <meta name="robots" content="noindex,nofollow" />
++</svelte:head>
++
+ {#if $auth.status === 'unknown'}
+   <div class="flex min-h-screen items-center justify-center bg-tk-paper"><div class="h-2 w-28 overflow-hidden rounded-full bg-tk-mist"><div class="h-full w-1/2 animate-pulse rounded-full bg-tk-strike"></div></div></div>
+ {:else if $auth.status === 'authenticated'}
+diff --git a/src/routes/(app)/today/+page.svelte b/src/routes/(app)/today/+page.svelte
+index 908cb4a..dfcb21a 100644
+--- a/src/routes/(app)/today/+page.svelte
++++ b/src/routes/(app)/today/+page.svelte
+@@ -90,7 +90,11 @@
+ 
+   <form class="mt-9 flex max-w-3xl gap-2 rounded-[17px] border border-[var(--border)] bg-white/86 p-2 shadow-[0_12px_35px_rgb(23_23_23/0.045)] backdrop-blur" onsubmit={submitQuickCapture}>
+     <Input class="border-transparent bg-transparent focus:border-transparent" placeholder="Capture a chore without breaking your flow…" bind:value={quickName} aria-label="Quick capture chore" />
+-    <Button type="submit" disabled={capture.isPending || !quickName.trim()}>
++    <Button
++      type="submit"
++      aria-label={capture.isPending ? 'Saving chore' : 'Capture chore'}
++      disabled={capture.isPending || !quickName.trim()}
++    >
+       <PlusIcon size={17} weight="bold" />
+       <span class="hidden sm:inline">{capture.isPending ? 'Saving…' : 'Capture'}</span>
+     </Button>
+diff --git a/src/routes/+error.svelte b/src/routes/+error.svelte
+new file mode 100644
+index 0000000..52839c4
+--- /dev/null
++++ b/src/routes/+error.svelte
+@@ -0,0 +1,42 @@
++<script lang="ts">
++  import { page } from '$app/state';
++  import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
++  import WarningCircleIcon from 'phosphor-svelte/lib/WarningCircleIcon';
++  import Logo from '$lib/components/brand/Logo.svelte';
++  import Button from '$lib/components/ui/Button.svelte';
++
++  const notFound = $derived(page.status === 404);
++</script>
++
++<svelte:head>
++  <title>{notFound ? 'Page not found' : 'Something went wrong'} — Taskiller</title>
++  <meta name="robots" content="noindex,nofollow" />
++</svelte:head>
++
++<main class="flex min-h-screen items-center justify-center px-6 py-16">
++  <section class="w-full max-w-xl rounded-[26px] border border-[var(--border)] bg-white/82 p-7 shadow-[0_26px_70px_rgb(23_23_23/0.08)] sm:p-10">
++    <Logo class="h-7 w-auto" />
++    <div class="mt-14 grid size-12 place-items-center rounded-[14px] bg-[#f0efea] text-tk-strike">
++      <WarningCircleIcon size={24} weight="fill" />
++    </div>
++    <p class="mt-7 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite">
++      {notFound ? '404' : `Error ${page.status}`}
++    </p>
++    <h1 class="tk-display mt-2 text-4xl font-extrabold sm:text-5xl">
++      {notFound ? 'That page is not here.' : 'Taskiller hit an unexpected edge.'}
++    </h1>
++    <p class="mt-4 max-w-lg text-sm leading-7 text-tk-graphite">
++      {#if notFound}
++        The link may be stale, mistyped, or point to something that moved.
++      {:else}
++        Your server-backed work has not been cleared. Return to Taskiller and retry the action.
++      {/if}
++    </p>
++    <div class="mt-8 flex flex-wrap gap-3">
++      <a href="/today"><Button>Go to Today</Button></a>
++      <button class="inline-flex h-11 items-center gap-2 rounded-[13px] px-4 text-sm font-semibold text-tk-graphite hover:bg-black/[0.05]" onclick={() => history.back()}>
++        <ArrowLeftIcon size={16} /> Go back
++      </button>
++    </div>
++  </section>
++</main>
+diff --git a/src/routes/healthz/+server.ts b/src/routes/healthz/+server.ts
+new file mode 100644
+index 0000000..859da35
+--- /dev/null
++++ b/src/routes/healthz/+server.ts
+@@ -0,0 +1,8 @@
++import { json } from '@sveltejs/kit';
++
++export function GET() {
++  return json(
++    { status: 'ok', service: 'taskiller-web' },
++    { headers: { 'Cache-Control': 'no-store' } }
++  );
++}
+diff --git a/static/robots.txt b/static/robots.txt
+new file mode 100644
+index 0000000..86c671c
+--- /dev/null
++++ b/static/robots.txt
+@@ -0,0 +1,10 @@
++User-agent: *
++Allow: /
++Disallow: /today
++Disallow: /inbox
++Disallow: /projects
++Disallow: /history
++Disallow: /analytics
++Disallow: /settings
++Disallow: /session
++Disallow: /work
+diff --git a/svelte.config.js b/svelte.config.js
+index 8dbfec5..2f3b69c 100644
+--- a/svelte.config.js
++++ b/svelte.config.js
+@@ -1,12 +1,43 @@
+ import adapter from '@sveltejs/adapter-vercel';
+ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+ 
++function apiOrigin() {
++  const value =
++    process.env.PUBLIC_TASKILLER_API_URL ??
++    process.env.TASKILLER_API_URL ??
++    'http://localhost:8000';
++
++  try {
++    return new URL(value).origin;
++  } catch {
++    throw new Error('PUBLIC_TASKILLER_API_URL must be an absolute URL.');
++  }
++}
++
+ /** @type {import('@sveltejs/kit').Config} */
+ const config = {
+   preprocess: vitePreprocess(),
+   kit: {
+     adapter: adapter(),
+-    version: { pollInterval: 60_000 }
++    version: { pollInterval: 60_000 },
++    csp: {
++      mode: 'auto',
++      directives: {
++        'default-src': ['self'],
++        'base-uri': ['self'],
++        'connect-src': ['self', apiOrigin()],
++        'font-src': ['self'],
++        'form-action': ['self'],
++        'frame-ancestors': ['none'],
++        'frame-src': ['none'],
++        'img-src': ['self', 'data:', 'blob:'],
++        'manifest-src': ['self'],
++        'object-src': ['none'],
++        'script-src': ['self'],
++        'style-src': ['self', 'unsafe-inline'],
++        'worker-src': ['self', 'blob:']
++      }
++    }
+   }
+ };
+ 
+diff --git a/tests/e2e/authenticated.spec.ts b/tests/e2e/authenticated.spec.ts
+new file mode 100644
+index 0000000..3096dc0
+--- /dev/null
++++ b/tests/e2e/authenticated.spec.ts
+@@ -0,0 +1,33 @@
++import { expect, test } from '@playwright/test';
++import { installMockApi } from './mock-api';
++
++test.beforeEach(async ({ page }) => {
++  await installMockApi(page);
++});
++
++test('login bootstraps the authenticated app and quick capture refreshes Today', async ({ page }) => {
++  await page.goto('/login');
++  await page.getByLabel('Email').fill('release@example.com');
++  await page.getByLabel('Password').fill('correct-horse-battery-staple');
++  await page.getByRole('button', { name: 'Log in' }).click();
++
++  await expect(page).toHaveURL(/\/today$/);
++  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
++  await expect(page.getByText('Ship the release checklist')).toBeVisible();
++
++  await page.getByLabel('Quick capture chore').fill('Write production notes');
++  await page.getByRole('button', { name: 'Capture chore' }).click();
++
++  await expect(page.getByText('Write production notes')).toBeVisible();
++});
++
++test('authenticated shell remains keyboard navigable', async ({ page }) => {
++  await page.goto('/login');
++  await page.getByLabel('Email').fill('release@example.com');
++  await page.getByLabel('Password').fill('correct-horse-battery-staple');
++  await page.getByRole('button', { name: 'Log in' }).click();
++  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
++
++  await page.keyboard.press('Tab');
++  await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
++});
+diff --git a/tests/e2e/mock-api.ts b/tests/e2e/mock-api.ts
+new file mode 100644
+index 0000000..b5b6df2
+--- /dev/null
++++ b/tests/e2e/mock-api.ts
+@@ -0,0 +1,94 @@
++import type { Page, Route } from '@playwright/test';
++
++const user = {
++  id: '11111111-1111-4111-8111-111111111111',
++  email: 'release@example.com',
++  displayName: 'Release Tester',
++  emailVerified: true,
++  createdAt: '2026-09-30T10:00:00Z',
++  updatedAt: '2026-09-30T10:00:00Z',
++  version: 1
++};
++
++function workItem(name: string, position: number) {
++  return {
++    id: crypto.randomUUID(),
++    kind: 'chore',
++    parentId: null,
++    workTypeId: null,
++    name,
++    description: null,
++    status: 'draft',
++    position,
++    priority: null,
++    estimatedEffortSeconds: null,
++    plannedStartAt: null,
++    deadlineAt: null,
++    targetStartDate: null,
++    targetEndDate: null,
++    characteristicOverrides: null,
++    effectiveCharacteristics: null,
++    completedAt: null,
++    createdAt: '2026-09-30T10:00:00Z',
++    updatedAt: '2026-09-30T10:00:00Z',
++    deletedAt: null,
++    version: 1
++  };
++}
++
++async function json(route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) {
++  await route.fulfill({
++    status,
++    contentType: 'application/json',
++    headers,
++    body: JSON.stringify(body)
++  });
++}
++
++export async function installMockApi(page: Page) {
++  let chores = [workItem('Ship the release checklist', 1000)];
++
++  await page.route('**/__api/**', async (route) => {
++    const request = route.request();
++    const url = new URL(request.url());
++    const path = url.pathname.replace(/^\/__api/, '');
++    const method = request.method();
++
++    if (method === 'POST' && path === '/api/v1/auth/login') {
++      return json(route, { accessToken: 'access-token', tokenType: 'Bearer', expiresIn: 900, user });
++    }
++    if (method === 'POST' && path === '/api/v1/auth/refresh') {
++      return json(route, { accessToken: 'access-token', tokenType: 'Bearer', expiresIn: 900, user });
++    }
++    if (method === 'GET' && path === '/api/v1/me') {
++      return json(route, user, 200, { ETag: '"user:11111111-1111-4111-8111-111111111111:v1"' });
++    }
++    if (method === 'GET' && path === '/api/v1/work-items') {
++      return json(route, { items: chores, page: { hasMore: false, nextCursor: null } });
++    }
++    if (method === 'POST' && path === '/api/v1/work-items') {
++      const body = request.postDataJSON() as { name: string };
++      const created = workItem(body.name, (chores.length + 1) * 1000);
++      chores = [...chores, created];
++      return json(route, created, 201);
++    }
++    if (method === 'GET' && path === '/api/v1/execution-sessions/active') {
++      return json(route, { session: null });
++    }
++    if (method === 'POST' && path === '/api/v1/auth/logout') {
++      return route.fulfill({ status: 204 });
++    }
++
++    return json(
++      route,
++      {
++        type: '/problems/not_mocked',
++        title: 'Not mocked',
++        status: 404,
++        code: 'not_mocked',
++        instance: path
++      },
++      404
++    );
++  });
++}
+diff --git a/tests/e2e/public.spec.ts b/tests/e2e/public.spec.ts
+new file mode 100644
+index 0000000..aa8c3cb
+--- /dev/null
++++ b/tests/e2e/public.spec.ts
+@@ -0,0 +1,23 @@
++import { expect, test } from '@playwright/test';
++import AxeBuilder from '@axe-core/playwright';
++
++test('landing page exposes the primary entry points', async ({ page }) => {
++  await page.goto('/');
++  await expect(page).toHaveTitle(/Taskiller/);
++  await expect(page.getByRole('heading', { name: 'Make the next move obvious.' })).toBeVisible();
++  await expect(page.getByRole('link', { name: 'Create your workspace' })).toBeVisible();
++  await expect(page.getByRole('link', { name: 'Log in' }).first()).toBeVisible();
++});
++
++test('login page has no serious accessibility violations', async ({ page }) => {
++  await page.goto('/login');
++  const results = await new AxeBuilder({ page }).analyze();
++  const severe = results.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''));
++  expect(severe).toEqual([]);
++});
++
++test('unknown route renders the Taskiller 404 surface', async ({ page }) => {
++  await page.goto('/this-route-does-not-exist');
++  await expect(page.getByRole('heading', { name: 'That page is not here.' })).toBeVisible();
++  await expect(page.getByRole('link', { name: 'Go to Today' })).toBeVisible();
++});
+diff --git a/vercel.json b/vercel.json
+new file mode 100644
+index 0000000..2e2ca21
+--- /dev/null
++++ b/vercel.json
+@@ -0,0 +1,35 @@
++{
++  "$schema": "https://openapi.vercel.sh/vercel.json",
++  "framework": "sveltekit",
++  "headers": [
++    {
++      "source": "/(.*)",
++      "headers": [
++        {
++          "key": "X-Content-Type-Options",
++          "value": "nosniff"
++        },
++        {
++          "key": "X-Frame-Options",
++          "value": "DENY"
++        },
++        {
++          "key": "Referrer-Policy",
++          "value": "no-referrer"
++        },
++        {
++          "key": "Permissions-Policy",
++          "value": "camera=(), microphone=(), geolocation=()"
++        },
++        {
++          "key": "Cross-Origin-Opener-Policy",
++          "value": "same-origin"
++        },
++        {
++          "key": "Strict-Transport-Security",
++          "value": "max-age=31536000; includeSubDomains"
++        }
++      ]
++    }
++  ]
++}

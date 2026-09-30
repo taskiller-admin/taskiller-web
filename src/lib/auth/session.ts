@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import type { User } from '$lib/api/auth';
 import * as authApi from '$lib/api/auth';
+import { setAccessToken } from '$lib/api/access-token';
 
 export type AuthStatus = 'unknown' | 'authenticated' | 'anonymous';
 export type AuthState = { status: AuthStatus; user: User | null };
@@ -37,7 +38,19 @@ export async function register(input: authApi.RegisterInput) {
   return response;
 }
 
-export async function logout() {
-  await authApi.logout();
+export function updateAuthenticatedUser(user: User) {
+  state.set({ status: 'authenticated', user });
+}
+
+export function clearAuth() {
+  setAccessToken(null);
   state.set({ status: 'anonymous', user: null });
+}
+
+export async function logout() {
+  try {
+    await authApi.logout();
+  } finally {
+    clearAuth();
+  }
 }

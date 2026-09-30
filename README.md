@@ -4,7 +4,7 @@ SvelteKit/Svelte 5 frontend for the Taskiller API.
 
 ## Current implementation
 
-Round 5 is complete:
+Round 6 is complete:
 
 - auth + refresh-cookie bootstrap;
 - responsive application shell with dedicated full-screen focus mode;
@@ -20,7 +20,7 @@ Round 5 is complete:
 - 30-day work-item analytics embedded directly in Project/Sprint/Chore detail;
 - drill-down from analytics/history to the underlying work item and execution session.
 
-See `docs/ROUND_1.md` through `docs/ROUND_5.md`.
+See `docs/ROUND_1.md` through `docs/ROUND_6.md`.
 
 ## Setup
 
@@ -43,10 +43,15 @@ The API URL must not end with `/`.
 
 ## Backend contract
 
-Round 5 was built against Taskiller backend main:
+Round 6 was built against Taskiller backend main:
 
 `7792c34c49e6a09e7e20380e8b6becf93c863c67`
 
 Run `npm run api:update` against the deployed backend before release so `openapi/taskiller.json` and `src/lib/api/generated/schema.d.ts` match production exactly.
 
-The Round-5 analytics/history layer deliberately keeps its TypeScript response contracts in `src/lib/api/analytics.ts` and `src/lib/api/execution.ts`. This keeps the bundled Round-4 bootstrap schema usable offline while `api:update` remains the production source of truth.
+Analytics/history and Round-6 account lifecycle helpers deliberately keep explicit TypeScript response contracts at the centralized API layer. `api:update` remains the production source of truth for the generated OpenAPI client.
+
+
+## Round 6
+
+Account and lifecycle surfaces are now implemented: profile/preferences, email verification, password recovery, device-session management, data export, logout-all and scheduled account deletion. See `docs/ROUND_6.md`.

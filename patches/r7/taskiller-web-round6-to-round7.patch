@@ -1,0 +1,895 @@
+diff --git a/MANIFEST.md b/MANIFEST.md
+index 9361f44..3a90a6b 100644
+--- a/MANIFEST.md
++++ b/MANIFEST.md
+@@ -1,32 +1,30 @@
+-# Taskiller Web Round 6 manifest
++# Taskiller Web Round 7 manifest
+ 
+ ## New files
+ 
+-- `src/lib/api/account.ts`
+-- `src/lib/components/settings/ProfileSettings.svelte`
+-- `src/lib/components/settings/PreferencesSettings.svelte`
+-- `src/lib/components/settings/SessionsSettings.svelte`
+-- `src/lib/components/settings/DataPrivacySettings.svelte`
+-- `src/routes/verify-email/+page.svelte`
+-- `src/routes/forgot-password/+page.svelte`
+-- `src/routes/reset-password/+page.svelte`
+-- `src/routes/account-deletion-scheduled/+page.svelte`
+-- `docs/ROUND_6.md`
++- `src/service-worker.js`
++- `src/lib/pwa/connectivity.ts`
++- `src/lib/pwa/install.ts`
++- `src/lib/components/pwa/UpdateAvailable.svelte`
++- `src/lib/components/pwa/InstallAppCard.svelte`
++- `src/routes/offline/+page.svelte`
++- `src/routes/offline/+page.ts`
++- `docs/ROUND_7.md`
+ 
+ ## Expanded files
+ 
+-- `src/lib/auth/session.ts` — explicit user refresh + local auth clearing helpers
+-- `src/lib/api/query-keys.ts` — profile/preferences/devices/export cache keys
+-- `src/lib/components/layout/AppShell.svelte` — profile link + unverified-email signal
+-- `src/routes/(app)/settings/+page.svelte` — complete account/settings workspace
+-- `src/routes/login/+page.svelte` — password-recovery entry point
+-- `package.json` — version `0.6.0`
++- `src/routes/+layout.svelte` — PWA initialization, update UI, reconnect-aware Query defaults and mobile app metadata
++- `src/routes/(app)/+layout.svelte` — cold-offline recovery instead of false anonymous/login redirect
++- `src/lib/components/layout/AppShell.svelte` — skip link, connectivity announcement, navigation semantics and route-code preloading
++- `src/lib/api/client.ts` — immediate rejection of offline mutations; no silent mutation queue
++- `src/routes/(app)/settings/+page.svelte` — install-app section
++- `src/lib/components/work/WorkComposer.svelte` — expandable-form ARIA state
++- `src/lib/components/execution/ActiveSessionCard.svelte` — avoids unnecessary timer interval while paused and improves assistive text
++- `src/lib/components/history/SessionHistoryRow.svelte` — content-visibility optimization
++- `src/routes/(app)/analytics/+page.svelte` — accessible table metadata
++- `src/routes/(app)/session/[id]/+page.svelte` — focus-mode skip link
++- `src/app.css` — local system fonts, contrast/forced-colors and performance helpers
++- `static/site.webmanifest` — install metadata and shortcuts
++- `svelte.config.js` — version polling
++- `package.json` — version `0.7.0`
+ - `README.md`
+-
+-## Round-6 behavior
+-
+-Account lifecycle is now inspectable and actionable from the web client:
+-
+-profile/preferences → email verification → active devices → data export → account deletion
+-
+-Password recovery is also available outside the authenticated shell.
+diff --git a/README.md b/README.md
+index d029422..2a3fe76 100644
+--- a/README.md
++++ b/README.md
+@@ -4,7 +4,7 @@ SvelteKit/Svelte 5 frontend for the Taskiller API.
+ 
+ ## Current implementation
+ 
+-Round 6 is complete:
++Round 7 is complete:
+ 
+ - auth + refresh-cookie bootstrap;
+ - responsive application shell with dedicated full-screen focus mode;
+@@ -20,7 +20,7 @@ Round 6 is complete:
+ - 30-day work-item analytics embedded directly in Project/Sprint/Chore detail;
+ - drill-down from analytics/history to the underlying work item and execution session.
+ 
+-See `docs/ROUND_1.md` through `docs/ROUND_6.md`.
++See `docs/ROUND_1.md` through `docs/ROUND_7.md`.
+ 
+ ## Setup
+ 
+@@ -43,15 +43,20 @@ The API URL must not end with `/`.
+ 
+ ## Backend contract
+ 
+-Round 6 was built against Taskiller backend main:
++Round 7 was built against Taskiller backend main:
+ 
+ `7792c34c49e6a09e7e20380e8b6becf93c863c67`
+ 
+ Run `npm run api:update` against the deployed backend before release so `openapi/taskiller.json` and `src/lib/api/generated/schema.d.ts` match production exactly.
+ 
+-Analytics/history and Round-6 account lifecycle helpers deliberately keep explicit TypeScript response contracts at the centralized API layer. `api:update` remains the production source of truth for the generated OpenAPI client.
++Analytics/history and account-lifecycle helpers deliberately keep explicit TypeScript response contracts at the centralized API layer. `api:update` remains the production source of truth for the generated OpenAPI client.
+ 
+ 
+ ## Round 6
+ 
+ Account and lifecycle surfaces are now implemented: profile/preferences, email verification, password recovery, device-session management, data export, logout-all and scheduled account deletion. See `docs/ROUND_6.md`.
++
++
++## Round 7
++
++Taskiller is now installable and production-PWA aware: native SvelteKit service worker, version/update handling, prerendered offline recovery, reconnect-aware queries, immediate offline mutation rejection, accessibility hardening, reduced-motion/high-contrast support and a lighter system-font performance profile. Authenticated API responses are intentionally never service-worker cached. See `docs/ROUND_7.md`.
+diff --git a/VALIDATION.md b/VALIDATION.md
+index 64fd639..a996538 100644
+--- a/VALIDATION.md
++++ b/VALIDATION.md
+@@ -1,39 +1,43 @@
+-# Round 6 validation
++# Round 7 validation
+ 
+ Completed in the build workspace:
+ 
+ - backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`;
+-- user/preferences/session/export/deletion/password-recovery behavior re-read from backend routes/services;
+-- parsed 62 TypeScript units, including every Svelte `<script lang="ts">`: OK;
++- native SvelteKit service-worker behavior verified against current SvelteKit documentation;
++- service worker JavaScript syntax checked with `node --check`: OK;
+ - bundled `openapi/taskiller.json`: valid JSON;
+-- all `$lib` and relative local imports resolve, including `.d.ts` modules;
++- all `$lib` and relative local imports resolve;
+ - Svelte `{#if}`, `{#each}`, `{#await}`, and `{#key}` block counts balance;
+-- profile and preference writes preserve ETag / `If-Match` concurrency semantics;
+-- active-session revocation and logout-all clear local auth state after server revocation;
+-- export UI treats exports as asynchronous jobs and polls only while queued/processing;
+-- account deletion reflects immediate deactivation/session revocation plus delayed hard deletion;
+-- password-reset request copy does not disclose whether an email is registered.
++- no authenticated/cross-origin API request is cached by the service worker;
++- non-GET/HEAD API actions fail immediately while offline and are not queued;
++- `/offline` is prerendered for service-worker fallback;
++- PWA manifest parses and declares app scope/start URL/icons/shortcuts;
++- Google Fonts network dependency removed;
++- skip-link, navigation-current, live-region, reduced-motion/high-contrast checks applied;
++- `git diff --check`: OK;
++- ZIP integrity: checked during packaging.
+ 
+-`npm install --prefer-offline --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler and Vite production build must be run locally.
++`npm install --ignore-scripts --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler, Vite build and browser PWA audit must be run locally.
+ 
+-Before committing/deploying:
++Before commit/deploy:
+ 
+ ```bash
+ npm install
+ npm run api:update
+ npm run check
+ npm run build
++npm run preview
+ ```
+ 
+-Exercise these flows against the deployed API:
++Then validate in a production browser context:
+ 
+-1. Edit display name, then simulate a stale ETag and confirm conflict recovery.
+-2. Request email verification and confirm a token through `/verify-email`.
+-3. Change timezone, week start, focus strategy, min/max block length and review prompt.
+-4. Open two browser/device sessions; revoke the non-current one, then revoke current.
+-5. Sign in again and test logout-all.
+-6. Request a password reset; confirm with a valid token; verify prior sessions are revoked.
+-7. Request a data export and leave Settings open until status reaches `ready`; download the gzip archive.
+-8. Reload Settings while an export is in progress and confirm the latest request resumes polling.
+-9. Schedule account deletion only after typing the confirmation phrase; confirm redirect to the public receipt.
+-10. Verify the account can no longer authenticate after deletion is scheduled.
++1. Application is installable from Chromium and can be added to Home Screen on supported mobile browsers.
++2. DevTools Application panel shows an active Taskiller service worker and valid manifest.
++3. Visit Today, Inbox and a work detail, then go offline; already-open UI stays visible and mutations fail immediately.
++4. Reload an authenticated app route fully offline and confirm `/offline` recovery rather than `/login`.
++5. Reconnect and return to the original route; queries refetch.
++6. Start a session, lose connectivity, and confirm controls are disabled until reconnect while the visible timer/session snapshot remains understandable.
++7. Deploy a new frontend version; wait for version polling and confirm the update banner reloads into the new worker/client together.
++8. Keyboard-only: use the skip link, primary navigation, capture form, settings and focus controls.
++9. Enable reduced motion and high-contrast/forced-colors modes and verify state remains understandable without animation/color alone.
++10. Run Lighthouse/PWA/accessibility/performance checks against the deployed Vercel URL.
+diff --git a/docs/ROUND_7.md b/docs/ROUND_7.md
+new file mode 100644
+index 0000000..cbde7c4
+--- /dev/null
++++ b/docs/ROUND_7.md
+@@ -0,0 +1,51 @@
++# Round 7 — PWA, offline resilience, accessibility and performance
++
++Round 7 hardens Taskiller as an installable production web app without weakening the API's server-authoritative model.
++
++## PWA
++
++- Native SvelteKit `src/service-worker.js`; no Workbox dependency.
++- Pre-caches built application assets, `static/` assets and prerendered pages.
++- Previously visited same-origin navigations are cached network-first for shell recovery.
++- Cross-origin API traffic is never cached by the service worker.
++- `site.webmanifest` now includes app identity, scope, categories, install shortcuts and maskable-capable icon declarations.
++- Settings exposes an install surface using `beforeinstallprompt` when the browser supports it.
++- SvelteKit version polling checks for new deployments every 60 seconds and exposes a controlled reload/update prompt.
++
++## Offline model
++
++Taskiller does **not** queue mutations offline. ETag- and idempotency-protected writes must be performed against current server state.
++
++- The authenticated shell warns when connectivity is lost.
++- Already-rendered query data remains visible while the app stays open.
++- Session controls remain disabled offline as introduced in Round 4.
++- API mutations fail immediately with a clear reconnect message instead of being queued.
++- A cold authenticated navigation while offline goes to the prerendered `/offline` recovery page instead of incorrectly redirecting to login.
++- On reconnect, the user can return to the original route; TanStack Query is configured to refetch on reconnect.
++
++## Accessibility
++
++- Desktop app shell and focus mode have keyboard skip links.
++- Primary/mobile navigation exposes `aria-current="page"`.
++- Global offline state is announced through a polite live region.
++- Work Composer's expandable fields expose `aria-expanded` and `aria-controls`.
++- Analytics comparison table has a caption and scoped column headings.
++- Timer text includes a screen-reader description without making the one-second visual countdown a live region.
++- Existing global `:focus-visible` and reduced-motion handling is retained.
++- Added higher-contrast and forced-colors fallbacks.
++
++## Performance/privacy
++
++- Removed Google Fonts runtime requests; Taskiller now uses high-quality system font stacks.
++- No new PWA/chart dependencies were added.
++- SvelteKit retains route-level code splitting.
++- Primary navigation asks SvelteKit to preload visible route code.
++- Long history rows use `content-visibility: auto`.
++- TanStack Query keeps inactive data for 30 minutes and refetches on reconnect/focus.
++- Service worker cache is versioned and old Taskiller shell caches are removed on activation.
++
++## Deployment notes
++
++The service worker is production-only under normal SvelteKit behavior. Validate PWA behavior against `npm run build && npm run preview` or the Vercel deployment, not only `npm run dev`.
++
++The service worker deliberately does not cache authenticated Render API responses. Offline reload therefore provides the shell/recovery page, not a persistent local clone of private account data.
+diff --git a/package.json b/package.json
+index d8dd5e2..08a6547 100644
+--- a/package.json
++++ b/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "taskiller-web",
+   "private": true,
+-  "version": "0.6.0",
++  "version": "0.7.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite dev",
+diff --git a/src/app.css b/src/app.css
+index 4c1b0f6..290dd0a 100644
+--- a/src/app.css
++++ b/src/app.css
+@@ -1,4 +1,3 @@
+-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Manrope:wght@600;700;800&display=swap');
+ @import 'tailwindcss';
+ @import 'tw-animate-css';
+ 
+@@ -12,9 +11,9 @@
+   --color-tk-mist: #e5e5df;
+   --color-tk-blue: #5577ff;
+   --color-tk-green: #2f9b6c;
+-  --font-tk-display: 'Manrope', system-ui, sans-serif;
+-  --font-tk-sans: 'DM Sans', system-ui, sans-serif;
+-  --font-tk-mono: 'JetBrains Mono', ui-monospace, monospace;
++  --font-tk-display: 'Avenir Next', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
++  --font-tk-sans: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
++  --font-tk-mono: 'SFMono-Regular', 'Cascadia Code', 'Roboto Mono', ui-monospace, monospace;
+   --radius-tk: 16px;
+ }
+ 
+@@ -36,7 +35,7 @@
+ }
+ 
+ * { box-sizing: border-box; }
+-html { background: var(--background); }
++html { background: var(--background); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+ body {
+   margin: 0;
+   min-width: 320px;
+@@ -46,7 +45,10 @@ body {
+     radial-gradient(circle at 20% 0%, rgba(255, 101, 66, 0.07), transparent 26rem),
+     var(--background);
+   color: var(--foreground);
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
+ }
++
+ button, input, textarea, select { font: inherit; }
+ a { color: inherit; text-decoration: none; }
+ ::selection { background: rgb(255 101 66 / 22%); }
+@@ -79,3 +81,33 @@ a { color: inherit; text-decoration: none; }
+     transition-duration: 0.01ms !important;
+   }
+ }
++
++
++.tk-content-auto {
++  content-visibility: auto;
++  contain-intrinsic-size: auto 96px;
++}
++
++.tk-skip-link {
++  position: fixed;
++  left: 1rem;
++  top: 1rem;
++  z-index: 100;
++  transform: translateY(-160%);
++  border-radius: 0.75rem;
++  background: #171717;
++  color: white;
++  padding: 0.7rem 1rem;
++  font-size: 0.875rem;
++  font-weight: 700;
++}
++.tk-skip-link:focus { transform: translateY(0); }
++
++@media (prefers-contrast: more) {
++  :root { --border: #9b9b94; --muted: #4f514f; }
++  .tk-surface { box-shadow: none; }
++}
++
++@media (forced-colors: active) {
++  :focus-visible { outline: 2px solid Highlight; }
++}
+diff --git a/src/lib/api/client.ts b/src/lib/api/client.ts
+index e7082a0..98b2934 100644
+--- a/src/lib/api/client.ts
++++ b/src/lib/api/client.ts
+@@ -18,6 +18,7 @@ if (!apiBase) {
+ let refreshPromise: Promise<boolean> | null = null;
+ 
+ async function refreshAccessToken(): Promise<boolean> {
++  if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
+   if (refreshPromise) return refreshPromise;
+   refreshPromise = (async () => {
+     try {
+@@ -45,6 +46,16 @@ async function refreshAccessToken(): Promise<boolean> {
+ 
+ export async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+   const initial = new Request(input, init);
++  if (
++    typeof navigator !== 'undefined' &&
++    !navigator.onLine &&
++    !['GET', 'HEAD'].includes(initial.method.toUpperCase())
++  ) {
++    throw {
++      title: 'You are offline',
++      detail: 'Reconnect before changing server state. Taskiller does not queue offline mutations.'
++    };
++  }
+   const first = new Request(initial);
+   const token = getAccessToken();
+   if (token) first.headers.set('Authorization', `Bearer ${token}`);
+diff --git a/src/lib/components/execution/ActiveSessionCard.svelte b/src/lib/components/execution/ActiveSessionCard.svelte
+index 878f5e0..d75dd1b 100644
+--- a/src/lib/components/execution/ActiveSessionCard.svelte
++++ b/src/lib/components/execution/ActiveSessionCard.svelte
+@@ -10,6 +10,7 @@
+   let now = $state(Date.now());
+ 
+   onMount(() => {
++    if (session.state !== 'running') return;
+     const interval = window.setInterval(() => (now = Date.now()), 1000);
+     return () => window.clearInterval(interval);
+   });
+@@ -46,7 +47,7 @@
+     </div>
+   </div>
+   <div class="relative mt-7 flex items-end justify-between gap-6 lg:mt-0 lg:block lg:text-right">
+-    <div class="tk-mono text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">{formatClock(remaining)}</div>
++    <div class="tk-mono text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">{formatClock(remaining)}<span class="sr-only"> remaining in the current segment</span></div>
+     <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
+       <a href={`/work/${session.workItemId}`} class="inline-flex items-center gap-1.5 text-xs font-bold text-white/45 hover:text-white">Open work</a>
+       <a href={`/session/${session.id}`} class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 hover:bg-white/15">Open session <ArrowUpRightIcon size={14} /></a>
+diff --git a/src/lib/components/history/SessionHistoryRow.svelte b/src/lib/components/history/SessionHistoryRow.svelte
+index 065fbf4..5c2aae5 100644
+--- a/src/lib/components/history/SessionHistoryRow.svelte
++++ b/src/lib/components/history/SessionHistoryRow.svelte
+@@ -21,7 +21,7 @@
+   );
+ </script>
+ 
+-<div class="grid gap-4 border-b border-[var(--border)] py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
++<div class="tk-content-auto grid gap-4 border-b border-[var(--border)] py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+   <div class="min-w-0">
+     <div class="flex flex-wrap items-center gap-2">
+       <span class={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${stateTone}`}>{session.state}</span>
+diff --git a/src/lib/components/layout/AppShell.svelte b/src/lib/components/layout/AppShell.svelte
+index b1e597e..2334880 100644
+--- a/src/lib/components/layout/AppShell.svelte
++++ b/src/lib/components/layout/AppShell.svelte
+@@ -4,6 +4,7 @@
+   import Logo from '$lib/components/brand/Logo.svelte';
+   import Button from '$lib/components/ui/Button.svelte';
+   import { auth, logout } from '$lib/auth/session';
++  import { online } from '$lib/pwa/connectivity';
+   import { cn } from '$lib/utils';
+   import HouseIcon from 'phosphor-svelte/lib/HouseIcon';
+   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
+@@ -43,6 +44,7 @@
+ {#if focusMode}
+   {@render children?.()}
+ {:else}
++<a class="tk-skip-link" href="#main-content">Skip to content</a>
+ <div class="min-h-screen lg:grid lg:grid-cols-[246px_minmax(0,1fr)]">
+   <aside class="sticky top-0 hidden h-screen border-r border-[var(--border)] bg-white/72 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
+     <div class="flex h-12 items-center px-2">
+@@ -53,10 +55,11 @@
+       <PlusIcon size={17} weight="bold" /> Capture work
+     </a>
+ 
+-    <nav class="mt-7 space-y-1" aria-label="Primary navigation">
++    <nav class="mt-7 space-y-1" aria-label="Primary navigation" data-sveltekit-preload-code="viewport">
+       {#each nav as item}
+         <a
+           href={item.href}
++          aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}
+           class={cn(
+             'group relative flex h-11 items-center gap-3 rounded-[13px] px-3.5 text-sm font-semibold text-tk-graphite transition hover:bg-black/[0.04] hover:text-tk-ink',
+             page.url.pathname.startsWith(item.href) && 'bg-black/[0.055] text-tk-ink'
+@@ -72,7 +75,7 @@
+     </nav>
+ 
+     <div class="mt-auto">
+-      <a href="/settings" class="flex h-10 items-center gap-3 rounded-[12px] px-3.5 text-sm font-semibold text-tk-graphite hover:bg-black/[0.04] hover:text-tk-ink">
++      <a href="/settings" aria-current={page.url.pathname.startsWith('/settings') ? 'page' : undefined} class="flex h-10 items-center gap-3 rounded-[12px] px-3.5 text-sm font-semibold text-tk-graphite hover:bg-black/[0.04] hover:text-tk-ink">
+         <GearSixIcon size={18} /> Settings
+       </a>
+       <div class="mt-3 flex items-center gap-3 rounded-[15px] border border-[var(--border)] bg-white p-2.5">
+@@ -99,13 +102,17 @@
+       </a>
+     </header>
+ 
+-    <main class="min-w-0 pb-24 lg:pb-0">{@render children?.()}</main>
++    {#if !$online}
++      <div class="sticky top-16 z-20 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 lg:top-0" role="status" aria-live="polite">Offline — loaded data stays visible, but server actions are paused until you reconnect.</div>
++    {/if}
++    <main id="main-content" tabindex="-1" class="min-w-0 pb-24 outline-none lg:pb-0">{@render children?.()}</main>
+   </div>
+ 
+   <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
+     {#each nav as item}
+       <a
+         href={item.href}
++        aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}
+         class={cn(
+           'flex flex-col items-center gap-1 rounded-[13px] py-2 text-[10px] font-bold text-tk-graphite transition',
+           page.url.pathname.startsWith(item.href) && 'bg-[#eeeeea] text-tk-ink'
+diff --git a/src/lib/components/pwa/InstallAppCard.svelte b/src/lib/components/pwa/InstallAppCard.svelte
+new file mode 100644
+index 0000000..cf34596
+--- /dev/null
++++ b/src/lib/components/pwa/InstallAppCard.svelte
+@@ -0,0 +1,26 @@
++<script lang="ts">
++  import DownloadSimpleIcon from 'phosphor-svelte/lib/DownloadSimpleIcon';
++  import DeviceMobileIcon from 'phosphor-svelte/lib/DeviceMobileIcon';
++  import Button from '$lib/components/ui/Button.svelte';
++  import { installState, promptInstall } from '$lib/pwa/install';
++</script>
++
++<section id="app" class="scroll-mt-24 rounded-[22px] border border-[var(--border)] bg-white/78 p-5 sm:p-6">
++  <div class="flex items-start gap-3">
++    <div class="grid size-10 place-items-center rounded-[13px] bg-tk-strike/10 text-[#b84429]"><DeviceMobileIcon size={21} /></div>
++    <div class="min-w-0 flex-1">
++      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">App</p>
++      <h2 class="mt-1 text-xl font-bold">Install Taskiller</h2>
++      <p class="mt-2 max-w-2xl text-sm leading-6 text-tk-graphite">Install the web app for a standalone window and offline access to the application shell. Task data itself still requires the API; Taskiller does not cache authenticated API responses on the device.</p>
++    </div>
++  </div>
++  <div class="mt-5 flex flex-wrap items-center gap-3">
++    {#if $installState.installed}
++      <span class="rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Installed</span>
++    {:else if $installState.available}
++      <Button onclick={promptInstall}><DownloadSimpleIcon size={17} weight="bold" /> Install app</Button>
++    {:else}
++      <span class="text-sm text-tk-graphite">Use your browser’s “Install app” or “Add to Home Screen” action when available.</span>
++    {/if}
++  </div>
++</section>
+diff --git a/src/lib/components/pwa/UpdateAvailable.svelte b/src/lib/components/pwa/UpdateAvailable.svelte
+new file mode 100644
+index 0000000..d4fe024
+--- /dev/null
++++ b/src/lib/components/pwa/UpdateAvailable.svelte
+@@ -0,0 +1,24 @@
++<script lang="ts">
++  import { updated } from '$app/state';
++  let applying = $state(false);
++
++  async function applyUpdate() {
++    applying = true;
++    const registration = await navigator.serviceWorker?.getRegistration();
++    if (registration?.waiting) {
++      const reload = () => window.location.reload();
++      navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
++      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
++      window.setTimeout(reload, 1500);
++    } else {
++      window.location.reload();
++    }
++  }
++</script>
++
++{#if updated.current}
++  <div class="fixed inset-x-3 bottom-24 z-[70] mx-auto flex max-w-xl items-center justify-between gap-4 rounded-[16px] border border-black/10 bg-tk-ink px-4 py-3 text-sm text-white shadow-2xl lg:bottom-5" role="status">
++    <span><strong>Taskiller updated.</strong> Reload when you’re ready.</span>
++    <button class="shrink-0 rounded-[10px] bg-white px-3 py-1.5 text-xs font-bold text-tk-ink" disabled={applying} onclick={applyUpdate}>{applying ? 'Updating…' : 'Reload'}</button>
++  </div>
++{/if}
+diff --git a/src/lib/components/work/WorkComposer.svelte b/src/lib/components/work/WorkComposer.svelte
+index d67a5c5..a326704 100644
+--- a/src/lib/components/work/WorkComposer.svelte
++++ b/src/lib/components/work/WorkComposer.svelte
+@@ -95,13 +95,13 @@
+     </Button>
+   </div>
+ 
+-  <button type="button" class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite hover:bg-black/[0.035]" onclick={() => (advanced = !advanced)}>
++  <button type="button" aria-expanded={advanced} aria-controls="work-composer-details" class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite hover:bg-black/[0.035]" onclick={() => (advanced = !advanced)}>
+     <CaretDownIcon size={13} class={advanced ? 'rotate-180' : ''} />
+     {advanced ? 'Fewer fields' : 'Add details'}
+   </button>
+ 
+   {#if advanced}
+-    <div class="mt-3 grid gap-3 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
++    <div id="work-composer-details" class="mt-3 grid gap-3 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
+       <label class="sm:col-span-2">
+         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
+         <Textarea bind:value={description} placeholder="Optional context, outcome, or notes…" maxlength="20000" />
+diff --git a/src/lib/pwa/connectivity.ts b/src/lib/pwa/connectivity.ts
+new file mode 100644
+index 0000000..8db1b0b
+--- /dev/null
++++ b/src/lib/pwa/connectivity.ts
+@@ -0,0 +1,14 @@
++import { writable } from 'svelte/store';
++
++const state = writable(true);
++export const online = { subscribe: state.subscribe };
++
++let initialized = false;
++export function initConnectivity() {
++  if (initialized || typeof window === 'undefined') return;
++  initialized = true;
++  const sync = () => state.set(navigator.onLine);
++  sync();
++  window.addEventListener('online', sync);
++  window.addEventListener('offline', sync);
++}
+diff --git a/src/lib/pwa/install.ts b/src/lib/pwa/install.ts
+new file mode 100644
+index 0000000..1e66395
+--- /dev/null
++++ b/src/lib/pwa/install.ts
+@@ -0,0 +1,31 @@
++import { writable } from 'svelte/store';
++
++type InstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
++type InstallState = { available: boolean; installed: boolean; prompt: InstallPromptEvent | null };
++
++const state = writable<InstallState>({ available: false, installed: false, prompt: null });
++export const installState = { subscribe: state.subscribe };
++let initialized = false;
++
++export function initInstallPrompt() {
++  if (initialized || typeof window === 'undefined') return;
++  initialized = true;
++  const standalone = window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
++  state.update((current) => ({ ...current, installed: standalone }));
++  window.addEventListener('beforeinstallprompt', (event) => {
++    event.preventDefault();
++    state.set({ available: true, installed: false, prompt: event as InstallPromptEvent });
++  });
++  window.addEventListener('appinstalled', () => state.set({ available: false, installed: true, prompt: null }));
++}
++
++export async function promptInstall() {
++  let snapshot: InstallState | null = null;
++  const unsubscribe = state.subscribe((value) => (snapshot = value));
++  unsubscribe();
++  if (!snapshot?.prompt) return false;
++  await snapshot.prompt.prompt();
++  const choice = await snapshot.prompt.userChoice;
++  state.set({ available: false, installed: choice.outcome === 'accepted', prompt: null });
++  return choice.outcome === 'accepted';
++}
+diff --git a/src/routes/(app)/+layout.svelte b/src/routes/(app)/+layout.svelte
+index 02967a9..72ce570 100644
+--- a/src/routes/(app)/+layout.svelte
++++ b/src/routes/(app)/+layout.svelte
+@@ -1,11 +1,17 @@
+ <script lang="ts">
+   import { onMount } from 'svelte';
+   import { goto } from '$app/navigation';
++  import { page } from '$app/state';
+   import AppShell from '$lib/components/layout/AppShell.svelte';
+   import { auth, bootstrapAuth } from '$lib/auth/session';
+   let { children }: { children?: import('svelte').Snippet } = $props();
+ 
+   onMount(async () => {
++    if (!navigator.onLine) {
++      const returnTo = `${page.url.pathname}${page.url.search}`;
++      await goto(`/offline?returnTo=${encodeURIComponent(returnTo)}`);
++      return;
++    }
+     const ok = await bootstrapAuth();
+     if (!ok) await goto('/login');
+   });
+diff --git a/src/routes/(app)/analytics/+page.svelte b/src/routes/(app)/analytics/+page.svelte
+index d9adb6b..6095feb 100644
+--- a/src/routes/(app)/analytics/+page.svelte
++++ b/src/routes/(app)/analytics/+page.svelte
+@@ -169,7 +169,8 @@
+       {:else}
+         <div class="overflow-x-auto">
+           <table class="w-full min-w-[650px] text-left text-sm">
+-            <thead class="bg-black/[0.025] text-[10px] font-bold uppercase tracking-[0.08em] text-tk-graphite"><tr><th class="px-5 py-3">Work type</th><th class="px-4 py-3">Active</th><th class="px-4 py-3">Sessions</th><th class="px-4 py-3">Completion</th><th class="px-4 py-3">Focus</th><th class="px-4 py-3">Estimate error</th></tr></thead>
++            <caption class="sr-only">Execution analytics by work type</caption>
++            <thead class="bg-black/[0.025] text-[10px] font-bold uppercase tracking-[0.08em] text-tk-graphite"><tr><th scope="col" class="px-5 py-3">Work type</th><th scope="col" class="px-4 py-3">Active</th><th scope="col" class="px-4 py-3">Sessions</th><th scope="col" class="px-4 py-3">Completion</th><th scope="col" class="px-4 py-3">Focus</th><th scope="col" class="px-4 py-3">Estimate error</th></tr></thead>
+             <tbody>
+               {#each sortedTypes as row}
+                 <tr class="border-t border-[var(--border)]"><td class="px-5 py-4 font-bold">{row.workTypeSlug || 'Uncategorized'}</td><td class="tk-mono px-4 py-4">{formatDuration(row.activeWorkSeconds)}</td><td class="tk-mono px-4 py-4">{row.sessionCount}</td><td class="tk-mono px-4 py-4">{percent(row.completionRate)}</td><td class="tk-mono px-4 py-4">{focus(row.medianFocusScore)}</td><td class="tk-mono px-4 py-4">{signedDuration(row.medianEstimateErrorSeconds)}</td></tr>
+diff --git a/src/routes/(app)/session/[id]/+page.svelte b/src/routes/(app)/session/[id]/+page.svelte
+index bf565cd..85e6f5b 100644
+--- a/src/routes/(app)/session/[id]/+page.svelte
++++ b/src/routes/(app)/session/[id]/+page.svelte
+@@ -223,7 +223,8 @@
+ 
+ <svelte:head><title>Focus session — Taskiller</title></svelte:head>
+ 
+-<div class="min-h-screen bg-[#111214] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
++<a class="tk-skip-link" href="#focus-main">Skip to session controls</a>
++<main id="focus-main" tabindex="-1" class="min-h-screen bg-[#111214] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
+   <div class="mx-auto max-w-[1180px]">
+     <div class="flex items-center justify-between gap-4">
+       <a href="/today" class="inline-flex items-center gap-1.5 text-sm font-bold text-white/48 transition hover:text-white"><ArrowLeftIcon size={15} /> Leave focus</a>
+@@ -358,4 +359,4 @@
+       </div>
+     {/if}
+   </div>
+-</div>
++</main>
+diff --git a/src/routes/(app)/settings/+page.svelte b/src/routes/(app)/settings/+page.svelte
+index c71a87f..b5215c2 100644
+--- a/src/routes/(app)/settings/+page.svelte
++++ b/src/routes/(app)/settings/+page.svelte
+@@ -4,12 +4,14 @@
+   import PreferencesSettings from '$lib/components/settings/PreferencesSettings.svelte';
+   import SessionsSettings from '$lib/components/settings/SessionsSettings.svelte';
+   import DataPrivacySettings from '$lib/components/settings/DataPrivacySettings.svelte';
++  import InstallAppCard from '$lib/components/pwa/InstallAppCard.svelte';
+ 
+   const sections = [
+     { href: '#profile', label: 'Profile' },
+     { href: '#preferences', label: 'Preferences' },
+     { href: '#devices', label: 'Devices' },
+-    { href: '#data', label: 'Data & privacy' }
++    { href: '#data', label: 'Data & privacy' },
++    { href: '#app', label: 'App' }
+   ];
+ </script>
+ 
+@@ -32,5 +34,6 @@
+     <PreferencesSettings />
+     <SessionsSettings />
+     <DataPrivacySettings />
++    <InstallAppCard />
+   </div>
+ </div>
+diff --git a/src/routes/+layout.svelte b/src/routes/+layout.svelte
+index 0cdd133..93dd907 100644
+--- a/src/routes/+layout.svelte
++++ b/src/routes/+layout.svelte
+@@ -1,19 +1,44 @@
+ <script lang="ts">
+   import '../app.css';
++  import { onMount } from 'svelte';
+   import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
++  import UpdateAvailable from '$lib/components/pwa/UpdateAvailable.svelte';
++  import { initConnectivity } from '$lib/pwa/connectivity';
++  import { initInstallPrompt } from '$lib/pwa/install';
+   let { children }: { children?: import('svelte').Snippet } = $props();
+   const queryClient = new QueryClient({
+     defaultOptions: {
+-      queries: { staleTime: 15_000, retry: 1, refetchOnWindowFocus: true },
+-      mutations: { retry: 0 }
++      queries: {
++        staleTime: 15_000,
++        gcTime: 30 * 60_000,
++        retry: 1,
++        refetchOnWindowFocus: true,
++        refetchOnReconnect: true,
++        networkMode: 'online'
++      },
++      mutations: { retry: 0, networkMode: 'always' }
+     }
+   });
++
++  onMount(() => {
++    initConnectivity();
++    initInstallPrompt();
++  });
+ </script>
+ 
+ <svelte:head>
+-  <meta name="theme-color" content="#f5f5f2" />
++  <meta name="theme-color" content="#171717" />
++  <meta name="color-scheme" content="light" />
++  <meta name="mobile-web-app-capable" content="yes" />
++  <meta name="apple-mobile-web-app-capable" content="yes" />
++  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
++  <meta name="apple-mobile-web-app-title" content="Taskiller" />
+   <link rel="icon" href="/favicon.svg" />
+   <link rel="manifest" href="/site.webmanifest" />
++  <link rel="apple-touch-icon" href="/icon-192.png" />
+ </svelte:head>
+ 
+-<QueryClientProvider client={queryClient}>{@render children?.()}</QueryClientProvider>
++<QueryClientProvider client={queryClient}>
++  {@render children?.()}
++  <UpdateAvailable />
++</QueryClientProvider>
+diff --git a/src/routes/offline/+page.svelte b/src/routes/offline/+page.svelte
+new file mode 100644
+index 0000000..0b19db2
+--- /dev/null
++++ b/src/routes/offline/+page.svelte
+@@ -0,0 +1,33 @@
++<script lang="ts">
++  import { onMount } from 'svelte';
++  import { page } from '$app/state';
++  import WifiSlashIcon from 'phosphor-svelte/lib/WifiSlashIcon';
++  import ArrowClockwiseIcon from 'phosphor-svelte/lib/ArrowClockwiseIcon';
++  import Logo from '$lib/components/brand/Logo.svelte';
++  import Button from '$lib/components/ui/Button.svelte';
++  let online = $state(false);
++  const returnTo = $derived(page.url.searchParams.get('returnTo') || '/today');
++  onMount(() => {
++    const sync = () => (online = navigator.onLine);
++    sync();
++    window.addEventListener('online', sync);
++    window.addEventListener('offline', sync);
++    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync); };
++  });
++  function retry() { window.location.href = returnTo; }
++</script>
++
++<svelte:head><title>Offline — Taskiller</title><meta name="robots" content="noindex" /></svelte:head>
++
++<main class="grid min-h-screen place-items-center px-5 py-10">
++  <div class="w-full max-w-lg rounded-[28px] border border-[var(--border)] bg-white/85 p-7 shadow-[0_25px_70px_rgb(23_23_23/0.08)] backdrop-blur sm:p-9">
++    <Logo class="h-7 w-auto" />
++    <div class="mt-10 grid size-12 place-items-center rounded-[15px] bg-black/[0.05] text-tk-graphite"><WifiSlashIcon size={24} /></div>
++    <h1 class="tk-display mt-5 text-4xl font-extrabold">You’re offline.</h1>
++    <p class="mt-3 text-sm leading-6 text-tk-graphite">The Taskiller shell is available, but authenticated work data is never stored by the service worker. Reconnect before syncing, editing, or starting new server actions.</p>
++    <div class="mt-7 flex flex-wrap gap-3">
++      <Button disabled={!online} onclick={retry}><ArrowClockwiseIcon size={17} /> {online ? 'Reconnect to Taskiller' : 'Waiting for connection'}</Button>
++      <a class="inline-flex h-11 items-center rounded-[13px] border border-[var(--border)] bg-white px-4 text-sm font-bold" href="/">Public home</a>
++    </div>
++  </div>
++</main>
+diff --git a/src/routes/offline/+page.ts b/src/routes/offline/+page.ts
+new file mode 100644
+index 0000000..189f71e
+--- /dev/null
++++ b/src/routes/offline/+page.ts
+@@ -0,0 +1 @@
++export const prerender = true;
+diff --git a/src/service-worker.js b/src/service-worker.js
+new file mode 100644
+index 0000000..3c978c9
+--- /dev/null
++++ b/src/service-worker.js
+@@ -0,0 +1,69 @@
++/// <reference no-default-lib="true"/>
++/// <reference lib="esnext" />
++/// <reference lib="webworker" />
++/// <reference types="@sveltejs/kit" />
++
++import { build, files, prerendered, version } from '$service-worker';
++
++const self = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (globalThis.self));
++const CACHE_PREFIX = 'taskiller-shell-';
++const CACHE = `${CACHE_PREFIX}${version}`;
++const ASSETS = [...build, ...files, ...prerendered];
++
++self.addEventListener('install', (event) => {
++  event.waitUntil(
++    (async () => {
++      const cache = await caches.open(CACHE);
++      await cache.addAll(ASSETS);
++    })()
++  );
++});
++
++self.addEventListener('activate', (event) => {
++  event.waitUntil(
++    (async () => {
++      for (const key of await caches.keys()) {
++        if (key.startsWith(CACHE_PREFIX) && key !== CACHE) await caches.delete(key);
++      }
++      await self.clients.claim();
++    })()
++  );
++});
++
++self.addEventListener('message', (event) => {
++  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
++});
++
++self.addEventListener('fetch', (event) => {
++  const request = event.request;
++  if (request.method !== 'GET') return;
++
++  const url = new URL(request.url);
++  // Never cache authenticated API traffic, especially the cross-origin Render API.
++  if (url.origin !== self.location.origin) return;
++
++  if (ASSETS.includes(url.pathname)) {
++    event.respondWith(
++      (async () => {
++        const cached = await caches.match(url.pathname);
++        return cached ?? fetch(request);
++      })()
++    );
++    return;
++  }
++
++  if (request.mode === 'navigate') {
++    event.respondWith(
++      (async () => {
++        const cache = await caches.open(CACHE);
++        try {
++          const response = await fetch(request);
++          if (response.ok) await cache.put(request, response.clone());
++          return response;
++        } catch {
++          return (await cache.match(request)) ?? (await cache.match('/offline')) ?? Response.error();
++        }
++      })()
++    );
++  }
++});
+diff --git a/static/site.webmanifest b/static/site.webmanifest
+index a96fc0d..9c772ee 100644
+--- a/static/site.webmanifest
++++ b/static/site.webmanifest
+@@ -1,20 +1,20 @@
+ {
++  "id": "/",
+   "name": "Taskiller",
+   "short_name": "Taskiller",
+-  "start_url": "/",
++  "description": "Plan work, focus deliberately, and review what actually happened.",
++  "start_url": "/today?source=pwa",
++  "scope": "/",
+   "display": "standalone",
+-  "background_color": "#F7F8FA",
+-  "theme_color": "#111214",
++  "background_color": "#F5F5F2",
++  "theme_color": "#171717",
++  "categories": ["productivity"],
+   "icons": [
+-    {
+-      "src": "icon-192.png",
+-      "sizes": "192x192",
+-      "type": "image/png"
+-    },
+-    {
+-      "src": "icon-512.png",
+-      "sizes": "512x512",
+-      "type": "image/png"
+-    }
++    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
++    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
++  ],
++  "shortcuts": [
++    { "name": "Today", "short_name": "Today", "url": "/today" },
++    { "name": "Capture work", "short_name": "Capture", "url": "/inbox?capture=1" }
+   ]
+-}
+\ No newline at end of file
++}
+diff --git a/svelte.config.js b/svelte.config.js
+index f386580..8dbfec5 100644
+--- a/svelte.config.js
++++ b/svelte.config.js
+@@ -5,7 +5,8 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+ const config = {
+   preprocess: vitePreprocess(),
+   kit: {
+-    adapter: adapter()
++    adapter: adapter(),
++    version: { pollInterval: 60_000 }
+   }
+ };
+ 

@@ -77,10 +77,13 @@
       </a>
       <div class="mt-3 flex items-center gap-3 rounded-[15px] border border-[var(--border)] bg-white p-2.5">
         <div class="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[#ecece7] text-xs font-black">{initials}</div>
-        <div class="min-w-0 flex-1">
+        <a href="/settings#profile" class="min-w-0 flex-1">
           <p class="truncate text-sm font-bold">{$auth.user?.displayName || 'Taskiller user'}</p>
           <p class="truncate text-[11px] text-tk-graphite">{$auth.user?.email}</p>
-        </div>
+          {#if $auth.user && !$auth.user.emailVerified}
+            <p class="mt-0.5 text-[10px] font-bold text-[#a63820]">Verify email</p>
+          {/if}
+        </a>
         <Button variant="ghost" size="icon" class="size-8" aria-label="Sign out" onclick={signOut}>
           <SignOutIcon size={16} />
         </Button>

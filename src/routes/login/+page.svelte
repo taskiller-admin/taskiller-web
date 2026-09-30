@@ -48,6 +48,7 @@
       <div class="mt-8 space-y-5">
         <label class="block text-sm font-semibold">Email<Input class="mt-2" type="email" bind:value={email} autocomplete="email" required /></label>
         <label class="block text-sm font-semibold">Password<Input class="mt-2" type="password" bind:value={password} autocomplete="current-password" required /></label>
+        <div class="text-right"><a class="text-xs font-bold text-tk-blue hover:underline" href="/forgot-password">Forgot password?</a></div>
       </div>
       {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
       <Button class="mt-7 w-full" size="lg" type="submit" disabled={loading}>{loading ? 'Logging in…' : 'Log in'}</Button>

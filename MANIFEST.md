@@ -1,29 +1,32 @@
-# Taskiller Web Round 5 manifest
+# Taskiller Web Round 6 manifest
 
 ## New files
 
-- `src/lib/api/analytics.ts`
-- `src/lib/components/analytics/MetricCard.svelte`
-- `src/lib/components/analytics/ActivityChart.svelte`
-- `src/lib/components/analytics/HourPatternChart.svelte`
-- `src/lib/components/analytics/WorkItemAnalyticsCard.svelte`
-- `src/lib/components/history/SessionHistoryRow.svelte`
-- `src/routes/(app)/history/+page.svelte`
-- `docs/ROUND_5.md`
+- `src/lib/api/account.ts`
+- `src/lib/components/settings/ProfileSettings.svelte`
+- `src/lib/components/settings/PreferencesSettings.svelte`
+- `src/lib/components/settings/SessionsSettings.svelte`
+- `src/lib/components/settings/DataPrivacySettings.svelte`
+- `src/routes/verify-email/+page.svelte`
+- `src/routes/forgot-password/+page.svelte`
+- `src/routes/reset-password/+page.svelte`
+- `src/routes/account-deletion-scheduled/+page.svelte`
+- `docs/ROUND_6.md`
 
 ## Expanded files
 
-- `src/lib/api/client.ts` — reusable authenticated JSON request primitive
-- `src/lib/api/execution.ts` — execution-session history listing
-- `src/lib/api/query-keys.ts` — analytics + history cache keys
-- `src/lib/components/layout/AppShell.svelte` — History navigation
-- `src/routes/(app)/analytics/+page.svelte` — complete analytics workspace
-- `src/routes/(app)/work/[id]/+page.svelte` — work-item analytics drill-down
-- `package.json` — version `0.5.0`
+- `src/lib/auth/session.ts` — explicit user refresh + local auth clearing helpers
+- `src/lib/api/query-keys.ts` — profile/preferences/devices/export cache keys
+- `src/lib/components/layout/AppShell.svelte` — profile link + unverified-email signal
+- `src/routes/(app)/settings/+page.svelte` — complete account/settings workspace
+- `src/routes/login/+page.svelte` — password-recovery entry point
+- `package.json` — version `0.6.0`
 - `README.md`
 
-## Round-5 behavior
+## Round-6 behavior
 
-Execution history and analytics now form one inspectable loop:
+Account lifecycle is now inspectable and actionable from the web client:
 
-work item → focused execution → immutable session record → review → global/work-item analytics → drill-down back to work/session.
+profile/preferences → email verification → active devices → data export → account deletion
+
+Password recovery is also available outside the authenticated shell.

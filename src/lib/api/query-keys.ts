@@ -1,5 +1,11 @@
 export const queryKeys = {
   me: ['me'] as const,
+  account: {
+    profile: ['account', 'profile'] as const,
+    preferences: ['account', 'preferences'] as const,
+    sessions: ['account', 'sessions'] as const,
+    export: (id: string) => ['account', 'export', id] as const
+  },
   work: {
     all: ['work'] as const,
     list: (filters: Record<string, unknown> = {}) => ['work', 'list', filters] as const,
