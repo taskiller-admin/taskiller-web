@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 
 type InstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 type InstallState = { available: boolean; installed: boolean; prompt: InstallPromptEvent | null };
@@ -20,12 +20,12 @@ export function initInstallPrompt() {
 }
 
 export async function promptInstall() {
-  let snapshot: InstallState | null = null;
-  const unsubscribe = state.subscribe((value) => (snapshot = value));
-  unsubscribe();
-  if (!snapshot?.prompt) return false;
-  await snapshot.prompt.prompt();
-  const choice = await snapshot.prompt.userChoice;
+  const snapshot = get(state);
+  const prompt = snapshot.prompt;
+  if (!prompt) return false;
+
+  await prompt.prompt();
+  const choice = await prompt.userChoice;
   state.set({ available: false, installed: choice.outcome === 'accepted', prompt: null });
   return choice.outcome === 'accepted';
 }

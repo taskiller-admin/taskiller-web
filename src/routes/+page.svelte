@@ -1,7 +1,7 @@
 <script lang="ts">
   import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
   import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
-  import FolderNotchOpenIcon from 'phosphor-svelte/lib/FolderNotchOpenIcon';
+  import TreeStructureIcon from 'phosphor-svelte/lib/TreeStructureIcon';
   import LightningIcon from 'phosphor-svelte/lib/LightningIcon';
   import StackIcon from 'phosphor-svelte/lib/StackIcon';
   import Logo from '$lib/components/brand/Logo.svelte';
@@ -39,7 +39,7 @@
       <div class="relative min-h-[480px]">
         <div class="absolute inset-x-4 top-3 rotate-[-2deg] rounded-[26px] border border-[var(--border)] bg-white/75 p-6 shadow-[0_24px_70px_rgb(23_23_23/0.08)] sm:inset-x-12">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3"><span class="grid size-10 place-items-center rounded-[12px] bg-tk-blue/10 text-tk-blue"><FolderNotchOpenIcon size={20} weight="fill" /></span><div><p class="text-xs font-bold uppercase tracking-[0.1em] text-tk-graphite">Project</p><p class="font-bold">Launch Taskiller</p></div></div>
+            <div class="flex items-center gap-3"><span class="grid size-10 place-items-center rounded-[12px] bg-tk-blue/10 text-tk-blue"><TreeStructureIcon size={20} weight="fill" /></span><div><p class="text-xs font-bold uppercase tracking-[0.1em] text-tk-graphite">Project</p><p class="font-bold">Launch Taskiller</p></div></div>
             <span class="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-bold text-tk-graphite">IN PROGRESS</span>
           </div>
           <div class="ml-5 mt-5 border-l border-[var(--border)] pl-5">

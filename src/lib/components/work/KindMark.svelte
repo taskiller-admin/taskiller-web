@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FolderNotchOpenIcon from 'phosphor-svelte/lib/FolderNotchOpenIcon';
+  import TreeStructureIcon from 'phosphor-svelte/lib/TreeStructureIcon';
   import StackIcon from 'phosphor-svelte/lib/StackIcon';
   import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
   import type { WorkItemKind } from '$lib/api/work';
@@ -19,7 +19,7 @@
   aria-hidden="true"
 >
   {#if kind === 'project'}
-    <FolderNotchOpenIcon size={18} weight="fill" />
+    <TreeStructureIcon size={18} weight="fill" />
   {:else if kind === 'sprint'}
     <StackIcon size={18} weight="fill" />
   {:else}

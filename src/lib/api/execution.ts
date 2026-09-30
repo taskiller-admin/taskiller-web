@@ -4,6 +4,7 @@ import { api, taskillerJson } from './client';
 export type ExecutionSession = components['schemas']['ExecutionSession'];
 export type StartExecutionSessionInput = components['schemas']['StartExecutionSessionRequest'];
 export type SessionEvent = components['schemas']['SessionEvent'];
+export type SessionEventPage = components['schemas']['SessionEventPage'];
 export type SessionEventType = components['schemas']['SessionEventType'];
 export type SessionEventInput = components['schemas']['CreateSessionEventRequest'];
 export type SessionReview = components['schemas']['SessionReview'];
@@ -80,19 +81,19 @@ export async function startExecutionSession(input: StartExecutionSessionInput) {
   return { session: data, etag: response.headers.get('etag') };
 }
 
-export async function listSessionEvents(id: string) {
+export async function listSessionEvents(id: string): Promise<SessionEventPage> {
   const items: SessionEvent[] = [];
   let cursor: string | null = null;
   let pages = 0;
 
   do {
-    const { data, error } = await api.GET('/api/v1/execution-sessions/{executionSessionId}/events', {
-      params: {
-        path: { executionSessionId: id },
-        query: { limit: 100, ...(cursor ? { cursor } : {}) }
-      }
-    });
-    if (error || !data) throw error ?? new Error('Session events returned no data.');
+    const params = new URLSearchParams({ limit: '100' });
+    if (cursor) params.set('cursor', cursor);
+
+    const { data } = await taskillerJson<SessionEventPage>(
+      `/api/v1/execution-sessions/${encodeURIComponent(id)}/events?${params.toString()}`
+    );
+
     items.push(...data.items);
     cursor = data.page.hasMore ? data.page.nextCursor : null;
     pages += 1;

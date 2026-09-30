@@ -13,19 +13,18 @@
     onsave: (input: SessionReviewInput) => Promise<void> | void;
   } = $props();
 
-  let focusScore = $state<number | null>(review?.focusScore ?? null);
-  let fatigueScore = $state<number | null>(review?.fatigueScore ?? null);
-  let difficultyScore = $state<number | null>(review?.difficultyScore ?? null);
-  let satisfactionScore = $state<number | null>(review?.satisfactionScore ?? null);
-  let note = $state(review?.note ?? '');
+  let focusScore = $state<number | null>(null);
+  let fatigueScore = $state<number | null>(null);
+  let difficultyScore = $state<number | null>(null);
+  let satisfactionScore = $state<number | null>(null);
+  let note = $state('');
 
   $effect(() => {
-    if (!review) return;
-    focusScore = review.focusScore ?? null;
-    fatigueScore = review.fatigueScore ?? null;
-    difficultyScore = review.difficultyScore ?? null;
-    satisfactionScore = review.satisfactionScore ?? null;
-    note = review.note ?? '';
+    focusScore = review?.focusScore ?? null;
+    fatigueScore = review?.fatigueScore ?? null;
+    difficultyScore = review?.difficultyScore ?? null;
+    satisfactionScore = review?.satisfactionScore ?? null;
+    note = review?.note ?? '';
   });
 
   const rows = [
