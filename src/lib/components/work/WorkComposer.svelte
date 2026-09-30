@@ -29,13 +29,8 @@
 
   const queryClient = useQueryClient();
 
-  function initialKind(): WorkItemKind {
-    return defaultKind;
-  }
-
-  function initialAdvanced(): boolean {
-    return !compact;
-  }
+  function initialKind(): WorkItemKind { return defaultKind; }
+  function initialAdvanced(): boolean { return !compact; }
 
   let name = $state('');
   let kind = $state<WorkItemKind>(initialKind());
@@ -88,36 +83,51 @@
   }
 </script>
 
-<form class="rounded-[18px] border border-[var(--border)] bg-white/80 p-3 shadow-[0_8px_28px_rgb(23_23_23/0.04)] backdrop-blur" onsubmit={submit}>
+<form class="tk-capture-deck rounded-[18px] p-2.5" onsubmit={submit}>
   <div class="flex gap-2">
     {#if allowedKinds.length > 1}
-      <Select class="w-32 shrink-0" bind:value={kind} aria-label="Work type">
+      <Select class="w-32 shrink-0 border-transparent bg-[var(--surface-subtle)]" bind:value={kind} aria-label="Work type">
         {#each allowedKinds as option}
           <option value={option}>{option === 'sprint' ? 'Sprint' : option === 'project' ? 'Project' : 'Chore'}</option>
         {/each}
       </Select>
     {/if}
-    <Input class="flex-1 border-transparent bg-transparent focus:border-transparent" bind:value={name} placeholder={kind === 'project' ? 'Name the project…' : kind === 'sprint' ? 'Name the sprint…' : 'What needs to be done?'} maxlength="300" required />
-    <Button type="submit" disabled={create.isPending || !name.trim()}>
+
+    <Input
+      class="flex-1 border-transparent bg-transparent text-base focus:border-transparent focus:shadow-none"
+      bind:value={name}
+      placeholder={kind === 'project' ? 'Name the Project…' : kind === 'sprint' ? 'Name the Sprint…' : 'What needs to move?…'}
+      maxlength="300"
+      autocomplete="off"
+      required
+    />
+
+    <Button type="submit" variant="dark" disabled={create.isPending || !name.trim()}>
       <PlusIcon size={17} weight="bold" />
       <span class="hidden sm:inline">{create.isPending ? 'Saving…' : label}</span>
     </Button>
   </div>
 
-  <button type="button" aria-expanded={advanced} aria-controls="work-composer-details" class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite hover:bg-black/[0.035]" onclick={() => (advanced = !advanced)}>
+  <button
+    type="button"
+    aria-expanded={advanced}
+    aria-controls="work-composer-details"
+    class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite transition-colors hover:bg-[var(--surface-subtle)] hover:text-tk-ink"
+    onclick={() => (advanced = !advanced)}
+  >
     <CaretDownIcon size={13} class={advanced ? 'rotate-180' : ''} />
     {advanced ? 'Fewer fields' : 'Add details'}
   </button>
 
   {#if advanced}
-    <div id="work-composer-details" class="mt-3 grid gap-3 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
+    <div id="work-composer-details" class="mt-3 grid gap-3 border-t border-[var(--border)] px-1 pt-4 sm:grid-cols-2">
       <label class="sm:col-span-2">
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
-        <Textarea bind:value={description} placeholder="Optional context, outcome, or notes…" maxlength="20000" />
+        <Textarea bind:value={description} placeholder="Context, outcome, or notes…" maxlength="20000" />
       </label>
       <label>
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Estimate (minutes)</span>
-        <Input type="number" min="0" step="5" bind:value={estimateMinutes} placeholder="45" />
+        <Input type="number" min="0" step="5" bind:value={estimateMinutes} placeholder="45" inputmode="numeric" />
       </label>
       <label>
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Priority</span>

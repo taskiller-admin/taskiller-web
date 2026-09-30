@@ -16,13 +16,14 @@
   } = $props();
 
   const variants = {
-    primary: 'border-transparent bg-tk-ink text-white hover:bg-black',
-    secondary: 'border-[var(--border)] bg-white text-tk-ink hover:bg-[#f7f7f4]',
-    soft: 'border-transparent bg-[#ecece7] text-tk-ink hover:bg-[#e4e4de]',
-    dark: 'border-transparent bg-tk-strike text-[#1a1512] hover:brightness-[0.98]',
-    ghost: 'border-transparent bg-transparent text-inherit hover:bg-black/[0.055]',
-    danger: 'border-transparent bg-red-600 text-white hover:bg-red-700'
+    primary: 'border-transparent bg-[var(--action)] text-[var(--action-foreground)] shadow-[0_9px_24px_hsl(var(--shadow-color)/0.12)] hover:shadow-[0_12px_30px_hsl(var(--shadow-color)/0.17)]',
+    secondary: 'border-[var(--border)] bg-[var(--surface-raised)] text-tk-ink hover:border-[var(--border-strong)] hover:bg-[var(--surface)]',
+    soft: 'border-transparent bg-[var(--surface-subtle)] text-tk-ink hover:bg-[var(--surface-strong)]',
+    dark: 'border-transparent bg-tk-strike text-[#24110b] shadow-[0_10px_30px_rgb(255_99_63/0.22)] hover:brightness-105',
+    ghost: 'border-transparent bg-transparent text-inherit hover:bg-[var(--surface-subtle)]',
+    danger: 'border-transparent bg-red-600 text-white hover:bg-red-500'
   } as const;
+
   const sizes = {
     sm: 'h-9 rounded-[11px] px-3 text-sm',
     md: 'h-11 rounded-[13px] px-4 text-sm',
@@ -34,7 +35,7 @@
 <button
   {type}
   class={cn(
-    'inline-flex shrink-0 items-center justify-center gap-2 border font-semibold transition duration-150 disabled:pointer-events-none disabled:opacity-45',
+    'inline-flex shrink-0 items-center justify-center gap-2 border font-semibold transition-[transform,background-color,border-color,box-shadow,color,filter] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-px active:translate-y-0 active:scale-[0.975] disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none',
     variants[variant],
     sizes[size],
     className

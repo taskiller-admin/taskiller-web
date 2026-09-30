@@ -3,6 +3,8 @@
   import { goto } from '$app/navigation';
   import Logo from '$lib/components/brand/Logo.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import ThemeToggle from '$lib/components/theme/ThemeToggle.svelte';
+  import CommandPalette from '$lib/components/layout/CommandPalette.svelte';
   import { auth, logout } from '$lib/auth/session';
   import { online } from '$lib/pwa/connectivity';
   import { cn } from '$lib/utils';
@@ -17,6 +19,7 @@
 
   let { children }: { children?: import('svelte').Snippet } = $props();
 
+  let commandOpen = $state(false);
   const focusMode = $derived(page.url.pathname.startsWith('/session/'));
 
   const nav = [
@@ -44,85 +47,119 @@
 {#if focusMode}
   {@render children?.()}
 {:else}
-<a class="tk-skip-link" href="#main-content">Skip to content</a>
-<div class="min-h-screen lg:grid lg:grid-cols-[246px_minmax(0,1fr)]">
-  <aside class="sticky top-0 hidden h-screen border-r border-[var(--border)] bg-white/72 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
-    <div class="flex h-12 items-center px-2">
-      <Logo class="h-6 w-auto" />
+  <a class="tk-skip-link" href="#main-content">Skip to content</a>
+
+  <div class="min-h-screen">
+    <div class="pointer-events-none fixed inset-x-0 top-0 z-50 hidden px-5 lg:block">
+      <header class="tk-rail pointer-events-auto mx-auto mt-4 flex h-[64px] max-w-[1240px] items-center gap-3 rounded-[20px] px-3">
+        <a href="/today" class="flex h-10 shrink-0 items-center px-2" aria-label="Taskiller Today">
+          <Logo class="h-5.5 w-auto" />
+        </a>
+
+        <nav class="ml-1 flex min-w-0 flex-1 items-center justify-center gap-0.5" aria-label="Primary navigation">
+          {#each nav as item}
+            {@const active = page.url.pathname.startsWith(item.href)}
+            <a
+              href={item.href}
+              aria-current={active ? 'page' : undefined}
+              class={cn('tk-nav-item', active && 'is-active')}
+              data-sveltekit-preload-code="hover"
+            >
+              <item.icon size={17} weight={active ? 'fill' : 'regular'} />
+              <span>{item.label}</span>
+            </a>
+          {/each}
+        </nav>
+
+        <div class="flex shrink-0 items-center gap-2">
+          <a
+            href="/inbox?capture=1"
+            class="inline-flex h-10 items-center gap-2 rounded-[12px] bg-tk-strike px-3.5 text-xs font-black text-[#24110b] transition-[transform,filter] duration-200 hover:-translate-y-px hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
+          >
+            <PlusIcon size={16} weight="bold" /> Capture
+          </a>
+
+          <button
+            type="button"
+            class="flex h-10 items-center gap-2 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-bold text-tk-graphite transition-colors hover:border-[var(--border-strong)] hover:text-tk-ink"
+            aria-label="Open command palette"
+            onclick={() => (commandOpen = true)}
+          >
+            <span>Jump</span>
+            <kbd class="rounded-md bg-[var(--surface-subtle)] px-1.5 py-0.5 text-[9px]">⌘K</kbd>
+          </button>
+
+          <ThemeToggle compact />
+
+          <a
+            href="/settings"
+            class="grid size-10 place-items-center rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink"
+            aria-label="Settings"
+          >
+            <GearSixIcon size={17} />
+          </a>
+
+          <a
+            href="/settings#profile"
+            class="grid size-10 place-items-center rounded-[12px] bg-[var(--surface-strong)] text-xs font-black"
+            aria-label="Profile"
+          >
+            {initials}
+          </a>
+
+          <Button variant="ghost" size="icon" class="size-10" aria-label="Sign out" onclick={signOut}>
+            <SignOutIcon size={16} />
+          </Button>
+        </div>
+      </header>
     </div>
 
-    <a href="/inbox?capture=1" class="mt-6 flex h-11 items-center justify-center gap-2 rounded-[13px] bg-tk-ink px-4 text-sm font-bold text-white transition hover:bg-black">
-      <PlusIcon size={17} weight="bold" /> Capture work
-    </a>
-
-    <nav class="mt-7 space-y-1" aria-label="Primary navigation" data-sveltekit-preload-code="viewport">
-      {#each nav as item}
-        <a
-          href={item.href}
-          aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}
-          class={cn(
-            'group relative flex h-11 items-center gap-3 rounded-[13px] px-3.5 text-sm font-semibold text-tk-graphite transition hover:bg-black/[0.04] hover:text-tk-ink',
-            page.url.pathname.startsWith(item.href) && 'bg-black/[0.055] text-tk-ink'
-          )}
+    <header class="tk-rail sticky top-0 z-40 flex h-16 items-center justify-between rounded-none border-x-0 border-t-0 px-4 lg:hidden">
+      <a href="/today" aria-label="Taskiller Today"><Logo class="h-5.5 w-auto" /></a>
+      <div class="flex items-center gap-2">
+        <ThemeToggle compact />
+        <button
+          type="button"
+          class="grid size-10 place-items-center rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite"
+          aria-label="Open command palette"
+          onclick={() => (commandOpen = true)}
         >
-          {#if page.url.pathname.startsWith(item.href)}
-            <span class="absolute left-0 h-5 w-[3px] rounded-full bg-tk-strike"></span>
-          {/if}
-          <item.icon size={19} weight={page.url.pathname.startsWith(item.href) ? 'fill' : 'regular'} />
-          {item.label}
+          <span class="text-sm font-black">⌘</span>
+        </button>
+        <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[12px] bg-tk-strike text-[#24110b]" aria-label="Capture work">
+          <PlusIcon size={18} weight="bold" />
         </a>
-      {/each}
-    </nav>
-
-    <div class="mt-auto">
-      <a href="/settings" aria-current={page.url.pathname.startsWith('/settings') ? 'page' : undefined} class="flex h-10 items-center gap-3 rounded-[12px] px-3.5 text-sm font-semibold text-tk-graphite hover:bg-black/[0.04] hover:text-tk-ink">
-        <GearSixIcon size={18} /> Settings
-      </a>
-      <div class="mt-3 flex items-center gap-3 rounded-[15px] border border-[var(--border)] bg-white p-2.5">
-        <div class="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[#ecece7] text-xs font-black">{initials}</div>
-        <a href="/settings#profile" class="min-w-0 flex-1">
-          <p class="truncate text-sm font-bold">{$auth.user?.displayName || 'Taskiller user'}</p>
-          <p class="truncate text-[11px] text-tk-graphite">{$auth.user?.email}</p>
-          {#if $auth.user && !$auth.user.emailVerified}
-            <p class="mt-0.5 text-[10px] font-bold text-[#a63820]">Verify email</p>
-          {/if}
-        </a>
-        <Button variant="ghost" size="icon" class="size-8" aria-label="Sign out" onclick={signOut}>
-          <SignOutIcon size={16} />
-        </Button>
       </div>
-    </div>
-  </aside>
-
-  <div class="min-w-0">
-    <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[rgb(245_245_242/0.82)] px-5 backdrop-blur-xl lg:hidden">
-      <Logo class="h-6 w-auto" />
-      <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[12px] bg-tk-ink text-white" aria-label="Capture work">
-        <PlusIcon size={18} weight="bold" />
-      </a>
     </header>
 
     {#if !$online}
-      <div class="sticky top-16 z-20 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 lg:top-0" role="status" aria-live="polite">Offline — loaded data stays visible, but server actions are paused until you reconnect.</div>
+      <div class="sticky top-16 z-30 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 lg:top-[84px]" role="status" aria-live="polite">
+        Offline — loaded data stays visible, but server actions are paused until you reconnect.
+      </div>
     {/if}
-    <main id="main-content" tabindex="-1" class="min-w-0 pb-24 outline-none lg:pb-0">{@render children?.()}</main>
+
+    <main id="main-content" tabindex="-1" class="min-w-0 pb-24 outline-none lg:pt-[84px] lg:pb-0">
+      {@render children?.()}
+    </main>
+
+    <nav class="tk-rail fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[18px] p-1.5 lg:hidden" aria-label="Mobile navigation">
+      {#each nav as item}
+        {@const active = page.url.pathname.startsWith(item.href)}
+        <a
+          href={item.href}
+          aria-current={active ? 'page' : undefined}
+          class={cn(
+            'relative flex flex-col items-center gap-1 rounded-[13px] py-2 text-[10px] font-bold text-tk-graphite transition-[background-color,color,transform] duration-180 active:scale-[0.97]',
+            active && 'bg-[var(--surface-strong)] text-tk-ink'
+          )}
+        >
+          <item.icon size={19} weight={active ? 'fill' : 'regular'} />
+          {item.label}
+          {#if active}<span class="absolute bottom-1 h-0.5 w-4 rounded-full bg-tk-strike"></span>{/if}
+        </a>
+      {/each}
+    </nav>
   </div>
 
-  <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
-    {#each nav as item}
-      <a
-        href={item.href}
-        aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}
-        class={cn(
-          'flex flex-col items-center gap-1 rounded-[13px] py-2 text-[10px] font-bold text-tk-graphite transition',
-          page.url.pathname.startsWith(item.href) && 'bg-[#eeeeea] text-tk-ink'
-        )}
-      >
-        <item.icon size={20} weight={page.url.pathname.startsWith(item.href) ? 'fill' : 'regular'} />
-        {item.label}
-      </a>
-    {/each}
-  </nav>
-</div>
-
+  <CommandPalette bind:open={commandOpen} />
 {/if}

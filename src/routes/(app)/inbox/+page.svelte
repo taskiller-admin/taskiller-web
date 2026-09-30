@@ -36,30 +36,31 @@
 
 <svelte:head><title>Inbox — Taskiller</title></svelte:head>
 
-<div class="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-  <header class="flex flex-wrap items-end justify-between gap-5">
+<div class="tk-page max-w-[1180px]">
+  <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
     <div>
-      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite">
-        <TrayIcon size={15} /> Unsorted capture
-      </div>
-      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Inbox</h1>
-      <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">A holding area, not a guilt wall. Capture first; decide where it belongs when you have the context.</p>
+      <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} /> Unsorted capture</div>
+      <h1 class="tk-display text-6xl font-extrabold sm:text-7xl">Inbox</h1>
+      <p class="mt-4 max-w-2xl text-base leading-7 text-tk-graphite">A holding area, not a guilt wall. Capture now; decide where it belongs when context returns.</p>
     </div>
-    <div class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5 text-sm text-tk-graphite">{inbox.data?.items.length ?? 0} root chores</div>
+    <span class="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-tk-graphite">{inbox.data?.items.length ?? 0} root Chores</span>
   </header>
 
-  <div class="mt-9 max-w-3xl">
+  <div class="mt-10 max-w-4xl">
     <WorkComposer compact label="Capture" />
   </div>
 
-  <div class="mt-10 flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-4">
-    <FunnelSimpleIcon size={16} class="mr-1 text-tk-graphite" />
+  <div class="mt-10 flex flex-wrap items-center gap-2">
+    <span class="mr-1 flex items-center gap-1.5 text-xs font-bold text-tk-graphite"><FunnelSimpleIcon size={15} />Filter</span>
     {#each filters as option}
       <button
         type="button"
+        aria-pressed={filter === option.value}
         class={cn(
-          'rounded-full px-3 py-1.5 text-xs font-bold transition',
-          filter === option.value ? 'bg-tk-ink text-white' : 'bg-white/65 text-tk-graphite hover:bg-white hover:text-tk-ink'
+          'rounded-[10px] border px-3 py-2 text-xs font-bold transition-[transform,background-color,border-color,color] duration-180 active:scale-[0.98]',
+          filter === option.value
+            ? 'border-tk-strike/25 bg-tk-strike/10 text-tk-ink'
+            : 'border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:border-[var(--border-strong)] hover:text-tk-ink'
         )}
         onclick={() => (filter = option.value)}
       >
@@ -70,18 +71,16 @@
 
   <section class="mt-5">
     {#if inbox.isPending}
-      <div class="space-y-2">
-        {#each Array(5) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}
-      </div>
+      <div class="space-y-2">{#each Array(5) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}</div>
     {:else if inbox.isError}
       <p class="py-10 text-sm text-red-700">Couldn’t load Inbox.</p>
     {:else if filtered.length === 0}
-      <div class="rounded-[20px] border border-dashed border-[var(--border)] bg-white/45 p-12 text-center">
+      <div class="tk-panel-soft rounded-[20px] border-dashed p-14 text-center">
         <p class="text-lg font-bold">Nothing in this view.</p>
-        <p class="mt-2 text-sm text-tk-graphite">Capture something above or switch filters.</p>
+        <p class="mt-2 text-sm text-tk-graphite">Capture something above or switch the filter.</p>
       </div>
     {:else}
-      <div class="rounded-[20px] border border-[var(--border)] bg-white/72 px-4 sm:px-5">
+      <div class="tk-panel overflow-hidden rounded-[20px] px-3 sm:px-4">
         {#each filtered as item}
           <WorkItemRow {item} />
         {/each}

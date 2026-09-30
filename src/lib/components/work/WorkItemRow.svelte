@@ -28,14 +28,14 @@
 </script>
 
 <div
-  class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--border)] py-3.5 last:border-b-0"
+  class="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--border)] py-3.5 transition-[background-color,transform] duration-180 last:border-b-0 hover:bg-[var(--surface-subtle)]/70"
   style={`padding-left:${Math.min(depth, 4) * 22}px`}
 >
-  <a href={`/work/${item.id}`} class="flex min-w-0 items-center gap-3 rounded-[12px] py-1.5">
+  <a href={`/work/${item.id}`} class="flex min-w-0 items-center gap-3 rounded-[12px] py-1.5 pl-2">
     {#if showKind}<KindMark kind={item.kind} />{/if}
     <div class="min-w-0 flex-1">
       <div class="flex min-w-0 items-center gap-2.5">
-        <span class="truncate font-semibold text-tk-ink">{item.name}</span>
+        <span class="truncate font-semibold text-tk-ink transition-transform duration-180 group-hover:translate-x-0.5">{item.name}</span>
         <StatusBadge status={item.status} />
       </div>
       <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-tk-graphite">
@@ -47,7 +47,7 @@
     </div>
   </a>
 
-  <div class="flex items-center gap-1">
+  <div class="flex items-center gap-1 pr-1">
     {#if onmoveup || onmovedown}
       <Button size="icon" variant="ghost" disabled={!canMoveUp} aria-label={`Move ${item.name} up`} onclick={onmoveup}>
         <CaretUpIcon size={16} weight="bold" />
@@ -56,7 +56,11 @@
         <CaretDownIcon size={16} weight="bold" />
       </Button>
     {/if}
-    <a class="grid size-9 place-items-center rounded-[11px] text-tk-graphite opacity-70 transition hover:bg-black/[0.05] hover:text-tk-ink group-hover:opacity-100" href={`/work/${item.id}`} aria-label={`Open ${item.name}`}>
+    <a
+      class="grid size-9 place-items-center rounded-[11px] text-tk-graphite opacity-55 transition-[opacity,background-color,color,transform] duration-180 hover:bg-[var(--surface-strong)] hover:text-tk-ink group-hover:translate-x-0.5 group-hover:opacity-100"
+      href={`/work/${item.id}`}
+      aria-label={`Open ${item.name}`}
+    >
       <ArrowUpRightIcon size={17} />
     </a>
   </div>

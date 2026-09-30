@@ -5,7 +5,10 @@
   import UpdateAvailable from '$lib/components/pwa/UpdateAvailable.svelte';
   import { initConnectivity } from '$lib/pwa/connectivity';
   import { initInstallPrompt } from '$lib/pwa/install';
+  import { initTheme } from '$lib/theme/theme';
+
   let { children }: { children?: import('svelte').Snippet } = $props();
+
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -21,14 +24,15 @@
   });
 
   onMount(() => {
+    initTheme();
     initConnectivity();
     initInstallPrompt();
   });
 </script>
 
 <svelte:head>
-  <meta name="theme-color" content="#171717" />
-  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#edf2f4" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
