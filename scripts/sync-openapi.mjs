@@ -17,14 +17,23 @@ async function loadEnvFile() {
 }
 
 await loadEnvFile();
+
+const direct = process.env.TASKILLER_OPENAPI_URL;
 const base = process.env.TASKILLER_API_URL ?? process.env.PUBLIC_TASKILLER_API_URL;
-if (!base) {
-  throw new Error('Set PUBLIC_TASKILLER_API_URL in .env or TASKILLER_API_URL in the shell.');
+
+if (!direct && !base) {
+  throw new Error(
+    'Set TASKILLER_OPENAPI_URL, PUBLIC_TASKILLER_API_URL in .env, or TASKILLER_API_URL in the shell.'
+  );
 }
 
-const url = new URL('/openapi.json', base.endsWith('/') ? base : `${base}/`);
+const url = direct
+  ? new URL(direct)
+  : new URL('/openapi.json', base.endsWith('/') ? base : `${base}/`);
+
 const response = await fetch(url, { headers: { Accept: 'application/json' } });
 if (!response.ok) throw new Error(`OpenAPI fetch failed: ${response.status} ${response.statusText}`);
+
 const spec = await response.text();
 JSON.parse(spec);
 await writeFile('openapi/taskiller.json', `${spec.trim()}\n`);

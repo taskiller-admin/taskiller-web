@@ -1,0 +1,69 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PUBLIC_TASKILLER_API_URL: http://127.0.0.1:4173/__api
+      TASKILLER_OPENAPI_URL: https://raw.githubusercontent.com/kmab5/taskiller-backend/main/openapi/current.json
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [[ -f package-lock.json ]]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Check backend OpenAPI drift
+        run: npm run api:check
+
+      - name: Require generated API types
+        run: |
+          cp src/lib/api/generated/schema.d.ts /tmp/schema.d.ts
+          npm run api:generate
+          diff -u /tmp/schema.d.ts src/lib/api/generated/schema.d.ts
+
+      - name: Svelte and TypeScript check
+        run: npm run check
+
+      - name: Release contract
+        run: npm run release:check
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

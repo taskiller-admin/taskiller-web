@@ -1,30 +1,27 @@
-# Taskiller Web Round 7 manifest
+# Taskiller Web — Round 8 manifest
 
-## New files
+Frontend version: `0.8.0`
 
-- `src/service-worker.js`
-- `src/lib/pwa/connectivity.ts`
-- `src/lib/pwa/install.ts`
-- `src/lib/components/pwa/UpdateAvailable.svelte`
-- `src/lib/components/pwa/InstallAppCard.svelte`
-- `src/routes/offline/+page.svelte`
-- `src/routes/offline/+page.ts`
-- `docs/ROUND_7.md`
+Backend contract reference: `kmab5/taskiller-backend@7792c34c49e6a09e7e20380e8b6becf93c863c67`
 
-## Expanded files
+## Round 8 release additions
 
-- `src/routes/+layout.svelte` — PWA initialization, update UI, reconnect-aware Query defaults and mobile app metadata
-- `src/routes/(app)/+layout.svelte` — cold-offline recovery instead of false anonymous/login redirect
-- `src/lib/components/layout/AppShell.svelte` — skip link, connectivity announcement, navigation semantics and route-code preloading
-- `src/lib/api/client.ts` — immediate rejection of offline mutations; no silent mutation queue
-- `src/routes/(app)/settings/+page.svelte` — install-app section
-- `src/lib/components/work/WorkComposer.svelte` — expandable-form ARIA state
-- `src/lib/components/execution/ActiveSessionCard.svelte` — avoids unnecessary timer interval while paused and improves assistive text
-- `src/lib/components/history/SessionHistoryRow.svelte` — content-visibility optimization
-- `src/routes/(app)/analytics/+page.svelte` — accessible table metadata
-- `src/routes/(app)/session/[id]/+page.svelte` — focus-mode skip link
-- `src/app.css` — local system fonts, contrast/forced-colors and performance helpers
-- `static/site.webmanifest` — install metadata and shortcuts
-- `svelte.config.js` — version polling
-- `package.json` — version `0.7.0`
-- `README.md`
+- `.github/workflows/ci.yml` — frontend CI: contract, generated types, Svelte/TS check, build, Playwright.
+- `.github/dependabot.yml` — weekly npm and GitHub Actions dependency maintenance.
+- `.npmrc` — Node engine enforcement and reduced install noise.
+- `playwright.config.ts` — desktop + Pixel 7 Chromium release suite.
+- `tests/e2e/` — public, authentication, quick-capture, keyboard and axe smoke tests.
+- `src/app.html` — explicit production document shell and language.
+- `src/routes/+error.svelte` — global branded 404/error recovery.
+- `src/routes/healthz/+server.ts` — frontend deployment health endpoint.
+- `scripts/check-openapi.mjs` — frontend-used backend contract compatibility gate.
+- `scripts/release-check.mjs` — internal release artifact validation.
+- `scripts/smoke-production.mjs` — deployed Vercel + Render smoke verification.
+- `vercel.json` — production security headers.
+- SvelteKit CSP configuration in `svelte.config.js`.
+- `static/robots.txt` — prevents authenticated workspace routes from crawler indexing.
+- `docs/PRODUCTION.md`, `docs/RELEASE_RUNBOOK.md`, `docs/SECURITY.md`, `docs/ROUND_8.md`.
+
+## Existing application
+
+Rounds 1–7 remain intact: auth, work hierarchy, Focus Plans, execution, History, Analytics, account/privacy lifecycle and PWA/offline support.

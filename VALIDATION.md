@@ -1,43 +1,61 @@
-# Round 7 validation
+# Round 8 validation
 
-Completed in the build workspace:
+## Passed in this environment
 
-- backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`;
-- native SvelteKit service-worker behavior verified against current SvelteKit documentation;
-- service worker JavaScript syntax checked with `node --check`: OK;
-- bundled `openapi/taskiller.json`: valid JSON;
-- all `$lib` and relative local imports resolve;
-- Svelte `{#if}`, `{#each}`, `{#await}`, and `{#key}` block counts balance;
-- no authenticated/cross-origin API request is cached by the service worker;
-- non-GET/HEAD API actions fail immediately while offline and are not queued;
-- `/offline` is prerendered for service-worker fallback;
-- PWA manifest parses and declares app scope/start URL/icons/shortcuts;
-- Google Fonts network dependency removed;
-- skip-link, navigation-current, live-region, reduced-motion/high-contrast checks applied;
-- `git diff --check`: OK;
-- ZIP integrity: checked during packaging.
+- JavaScript/MJS syntax:
+  - `svelte.config.js`
+  - `src/service-worker.js`
+  - OpenAPI/release/smoke scripts
+- `npm run release:check`
+- JSON parsing:
+  - `package.json`
+  - `static/site.webmanifest`
+  - `vercel.json`
+  - `openapi/taskiller.json`
+- explicit `src/app.html` SvelteKit placeholders + `lang="en"`
+- local `$lib` and relative import resolution
+- Svelte control-block balance
+- release-specific CI/script assertions
+- TypeScript syntax parse of 72 `.ts` files and Svelte `<script>` units using the installed TypeScript compiler
+- `git diff --check` for the Round 7 → Round 8 source diff
 
-`npm install --ignore-scripts --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler, Vite build and browser PWA audit must be run locally.
+## Blocked by sandbox networking
 
-Before commit/deploy:
+`npm install --no-audit --no-fund` timed out. The sandbox also cannot resolve `raw.githubusercontent.com`, so `npm run api:check` could not perform its network fetch here.
+
+Because dependencies could not install, the following release gates could not be executed in this sandbox:
+
+```bash
+npm run check
+npm run build
+npx playwright install chromium
+npm run test:e2e
+npm run audit:prod
+```
+
+Run them locally or let the included GitHub Actions workflow execute them.
+
+## Lockfile
+
+This artifact cannot include a truthful `package-lock.json` because npm dependency resolution is blocked here. After the first successful local `npm install`, commit the generated `package-lock.json`. The included CI automatically switches from `npm install` to deterministic `npm ci` when the lockfile exists.
+
+## Recommended local validation
 
 ```bash
 npm install
 npm run api:update
+npm run api:check
 npm run check
+npm run release:check
 npm run build
-npm run preview
+npx playwright install chromium
+npm run test:e2e
 ```
 
-Then validate in a production browser context:
+After deployment:
 
-1. Application is installable from Chromium and can be added to Home Screen on supported mobile browsers.
-2. DevTools Application panel shows an active Taskiller service worker and valid manifest.
-3. Visit Today, Inbox and a work detail, then go offline; already-open UI stays visible and mutations fail immediately.
-4. Reload an authenticated app route fully offline and confirm `/offline` recovery rather than `/login`.
-5. Reconnect and return to the original route; queries refetch.
-6. Start a session, lose connectivity, and confirm controls are disabled until reconnect while the visible timer/session snapshot remains understandable.
-7. Deploy a new frontend version; wait for version polling and confirm the update banner reloads into the new worker/client together.
-8. Keyboard-only: use the skip link, primary navigation, capture form, settings and focus controls.
-9. Enable reduced motion and high-contrast/forced-colors modes and verify state remains understandable without animation/color alone.
-10. Run Lighthouse/PWA/accessibility/performance checks against the deployed Vercel URL.
+```bash
+TASKILLER_WEB_URL=https://YOUR-WEB.vercel.app \
+TASKILLER_API_URL=https://YOUR-API.onrender.com \
+npm run smoke:prod
+```

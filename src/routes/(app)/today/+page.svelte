@@ -90,7 +90,11 @@
 
   <form class="mt-9 flex max-w-3xl gap-2 rounded-[17px] border border-[var(--border)] bg-white/86 p-2 shadow-[0_12px_35px_rgb(23_23_23/0.045)] backdrop-blur" onsubmit={submitQuickCapture}>
     <Input class="border-transparent bg-transparent focus:border-transparent" placeholder="Capture a chore without breaking your flow…" bind:value={quickName} aria-label="Quick capture chore" />
-    <Button type="submit" disabled={capture.isPending || !quickName.trim()}>
+    <Button
+      type="submit"
+      aria-label={capture.isPending ? 'Saving chore' : 'Capture chore'}
+      disabled={capture.isPending || !quickName.trim()}
+    >
       <PlusIcon size={17} weight="bold" />
       <span class="hidden sm:inline">{capture.isPending ? 'Saving…' : 'Capture'}</span>
     </Button>

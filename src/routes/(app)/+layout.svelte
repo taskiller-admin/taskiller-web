@@ -17,6 +17,10 @@
   });
 </script>
 
+<svelte:head>
+  <meta name="robots" content="noindex,nofollow" />
+</svelte:head>
+
 {#if $auth.status === 'unknown'}
   <div class="flex min-h-screen items-center justify-center bg-tk-paper"><div class="h-2 w-28 overflow-hidden rounded-full bg-tk-mist"><div class="h-full w-1/2 animate-pulse rounded-full bg-tk-strike"></div></div></div>
 {:else if $auth.status === 'authenticated'}

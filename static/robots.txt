@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /today
+Disallow: /inbox
+Disallow: /projects
+Disallow: /history
+Disallow: /analytics
+Disallow: /settings
+Disallow: /session
+Disallow: /work

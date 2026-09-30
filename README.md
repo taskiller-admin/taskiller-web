@@ -2,34 +2,36 @@
 
 SvelteKit/Svelte 5 frontend for the Taskiller API.
 
-## Current implementation
+## Release status
 
-Round 7 is complete:
+Rounds 1–8 are implemented. The frontend now includes:
 
-- auth + refresh-cookie bootstrap;
-- responsive application shell with dedicated full-screen focus mode;
-- Today, Inbox, Projects and adaptive Project/Sprint/Chore workspaces;
-- work CRUD, hierarchy, re-parenting, reorder, ETags and conflict recovery;
-- Focus Plan recommendation generation, rationale and editable sequencing;
-- saved-plan load/update + Save & Start;
-- full execution state machine, reconnect recovery, event timeline and review;
-- first-class History route with state/range/work-item filtering and pagination;
-- analytics summary, activity timeseries and time-of-day execution view;
-- work-type completion/focus/estimate comparisons;
-- personalization-eligibility evidence without causal productivity claims;
-- 30-day work-item analytics embedded directly in Project/Sprint/Chore detail;
-- drill-down from analytics/history to the underlying work item and execution session.
+- authentication and refresh-cookie bootstrap;
+- responsive Project/Sprint/Chore planning surfaces;
+- ETag conflict recovery and idempotent writes;
+- Focus Plan recommendation/edit/save/start;
+- full execution state machine + terminal review;
+- History and Analytics;
+- account/preferences/device/privacy/export/deletion flows;
+- installable PWA and conservative offline recovery;
+- accessibility/reduced-motion/high-contrast handling;
+- OpenAPI drift CI gate;
+- Playwright browser E2E + axe accessibility smoke;
+- SvelteKit CSP + Vercel security headers;
+- frontend health endpoint and production smoke command.
 
-See `docs/ROUND_1.md` through `docs/ROUND_7.md`.
+See `docs/ROUND_1.md` through `docs/ROUND_8.md`.
 
 ## Setup
 
 ```bash
 cp .env.example .env
 npm install
+# Commit the generated package-lock.json once dependencies install successfully.
 npm run api:update
 npm run check
 npm run build
+npm run test:e2e
 npm run dev
 ```
 
@@ -41,22 +43,44 @@ PUBLIC_TASKILLER_API_URL=https://YOUR-API.onrender.com
 
 The API URL must not end with `/`.
 
-## Backend contract
+## Contract workflow
 
-Round 7 was built against Taskiller backend main:
+Taskiller Web treats the backend OpenAPI document as a release contract.
+
+```bash
+npm run api:update
+npm run api:check
+```
+
+CI checks the committed frontend-used OpenAPI surface against backend `main` and also verifies that generated TypeScript types are committed.
+
+Round 8 was built against backend:
 
 `7792c34c49e6a09e7e20380e8b6becf93c863c67`
 
-Run `npm run api:update` against the deployed backend before release so `openapi/taskiller.json` and `src/lib/api/generated/schema.d.ts` match production exactly.
+## Quality
 
-Analytics/history and account-lifecycle helpers deliberately keep explicit TypeScript response contracts at the centralized API layer. `api:update` remains the production source of truth for the generated OpenAPI client.
+```bash
+npm run check
+npm run release:check
+npm run build
+npm run test:e2e
+```
 
+Optional production-dependency audit:
 
-## Round 6
+```bash
+npm run audit:prod
+```
 
-Account and lifecycle surfaces are now implemented: profile/preferences, email verification, password recovery, device-session management, data export, logout-all and scheduled account deletion. See `docs/ROUND_6.md`.
+## Production smoke
 
+After Vercel deployment:
 
-## Round 7
+```bash
+TASKILLER_WEB_URL=https://YOUR-WEB.vercel.app \
+TASKILLER_API_URL=https://YOUR-API.onrender.com \
+npm run smoke:prod
+```
 
-Taskiller is now installable and production-PWA aware: native SvelteKit service worker, version/update handling, prerendered offline recovery, reconnect-aware queries, immediate offline mutation rejection, accessibility hardening, reduced-motion/high-contrast support and a lighter system-font performance profile. Authenticated API responses are intentionally never service-worker cached. See `docs/ROUND_7.md`.
+See `docs/PRODUCTION.md` and `docs/RELEASE_RUNBOOK.md`.
