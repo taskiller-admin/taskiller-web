@@ -4,6 +4,7 @@
   import Logo from '$lib/components/brand/Logo.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { auth, logout } from '$lib/auth/session';
+  import { online } from '$lib/pwa/connectivity';
   import { cn } from '$lib/utils';
   import HouseIcon from 'phosphor-svelte/lib/HouseIcon';
   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
@@ -43,6 +44,7 @@
 {#if focusMode}
   {@render children?.()}
 {:else}
+<a class="tk-skip-link" href="#main-content">Skip to content</a>
 <div class="min-h-screen lg:grid lg:grid-cols-[246px_minmax(0,1fr)]">
   <aside class="sticky top-0 hidden h-screen border-r border-[var(--border)] bg-white/72 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
     <div class="flex h-12 items-center px-2">
@@ -53,10 +55,11 @@
       <PlusIcon size={17} weight="bold" /> Capture work
     </a>
 
-    <nav class="mt-7 space-y-1" aria-label="Primary navigation">
+    <nav class="mt-7 space-y-1" aria-label="Primary navigation" data-sveltekit-preload-code="viewport">
       {#each nav as item}
         <a
           href={item.href}
+          aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}
           class={cn(
             'group relative flex h-11 items-center gap-3 rounded-[13px] px-3.5 text-sm font-semibold text-tk-graphite transition hover:bg-black/[0.04] hover:text-tk-ink',
             page.url.pathname.startsWith(item.href) && 'bg-black/[0.055] text-tk-ink'
@@ -72,7 +75,7 @@
     </nav>
 
     <div class="mt-auto">
-      <a href="/settings" class="flex h-10 items-center gap-3 rounded-[12px] px-3.5 text-sm font-semibold text-tk-graphite hover:bg-black/[0.04] hover:text-tk-ink">
+      <a href="/settings" aria-current={page.url.pathname.startsWith('/settings') ? 'page' : undefined} class="flex h-10 items-center gap-3 rounded-[12px] px-3.5 text-sm font-semibold text-tk-graphite hover:bg-black/[0.04] hover:text-tk-ink">
         <GearSixIcon size={18} /> Settings
       </a>
       <div class="mt-3 flex items-center gap-3 rounded-[15px] border border-[var(--border)] bg-white p-2.5">
@@ -99,13 +102,17 @@
       </a>
     </header>
 
-    <main class="min-w-0 pb-24 lg:pb-0">{@render children?.()}</main>
+    {#if !$online}
+      <div class="sticky top-16 z-20 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 lg:top-0" role="status" aria-live="polite">Offline — loaded data stays visible, but server actions are paused until you reconnect.</div>
+    {/if}
+    <main id="main-content" tabindex="-1" class="min-w-0 pb-24 outline-none lg:pb-0">{@render children?.()}</main>
   </div>
 
   <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
     {#each nav as item}
       <a
         href={item.href}
+        aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}
         class={cn(
           'flex flex-col items-center gap-1 rounded-[13px] py-2 text-[10px] font-bold text-tk-graphite transition',
           page.url.pathname.startsWith(item.href) && 'bg-[#eeeeea] text-tk-ink'

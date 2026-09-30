@@ -1,32 +1,30 @@
-# Taskiller Web Round 6 manifest
+# Taskiller Web Round 7 manifest
 
 ## New files
 
-- `src/lib/api/account.ts`
-- `src/lib/components/settings/ProfileSettings.svelte`
-- `src/lib/components/settings/PreferencesSettings.svelte`
-- `src/lib/components/settings/SessionsSettings.svelte`
-- `src/lib/components/settings/DataPrivacySettings.svelte`
-- `src/routes/verify-email/+page.svelte`
-- `src/routes/forgot-password/+page.svelte`
-- `src/routes/reset-password/+page.svelte`
-- `src/routes/account-deletion-scheduled/+page.svelte`
-- `docs/ROUND_6.md`
+- `src/service-worker.js`
+- `src/lib/pwa/connectivity.ts`
+- `src/lib/pwa/install.ts`
+- `src/lib/components/pwa/UpdateAvailable.svelte`
+- `src/lib/components/pwa/InstallAppCard.svelte`
+- `src/routes/offline/+page.svelte`
+- `src/routes/offline/+page.ts`
+- `docs/ROUND_7.md`
 
 ## Expanded files
 
-- `src/lib/auth/session.ts` — explicit user refresh + local auth clearing helpers
-- `src/lib/api/query-keys.ts` — profile/preferences/devices/export cache keys
-- `src/lib/components/layout/AppShell.svelte` — profile link + unverified-email signal
-- `src/routes/(app)/settings/+page.svelte` — complete account/settings workspace
-- `src/routes/login/+page.svelte` — password-recovery entry point
-- `package.json` — version `0.6.0`
+- `src/routes/+layout.svelte` — PWA initialization, update UI, reconnect-aware Query defaults and mobile app metadata
+- `src/routes/(app)/+layout.svelte` — cold-offline recovery instead of false anonymous/login redirect
+- `src/lib/components/layout/AppShell.svelte` — skip link, connectivity announcement, navigation semantics and route-code preloading
+- `src/lib/api/client.ts` — immediate rejection of offline mutations; no silent mutation queue
+- `src/routes/(app)/settings/+page.svelte` — install-app section
+- `src/lib/components/work/WorkComposer.svelte` — expandable-form ARIA state
+- `src/lib/components/execution/ActiveSessionCard.svelte` — avoids unnecessary timer interval while paused and improves assistive text
+- `src/lib/components/history/SessionHistoryRow.svelte` — content-visibility optimization
+- `src/routes/(app)/analytics/+page.svelte` — accessible table metadata
+- `src/routes/(app)/session/[id]/+page.svelte` — focus-mode skip link
+- `src/app.css` — local system fonts, contrast/forced-colors and performance helpers
+- `static/site.webmanifest` — install metadata and shortcuts
+- `svelte.config.js` — version polling
+- `package.json` — version `0.7.0`
 - `README.md`
-
-## Round-6 behavior
-
-Account lifecycle is now inspectable and actionable from the web client:
-
-profile/preferences → email verification → active devices → data export → account deletion
-
-Password recovery is also available outside the authenticated shell.

@@ -1,11 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import AppShell from '$lib/components/layout/AppShell.svelte';
   import { auth, bootstrapAuth } from '$lib/auth/session';
   let { children }: { children?: import('svelte').Snippet } = $props();
 
   onMount(async () => {
+    if (!navigator.onLine) {
+      const returnTo = `${page.url.pathname}${page.url.search}`;
+      await goto(`/offline?returnTo=${encodeURIComponent(returnTo)}`);
+      return;
+    }
     const ok = await bootstrapAuth();
     if (!ok) await goto('/login');
   });

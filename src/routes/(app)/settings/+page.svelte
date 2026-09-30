@@ -4,12 +4,14 @@
   import PreferencesSettings from '$lib/components/settings/PreferencesSettings.svelte';
   import SessionsSettings from '$lib/components/settings/SessionsSettings.svelte';
   import DataPrivacySettings from '$lib/components/settings/DataPrivacySettings.svelte';
+  import InstallAppCard from '$lib/components/pwa/InstallAppCard.svelte';
 
   const sections = [
     { href: '#profile', label: 'Profile' },
     { href: '#preferences', label: 'Preferences' },
     { href: '#devices', label: 'Devices' },
-    { href: '#data', label: 'Data & privacy' }
+    { href: '#data', label: 'Data & privacy' },
+    { href: '#app', label: 'App' }
   ];
 </script>
 
@@ -32,5 +34,6 @@
     <PreferencesSettings />
     <SessionsSettings />
     <DataPrivacySettings />
+    <InstallAppCard />
   </div>
 </div>

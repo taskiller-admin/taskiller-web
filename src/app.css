@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Manrope:wght@600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -12,9 +11,9 @@
   --color-tk-mist: #e5e5df;
   --color-tk-blue: #5577ff;
   --color-tk-green: #2f9b6c;
-  --font-tk-display: 'Manrope', system-ui, sans-serif;
-  --font-tk-sans: 'DM Sans', system-ui, sans-serif;
-  --font-tk-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-tk-display: 'Avenir Next', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --font-tk-sans: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-tk-mono: 'SFMono-Regular', 'Cascadia Code', 'Roboto Mono', ui-monospace, monospace;
   --radius-tk: 16px;
 }
 
@@ -36,7 +35,7 @@
 }
 
 * { box-sizing: border-box; }
-html { background: var(--background); }
+html { background: var(--background); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
   min-width: 320px;
@@ -46,7 +45,10 @@ body {
     radial-gradient(circle at 20% 0%, rgba(255, 101, 66, 0.07), transparent 26rem),
     var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
 button, input, textarea, select { font: inherit; }
 a { color: inherit; text-decoration: none; }
 ::selection { background: rgb(255 101 66 / 22%); }
@@ -78,4 +80,34 @@ a { color: inherit; text-decoration: none; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+
+.tk-content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+
+.tk-skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  border-radius: 0.75rem;
+  background: #171717;
+  color: white;
+  padding: 0.7rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.tk-skip-link:focus { transform: translateY(0); }
+
+@media (prefers-contrast: more) {
+  :root { --border: #9b9b94; --muted: #4f514f; }
+  .tk-surface { box-shadow: none; }
+}
+
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid Highlight; }
 }

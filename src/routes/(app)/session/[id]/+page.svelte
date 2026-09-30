@@ -223,7 +223,8 @@
 
 <svelte:head><title>Focus session — Taskiller</title></svelte:head>
 
-<div class="min-h-screen bg-[#111214] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
+<a class="tk-skip-link" href="#focus-main">Skip to session controls</a>
+<main id="focus-main" tabindex="-1" class="min-h-screen bg-[#111214] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
   <div class="mx-auto max-w-[1180px]">
     <div class="flex items-center justify-between gap-4">
       <a href="/today" class="inline-flex items-center gap-1.5 text-sm font-bold text-white/48 transition hover:text-white"><ArrowLeftIcon size={15} /> Leave focus</a>
@@ -358,4 +359,4 @@
       </div>
     {/if}
   </div>
-</div>
+</main>

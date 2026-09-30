@@ -169,7 +169,8 @@
       {:else}
         <div class="overflow-x-auto">
           <table class="w-full min-w-[650px] text-left text-sm">
-            <thead class="bg-black/[0.025] text-[10px] font-bold uppercase tracking-[0.08em] text-tk-graphite"><tr><th class="px-5 py-3">Work type</th><th class="px-4 py-3">Active</th><th class="px-4 py-3">Sessions</th><th class="px-4 py-3">Completion</th><th class="px-4 py-3">Focus</th><th class="px-4 py-3">Estimate error</th></tr></thead>
+            <caption class="sr-only">Execution analytics by work type</caption>
+            <thead class="bg-black/[0.025] text-[10px] font-bold uppercase tracking-[0.08em] text-tk-graphite"><tr><th scope="col" class="px-5 py-3">Work type</th><th scope="col" class="px-4 py-3">Active</th><th scope="col" class="px-4 py-3">Sessions</th><th scope="col" class="px-4 py-3">Completion</th><th scope="col" class="px-4 py-3">Focus</th><th scope="col" class="px-4 py-3">Estimate error</th></tr></thead>
             <tbody>
               {#each sortedTypes as row}
                 <tr class="border-t border-[var(--border)]"><td class="px-5 py-4 font-bold">{row.workTypeSlug || 'Uncategorized'}</td><td class="tk-mono px-4 py-4">{formatDuration(row.activeWorkSeconds)}</td><td class="tk-mono px-4 py-4">{row.sessionCount}</td><td class="tk-mono px-4 py-4">{percent(row.completionRate)}</td><td class="tk-mono px-4 py-4">{focus(row.medianFocusScore)}</td><td class="tk-mono px-4 py-4">{signedDuration(row.medianEstimateErrorSeconds)}</td></tr>

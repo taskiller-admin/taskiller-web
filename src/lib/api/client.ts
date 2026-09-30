@@ -18,6 +18,7 @@ if (!apiBase) {
 let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
     try {
@@ -45,6 +46,16 @@ async function refreshAccessToken(): Promise<boolean> {
 
 export async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const initial = new Request(input, init);
+  if (
+    typeof navigator !== 'undefined' &&
+    !navigator.onLine &&
+    !['GET', 'HEAD'].includes(initial.method.toUpperCase())
+  ) {
+    throw {
+      title: 'You are offline',
+      detail: 'Reconnect before changing server state. Taskiller does not queue offline mutations.'
+    };
+  }
   const first = new Request(initial);
   const token = getAccessToken();
   if (token) first.headers.set('Authorization', `Bearer ${token}`);

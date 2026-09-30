@@ -1,39 +1,43 @@
-# Round 6 validation
+# Round 7 validation
 
 Completed in the build workspace:
 
 - backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`;
-- user/preferences/session/export/deletion/password-recovery behavior re-read from backend routes/services;
-- parsed 62 TypeScript units, including every Svelte `<script lang="ts">`: OK;
+- native SvelteKit service-worker behavior verified against current SvelteKit documentation;
+- service worker JavaScript syntax checked with `node --check`: OK;
 - bundled `openapi/taskiller.json`: valid JSON;
-- all `$lib` and relative local imports resolve, including `.d.ts` modules;
+- all `$lib` and relative local imports resolve;
 - Svelte `{#if}`, `{#each}`, `{#await}`, and `{#key}` block counts balance;
-- profile and preference writes preserve ETag / `If-Match` concurrency semantics;
-- active-session revocation and logout-all clear local auth state after server revocation;
-- export UI treats exports as asynchronous jobs and polls only while queued/processing;
-- account deletion reflects immediate deactivation/session revocation plus delayed hard deletion;
-- password-reset request copy does not disclose whether an email is registered.
+- no authenticated/cross-origin API request is cached by the service worker;
+- non-GET/HEAD API actions fail immediately while offline and are not queued;
+- `/offline` is prerendered for service-worker fallback;
+- PWA manifest parses and declares app scope/start URL/icons/shortcuts;
+- Google Fonts network dependency removed;
+- skip-link, navigation-current, live-region, reduced-motion/high-contrast checks applied;
+- `git diff --check`: OK;
+- ZIP integrity: checked during packaging.
 
-`npm install --prefer-offline --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler and Vite production build must be run locally.
+`npm install --ignore-scripts --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler, Vite build and browser PWA audit must be run locally.
 
-Before committing/deploying:
+Before commit/deploy:
 
 ```bash
 npm install
 npm run api:update
 npm run check
 npm run build
+npm run preview
 ```
 
-Exercise these flows against the deployed API:
+Then validate in a production browser context:
 
-1. Edit display name, then simulate a stale ETag and confirm conflict recovery.
-2. Request email verification and confirm a token through `/verify-email`.
-3. Change timezone, week start, focus strategy, min/max block length and review prompt.
-4. Open two browser/device sessions; revoke the non-current one, then revoke current.
-5. Sign in again and test logout-all.
-6. Request a password reset; confirm with a valid token; verify prior sessions are revoked.
-7. Request a data export and leave Settings open until status reaches `ready`; download the gzip archive.
-8. Reload Settings while an export is in progress and confirm the latest request resumes polling.
-9. Schedule account deletion only after typing the confirmation phrase; confirm redirect to the public receipt.
-10. Verify the account can no longer authenticate after deletion is scheduled.
+1. Application is installable from Chromium and can be added to Home Screen on supported mobile browsers.
+2. DevTools Application panel shows an active Taskiller service worker and valid manifest.
+3. Visit Today, Inbox and a work detail, then go offline; already-open UI stays visible and mutations fail immediately.
+4. Reload an authenticated app route fully offline and confirm `/offline` recovery rather than `/login`.
+5. Reconnect and return to the original route; queries refetch.
+6. Start a session, lose connectivity, and confirm controls are disabled until reconnect while the visible timer/session snapshot remains understandable.
+7. Deploy a new frontend version; wait for version polling and confirm the update banner reloads into the new worker/client together.
+8. Keyboard-only: use the skip link, primary navigation, capture form, settings and focus controls.
+9. Enable reduced motion and high-contrast/forced-colors modes and verify state remains understandable without animation/color alone.
+10. Run Lighthouse/PWA/accessibility/performance checks against the deployed Vercel URL.

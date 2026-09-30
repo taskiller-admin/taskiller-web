@@ -95,13 +95,13 @@
     </Button>
   </div>
 
-  <button type="button" class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite hover:bg-black/[0.035]" onclick={() => (advanced = !advanced)}>
+  <button type="button" aria-expanded={advanced} aria-controls="work-composer-details" class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite hover:bg-black/[0.035]" onclick={() => (advanced = !advanced)}>
     <CaretDownIcon size={13} class={advanced ? 'rotate-180' : ''} />
     {advanced ? 'Fewer fields' : 'Add details'}
   </button>
 
   {#if advanced}
-    <div class="mt-3 grid gap-3 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
+    <div id="work-composer-details" class="mt-3 grid gap-3 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
       <label class="sm:col-span-2">
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
         <Textarea bind:value={description} placeholder="Optional context, outcome, or notes…" maxlength="20000" />

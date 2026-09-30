@@ -21,7 +21,7 @@
   );
 </script>
 
-<div class="grid gap-4 border-b border-[var(--border)] py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+<div class="tk-content-auto grid gap-4 border-b border-[var(--border)] py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
   <div class="min-w-0">
     <div class="flex flex-wrap items-center gap-2">
       <span class={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${stateTone}`}>{session.state}</span>
