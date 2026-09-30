@@ -1,0 +1,8 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Taskiller Round 1 partial schema",
+    "version": "1.0.0"
+  },
+  "paths": {}
+}

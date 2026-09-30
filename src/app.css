@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Display:wght@700;800;900&family=Noto+Sans+Mono:wght@500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-tk-ink: #111214;
+  --color-tk-paper: #f7f8fa;
+  --color-tk-strike: #ff5b3a;
+  --color-tk-graphite: #646b75;
+  --color-tk-mist: #e5e7eb;
+  --font-tk-display: 'Noto Sans Display', system-ui, sans-serif;
+  --font-tk-sans: 'Noto Sans', system-ui, sans-serif;
+  --font-tk-mono: 'Noto Sans Mono', ui-monospace, monospace;
+  --radius-tk: 12px;
+}
+
+:root {
+  font-family: var(--font-tk-sans);
+  color: var(--color-tk-ink);
+  background: var(--color-tk-paper);
+  font-synthesis: none;
+  --background: #f7f8fa;
+  --foreground: #111214;
+  --surface: #ffffff;
+  --muted: #646b75;
+  --border: #e5e7eb;
+  --accent: #ff5b3a;
+  --focus-ring: #ff5b3a;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--background); }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--background); color: var(--foreground); }
+button, input, textarea, select { font: inherit; }
+a { color: inherit; text-decoration: none; }
+::selection { background: #ff5b3a33; }
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.tk-display { font-family: var(--font-tk-display); letter-spacing: -0.03em; }
+.tk-mono { font-family: var(--font-tk-mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,2 @@
+<svelte:head><title>Inbox — Taskiller</title></svelte:head>
+<div class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:px-14 lg:py-16"><h1 class="tk-display text-5xl font-black">Inbox</h1><p class="mt-4 max-w-2xl text-lg leading-8 text-tk-graphite">Everything captured but not yet shaped into executable work.</p><div class="mt-12 rounded-[16px] border border-dashed border-tk-mist bg-white/60 p-10 text-sm text-tk-graphite">Route foundation is in place. This screen is scheduled for the next development rounds.</div></div>
