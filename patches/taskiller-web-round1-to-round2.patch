@@ -1,0 +1,4413 @@
+diff --git a/MANIFEST.md b/MANIFEST.md
+new file mode 100644
+index 0000000..baaaeb4
+--- /dev/null
++++ b/MANIFEST.md
+@@ -0,0 +1,64 @@
++# Taskiller Web Round 2 manifest
++
++- `.env.example`
++- `.gitignore`
++- `README.md`
++- `VALIDATION.md`
++- `components.json`
++- `docs/ROUND_1.md`
++- `docs/ROUND_2.md`
++- `openapi/README.md`
++- `openapi/taskiller-planning.yaml`
++- `openapi/taskiller.json`
++- `package.json`
++- `scripts/sync-openapi.mjs`
++- `src/app.css`
++- `src/lib/api/access-token.ts`
++- `src/lib/api/auth.ts`
++- `src/lib/api/client.ts`
++- `src/lib/api/execution.ts`
++- `src/lib/api/generated/schema.d.ts`
++- `src/lib/api/problem.ts`
++- `src/lib/api/query-keys.ts`
++- `src/lib/api/work.ts`
++- `src/lib/auth/session.ts`
++- `src/lib/components/brand/Logo.svelte`
++- `src/lib/components/execution/ActiveSessionCard.svelte`
++- `src/lib/components/layout/AppShell.svelte`
++- `src/lib/components/ui/Badge.svelte`
++- `src/lib/components/ui/Button.svelte`
++- `src/lib/components/ui/Card.svelte`
++- `src/lib/components/ui/Input.svelte`
++- `src/lib/components/ui/Select.svelte`
++- `src/lib/components/ui/Textarea.svelte`
++- `src/lib/components/work/KindMark.svelte`
++- `src/lib/components/work/ProjectCard.svelte`
++- `src/lib/components/work/StatusBadge.svelte`
++- `src/lib/components/work/WorkComposer.svelte`
++- `src/lib/components/work/WorkEditor.svelte`
++- `src/lib/components/work/WorkItemRow.svelte`
++- `src/lib/utils.ts`
++- `src/routes/(app)/+layout.svelte`
++- `src/routes/(app)/+layout.ts`
++- `src/routes/(app)/analytics/+page.svelte`
++- `src/routes/(app)/inbox/+page.svelte`
++- `src/routes/(app)/projects/+page.svelte`
++- `src/routes/(app)/settings/+page.svelte`
++- `src/routes/(app)/today/+page.svelte`
++- `src/routes/(app)/work/[id]/+page.svelte`
++- `src/routes/+layout.svelte`
++- `src/routes/+page.svelte`
++- `src/routes/login/+page.svelte`
++- `src/routes/register/+page.svelte`
++- `static/brand/finish-cut-pattern.svg`
++- `static/brand/taskiller-logo-primary.svg`
++- `static/brand/taskiller-logo-reverse.svg`
++- `static/brand/taskiller-symbol-strike.svg`
++- `static/favicon.ico`
++- `static/favicon.svg`
++- `static/icon-192.png`
++- `static/icon-512.png`
++- `static/site.webmanifest`
++- `svelte.config.js`
++- `tsconfig.json`
++- `vite.config.ts`
+diff --git a/README.md b/README.md
+index 01c0824..22eb3de 100644
+--- a/README.md
++++ b/README.md
+@@ -1,53 +1,90 @@
+-# Taskiller Web — Round 1
++# Taskiller Web
+ 
+-Production frontend foundation for Taskiller.
++Svelte 5 / SvelteKit web client for Taskiller.
++
++This package includes **Rounds 1–2**:
++
++- production frontend foundation;
++- login/register + rotating refresh-cookie bootstrap;
++- memory-only access token;
++- typed OpenAPI client boundary;
++- TanStack Svelte Query state;
++- responsive Taskiller application shell;
++- Today execution runway + quick capture;
++- active-session reconstruction display;
++- Inbox;
++- Projects;
++- Project/Sprint/Chore workspaces;
++- create/edit/delete/re-parent work;
++- work hierarchy rendering;
++- Project next-action;
++- accessible reorder controls;
++- ETag / `If-Match` conflict handling;
++- Vercel adapter.
+ 
+ ## Stack
+ 
+-- SvelteKit + Svelte 5 + strict TypeScript
++- Svelte 5
++- SvelteKit
++- TypeScript
+ - Tailwind CSS v4
+-- shadcn-svelte-compatible component structure
++- shadcn-svelte-compatible local component structure
+ - Phosphor Icons
+-- TanStack Svelte Query v6
+-- OpenAPI sync/codegen pipeline (`openapi-typescript` + `openapi-fetch`)
++- TanStack Svelte Query
++- openapi-typescript
++- openapi-fetch
+ - Vercel adapter
+ 
+-## Included in Round 1
+-
+-- Taskiller brand tokens/assets and responsive shell
+-- login/register against the real API
+-- rotating refresh-cookie bootstrap; access token stays in memory
+-- automatic one-time access-token refresh for authenticated API calls
+-- Today view with real Chore query
+-- quick Chore capture (`Idempotency-Key` UUID)
+-- active Session query + server-timestamp-derived timer
+-- responsive desktop/sidebar + mobile bottom navigation
+-- placeholders for Inbox, Projects, Analytics and Settings
+-- live OpenAPI synchronization/code generation scripts
+-
+-## Run
++## Run locally
+ 
+ ```bash
+ cp .env.example .env
+-# set PUBLIC_TASKILLER_API_URL to the Render API, without a trailing slash
+ npm install
+ npm run check
+ npm run dev
+ ```
+ 
+-If you use pnpm, all npm commands map directly (`pnpm install`, `pnpm check`, etc.).
++Set the deployed API origin in `.env`:
+ 
+-## Refresh the API contract
++```env
++PUBLIC_TASKILLER_API_URL=https://YOUR-RENDER-API.onrender.com
++```
++
++No trailing slash.
+ 
+-The repository includes a small Round-1 type subset so it can be read immediately. Replace it with the authoritative backend OpenAPI types as soon as your API is reachable:
++The backend must allow your frontend origin in `TASKILLER_CORS_ORIGINS`. For local development that normally includes:
++
++```json
++["http://localhost:5173"]
++```
++
++## API contract
++
++The committed `src/lib/api/generated/schema.d.ts` is a focused bootstrap subset matching backend OpenAPI v1.0.0 and the Round-2 endpoints.
++
++Once the deployed backend is available, replace it with the full generated contract:
+ 
+ ```bash
+ npm run api:update
+ npm run check
+ ```
+ 
+-The backend must allow the frontend origin in `TASKILLER_CORS_ORIGINS`, and because Vercel and Render are cross-site initially the backend refresh cookie should remain `Secure; SameSite=None`.
++`api:update` downloads `/openapi.json` and runs `openapi-typescript`.
++
++All component code talks to Taskiller through `src/lib/api/*`; components do not reproduce backend state machines.
++
++## Round 2
++
++See [`docs/ROUND_2.md`](docs/ROUND_2.md).
++
++## Next — Round 3
+ 
+-## Next round
++Round 3 will implement Focus Plan recommendations and **Plan & Start**:
+ 
+-Round 2: full Work domain UI — Inbox, Project/Sprint/Chore create/edit, tree navigation, ETags, conflict UX, reorder, and Project next-action.
++1. request recommendation for a Chore/Sprint;
++2. show rationale/provenance without claiming scientific optimality;
++3. edit recommended segments into the user's selected plan;
++4. save Focus Plan;
++5. create Execution Session;
++6. reconcile one-open-session conflicts;
++7. transition into the active focus surface.
+diff --git a/VALIDATION.md b/VALIDATION.md
+new file mode 100644
+index 0000000..ba87e7d
+--- /dev/null
++++ b/VALIDATION.md
+@@ -0,0 +1,45 @@
++# Round 2 validation
++
++## Contract basis
++
++Backend inspected before implementation:
++
++- repository: `kmab5/taskiller-backend`
++- branch: `main`
++- commit: `7792c34c49e6a09e7e20380e8b6becf93c863c67`
++- API version: `1.0.0`
++
++The Round-2 handwritten bootstrap types cover the exact work/auth/active-session endpoints used by the UI. `npm run api:update` replaces them with generated types from the deployed backend.
++
++## Checks completed in the build environment
++
++- `package.json` parses as JSON.
++- `components.json` parses as JSON.
++- `openapi/taskiller.json` parses as OpenAPI JSON structure.
++- `src/lib/api/generated/schema.d.ts` parses with TypeScript.
++- TypeScript inside all 26 Svelte `<script>` blocks parses successfully.
++- Basic structural Svelte tag-balance checks pass.
++- Every relative and `$lib` import resolves to a local source file.
++- No generated helper/temporary patch files are included in the frontend project.
++
++## Environment limitation
++
++`npm install` could not complete in the artifact container because external package installation timed out. Therefore this artifact is **not claimed to have passed `svelte-check` or `vite build` inside the container**.
++
++Run these immediately after extraction:
++
++```bash
++npm install
++npm run check
++npm run build
++```
++
++If your deployed API is reachable, also run:
++
++```bash
++npm run api:update
++npm run check
++npm run build
++```
++
++This is the authoritative compiler validation because it uses the actual dependency graph and full generated backend contract.
+diff --git a/docs/ROUND_2.md b/docs/ROUND_2.md
+new file mode 100644
+index 0000000..72c3686
+--- /dev/null
++++ b/docs/ROUND_2.md
+@@ -0,0 +1,80 @@
++# Round 2 — Work hierarchy + design pass
++
++Backend contract checked against `kmab5/taskiller-backend` main at:
++
++`7792c34c49e6a09e7e20380e8b6becf93c863c67`
++
++## Product delivered
++
++Round 2 turns the Round-1 shell into a usable work-management client while preserving the backend as the source of truth.
++
++### Design corrections
++
++- The brand kit is treated as an asset library and identity anchor, not a layout constraint.
++- Replaced the permanent dark sidebar with a lighter, quieter navigation shell.
++- Kept dark surfaces for execution/focus moments where they improve hierarchy.
++- Introduced a broader neutral surface system plus limited blue/green semantic accents.
++- Switched interface typography to Manrope + DM Sans + JetBrains Mono for a more product-oriented UI while continuing to use Taskiller logo/icon assets.
++- Removed the fake Focus Plan cards from Today; every work/focus claim shown in the app is now either server-derived or clearly marked as future functionality.
++- Active Session now precedes backlog information on Today when present.
++- Improved public landing, login, and signup pages so they feel like the same product as the authenticated workspace.
++
++### Work hierarchy
++
++Implemented against the existing REST API:
++
++- Inbox of root/unfiled Chores.
++- Inbox status filters.
++- Quick capture with name-only minimum.
++- Progressive-detail creation form.
++- Projects index.
++- Project cards with server-derived `nextAction`.
++- Project creation.
++- Project workspace.
++- Sprint workspace.
++- Chore detail.
++- Project → Sprint/Chore creation.
++- Sprint → Chore creation.
++- Full hierarchy tree rendering.
++- Explicit up/down ordering controls for direct children.
++- Parent reassignment:
++  - Sprint → Project.
++  - Chore → Inbox, Project, or Sprint.
++- Edit name, description, status, priority, active-effort estimate, planned start, deadline, and Project target dates.
++- Soft delete through the backend delete endpoint.
++
++### Concurrency
++
++- Detail GETs retain the response `ETag`.
++- PATCH uses `If-Match`.
++- DELETE uses `If-Match`.
++- Reorder fetches the child's current ETag before mutating.
++- `412` is represented as `WorkConflictError`.
++- Edit conflicts preserve the local draft and refetch server truth in the background.
++- User can explicitly reset the editor to the newest server version.
++- Every create/reorder mutation receives a client-generated UUID idempotency key.
++
++### Auth correction
++
++After refresh-cookie bootstrap, the client now calls `GET /api/v1/me` so the global authenticated shell always has the actual user profile after a reload.
++
++## Accessibility decisions
++
++- Reorder never depends on drag-and-drop.
++- All hierarchy navigation is standard links.
++- Create/edit forms use labels and native controls.
++- Conflict messages use `role="alert"`.
++- Visible focus treatment remains global.
++- Reduced motion is respected.
++
++## Deferred intentionally
++
++Round 3 owns:
++
++- recommendation creation;
++- recommendation reasons/provenance UI;
++- editable Focus Plan builder;
++- Plan & Start;
++- starting Chore/Sprint Sessions.
++
++Round 4 owns full active-session event controls and review flow.
+diff --git a/openapi/README.md b/openapi/README.md
+index 42a6163..54a77c5 100644
+--- a/openapi/README.md
++++ b/openapi/README.md
+@@ -1,14 +1,18 @@
+-# OpenAPI
++# OpenAPI in the frontend
+ 
+-`taskiller-planning.yaml` is the planning baseline from the product package.
+-The frontend should develop against the **live backend contract** instead:
++`taskiller.json` is a **Round-2 bootstrap subset** matching the work/auth/session endpoints used before code generation is run.
++
++The deployed backend remains authoritative. As soon as the API is reachable, run:
+ 
+ ```bash
+-cp .env.example .env
+-# set PUBLIC_TASKILLER_API_URL
+ npm run api:update
+ ```
+ 
+-`api:sync` downloads `/openapi.json` from the configured backend into
+-`openapi/taskiller.json`; `api:generate` then replaces the committed partial
+-Round-1 types with full generated OpenAPI types.
++That command:
++
++1. downloads `${PUBLIC_TASKILLER_API_URL}/openapi.json`;
++2. replaces `openapi/taskiller.json`;
++3. runs `openapi-typescript`;
++4. replaces `src/lib/api/generated/schema.d.ts` with the complete generated contract.
++
++Do not hand-edit generated output after that point. Keep handwritten behavior in `src/lib/api/*`.
+diff --git a/openapi/taskiller.json b/openapi/taskiller.json
+index 66d5e36..fa9177b 100644
+--- a/openapi/taskiller.json
++++ b/openapi/taskiller.json
+@@ -1,8 +1,1649 @@
+ {
+   "openapi": "3.1.0",
+   "info": {
+-    "title": "Taskiller Round 1 partial schema",
+-    "version": "1.0.0"
++    "title": "Taskiller Round 2 bootstrap contract",
++    "version": "1.0.0",
++    "description": "Focused bootstrap subset. Run npm run api:update to replace with deployed backend OpenAPI."
+   },
+-  "paths": {}
+-}
+\ No newline at end of file
++  "paths": {
++    "/api/v1/auth/login": {
++      "post": {
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/LoginRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/AuthResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/auth/register": {
++      "post": {
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/RegisterRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "201": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/AuthResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/auth/refresh": {
++      "post": {
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/AuthResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/auth/logout": {
++      "post": {
++        "responses": {
++          "204": {
++            "description": "No Content"
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/me": {
++      "get": {
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/UserResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/work-items": {
++      "get": {
++        "parameters": [
++          {
++            "name": "limit",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "type": "integer",
++              "default": 25
++            }
++          },
++          {
++            "name": "cursor",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          },
++          {
++            "name": "kind",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "$ref": "#/components/schemas/WorkItemKind"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          },
++          {
++            "name": "status",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "$ref": "#/components/schemas/WorkItemStatus"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          },
++          {
++            "name": "parentId",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string",
++                  "format": "uuid"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          },
++          {
++            "name": "includeDeleted",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "type": "boolean",
++              "default": false
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemPage"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      },
++      "post": {
++        "parameters": [
++          {
++            "name": "Idempotency-Key",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "minLength": 8,
++              "maxLength": 200
++            }
++          }
++        ],
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/CreateWorkItemRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "201": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/work-items/{workItemId}": {
++      "get": {
++        "parameters": [
++          {
++            "name": "workItemId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      },
++      "patch": {
++        "parameters": [
++          {
++            "name": "workItemId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          },
++          {
++            "name": "If-Match",
++            "in": "header",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          }
++        ],
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/UpdateWorkItemRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      },
++      "delete": {
++        "parameters": [
++          {
++            "name": "workItemId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          },
++          {
++            "name": "If-Match",
++            "in": "header",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          }
++        ],
++        "responses": {
++          "204": {
++            "description": "No Content"
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/work-items/{workItemId}/children": {
++      "get": {
++        "parameters": [
++          {
++            "name": "workItemId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemChildrenResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/work-items/{workItemId}/tree": {
++      "get": {
++        "parameters": [
++          {
++            "name": "workItemId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemTreeNode"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/work-items/{workItemId}/reorder": {
++      "post": {
++        "parameters": [
++          {
++            "name": "workItemId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          },
++          {
++            "name": "Idempotency-Key",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "minLength": 8,
++              "maxLength": 200
++            }
++          },
++          {
++            "name": "If-Match",
++            "in": "header",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          }
++        ],
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/ReorderWorkItemRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/WorkItemResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/projects/{projectId}/next-action": {
++      "get": {
++        "parameters": [
++          {
++            "name": "projectId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/ProjectNextActionResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/execution-sessions/active": {
++      "get": {
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/ActiveExecutionSession"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    }
++  },
++  "components": {
++    "schemas": {
++      "UserResponse": {
++        "type": "object",
++        "required": [
++          "id",
++          "email",
++          "displayName",
++          "emailVerified",
++          "createdAt",
++          "updatedAt",
++          "version"
++        ],
++        "properties": {
++          "id": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "email": {
++            "type": "string"
++          },
++          "displayName": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "emailVerified": {
++            "type": "boolean"
++          },
++          "createdAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "updatedAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "version": {
++            "type": "integer"
++          }
++        }
++      },
++      "AuthResponse": {
++        "type": "object",
++        "required": [
++          "accessToken",
++          "tokenType",
++          "expiresIn",
++          "user"
++        ],
++        "properties": {
++          "accessToken": {
++            "type": "string"
++          },
++          "tokenType": {
++            "type": "string",
++            "const": "Bearer"
++          },
++          "expiresIn": {
++            "type": "integer"
++          },
++          "user": {
++            "$ref": "#/components/schemas/UserResponse"
++          }
++        }
++      },
++      "LoginRequest": {
++        "type": "object",
++        "required": [
++          "email",
++          "password"
++        ],
++        "properties": {
++          "email": {
++            "type": "string",
++            "format": "email"
++          },
++          "password": {
++            "type": "string"
++          },
++          "deviceName": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "RegisterRequest": {
++        "type": "object",
++        "required": [
++          "email",
++          "password"
++        ],
++        "properties": {
++          "email": {
++            "type": "string",
++            "format": "email"
++          },
++          "password": {
++            "type": "string",
++            "minLength": 10
++          },
++          "displayName": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "timezone": {
++            "type": "string",
++            "default": "UTC"
++          },
++          "locale": {
++            "type": "string",
++            "default": "en"
++          }
++        }
++      },
++      "WorkItemKind": {
++        "type": "string",
++        "enum": [
++          "project",
++          "sprint",
++          "chore"
++        ]
++      },
++      "WorkItemStatus": {
++        "type": "string",
++        "enum": [
++          "draft",
++          "ready",
++          "in_progress",
++          "completed",
++          "cancelled",
++          "archived"
++        ]
++      },
++      "CreateWorkItemRequest": {
++        "type": "object",
++        "required": [
++          "kind",
++          "name"
++        ],
++        "properties": {
++          "kind": {
++            "$ref": "#/components/schemas/WorkItemKind"
++          },
++          "name": {
++            "type": "string",
++            "minLength": 1,
++            "maxLength": 300
++          },
++          "status": {
++            "$ref": "#/components/schemas/WorkItemStatus",
++            "default": "draft"
++          },
++          "parentId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "workTypeId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "description": {
++            "anyOf": [
++              {
++                "type": "string",
++                "maxLength": 20000
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "priority": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 0,
++                "maximum": 5
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "estimatedEffortSeconds": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 0,
++                "maximum": 31536000
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "plannedStartAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "deadlineAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "targetStartDate": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "targetEndDate": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "UpdateWorkItemRequest": {
++        "type": "object",
++        "properties": {
++          "name": {
++            "anyOf": [
++              {
++                "type": "string",
++                "minLength": 1,
++                "maxLength": 300
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "status": {
++            "anyOf": [
++              {
++                "$ref": "#/components/schemas/WorkItemStatus"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "parentId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "workTypeId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "description": {
++            "anyOf": [
++              {
++                "type": "string",
++                "maxLength": 20000
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "priority": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 0,
++                "maximum": 5
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "estimatedEffortSeconds": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 0,
++                "maximum": 31536000
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "plannedStartAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "deadlineAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "targetStartDate": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "targetEndDate": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "WorkItemResponse": {
++        "type": "object",
++        "required": [
++          "id",
++          "kind",
++          "parentId",
++          "workTypeId",
++          "name",
++          "description",
++          "status",
++          "position",
++          "priority",
++          "estimatedEffortSeconds",
++          "plannedStartAt",
++          "deadlineAt",
++          "targetStartDate",
++          "targetEndDate",
++          "completedAt",
++          "createdAt",
++          "updatedAt",
++          "deletedAt",
++          "version"
++        ],
++        "properties": {
++          "id": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "kind": {
++            "$ref": "#/components/schemas/WorkItemKind"
++          },
++          "parentId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "workTypeId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "name": {
++            "type": "string"
++          },
++          "description": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "status": {
++            "$ref": "#/components/schemas/WorkItemStatus"
++          },
++          "position": {
++            "type": "integer"
++          },
++          "priority": {
++            "anyOf": [
++              {
++                "type": "integer"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "estimatedEffortSeconds": {
++            "anyOf": [
++              {
++                "type": "integer"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "plannedStartAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "deadlineAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "targetStartDate": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "targetEndDate": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "completedAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "createdAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "updatedAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "deletedAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "version": {
++            "type": "integer"
++          }
++        }
++      },
++      "PageMeta": {
++        "type": "object",
++        "required": [
++          "hasMore",
++          "nextCursor"
++        ],
++        "properties": {
++          "hasMore": {
++            "type": "boolean"
++          },
++          "nextCursor": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "WorkItemPage": {
++        "type": "object",
++        "required": [
++          "items",
++          "page"
++        ],
++        "properties": {
++          "items": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/WorkItemResponse"
++            }
++          },
++          "page": {
++            "$ref": "#/components/schemas/PageMeta"
++          }
++        }
++      },
++      "WorkItemChildrenResponse": {
++        "type": "object",
++        "required": [
++          "items"
++        ],
++        "properties": {
++          "items": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/WorkItemResponse"
++            }
++          }
++        }
++      },
++      "WorkItemTreeNode": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/WorkItemResponse"
++          },
++          {
++            "type": "object",
++            "required": [
++              "children"
++            ],
++            "properties": {
++              "children": {
++                "type": "array",
++                "items": {
++                  "$ref": "#/components/schemas/WorkItemTreeNode"
++                }
++              }
++            }
++          }
++        ]
++      },
++      "ReorderWorkItemRequest": {
++        "type": "object",
++        "properties": {
++          "beforeId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "afterId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "ProjectNextActionResponse": {
++        "type": "object",
++        "required": [
++          "nextAction"
++        ],
++        "properties": {
++          "nextAction": {
++            "anyOf": [
++              {
++                "$ref": "#/components/schemas/WorkItemResponse"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "FocusSegmentKind": {
++        "type": "string",
++        "enum": [
++          "work",
++          "break",
++          "long_break",
++          "retrieval",
++          "review",
++          "planning",
++          "transition"
++        ]
++      },
++      "DurationMode": {
++        "type": "string",
++        "enum": [
++          "fixed",
++          "flexible",
++          "open"
++        ]
++      },
++      "FocusPlanSegmentInput": {
++        "type": "object",
++        "required": [
++          "kind",
++          "durationMode"
++        ],
++        "properties": {
++          "kind": {
++            "$ref": "#/components/schemas/FocusSegmentKind"
++          },
++          "durationMode": {
++            "$ref": "#/components/schemas/DurationMode"
++          },
++          "targetSeconds": {
++            "anyOf": [
++              {
++                "type": "integer"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "minSeconds": {
++            "anyOf": [
++              {
++                "type": "integer"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "maxSeconds": {
++            "anyOf": [
++              {
++                "type": "integer"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "linkedWorkItemId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "optional": {
++            "type": "boolean",
++            "default": false
++          },
++          "label": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "instructions": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "FocusPlanSnapshot": {
++        "type": "object",
++        "required": [
++          "segments"
++        ],
++        "properties": {
++          "strategy": {
++            "anyOf": [
++              {
++                "type": "string"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "segments": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/FocusPlanSegmentInput"
++            }
++          }
++        }
++      },
++      "ExecutionSessionState": {
++        "type": "string",
++        "enum": [
++          "running",
++          "paused",
++          "completed",
++          "abandoned"
++        ]
++      },
++      "ExecutionSession": {
++        "type": "object",
++        "required": [
++          "id",
++          "workItemId",
++          "focusPlanId",
++          "recommendationId",
++          "state",
++          "currentSegmentIndex",
++          "sessionStartedAt",
++          "currentSegmentStartedAt",
++          "pausedAt",
++          "endedAt",
++          "planSnapshot",
++          "createdAt",
++          "updatedAt",
++          "version"
++        ],
++        "properties": {
++          "id": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "workItemId": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "focusPlanId": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "recommendationId": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "uuid"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "state": {
++            "$ref": "#/components/schemas/ExecutionSessionState"
++          },
++          "currentSegmentIndex": {
++            "type": "integer"
++          },
++          "sessionStartedAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "currentSegmentStartedAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "pausedAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "endedAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "planSnapshot": {
++            "$ref": "#/components/schemas/FocusPlanSnapshot"
++          },
++          "recommendationSnapshot": {
++            "anyOf": [
++              {
++                "type": "object",
++                "additionalProperties": true
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "createdAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "updatedAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "version": {
++            "type": "integer"
++          }
++        }
++      },
++      "ActiveExecutionSession": {
++        "type": "object",
++        "required": [
++          "session"
++        ],
++        "properties": {
++          "session": {
++            "anyOf": [
++              {
++                "$ref": "#/components/schemas/ExecutionSession"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "Problem": {
++        "type": "object",
++        "required": [
++          "type",
++          "title",
++          "status",
++          "code",
++          "instance"
++        ],
++        "properties": {
++          "type": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "status": {
++            "type": "integer"
++          },
++          "code": {
++            "type": "string"
++          },
++          "instance": {
++            "type": "string"
++          },
++          "detail": {
++            "type": "string"
++          },
++          "requestId": {
++            "type": "string"
++          },
++          "meta": {
++            "type": "object",
++            "additionalProperties": true
++          }
++        }
++      }
++    }
++  }
++}
+diff --git a/package.json b/package.json
+index c0828d1..ac773b1 100644
+--- a/package.json
++++ b/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "taskiller-web",
+   "private": true,
+-  "version": "0.1.0",
++  "version": "0.2.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite dev",
+diff --git a/src/app.css b/src/app.css
+index 8e08ce9..4c1b0f6 100644
+--- a/src/app.css
++++ b/src/app.css
+@@ -1,19 +1,21 @@
+-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Display:wght@700;800;900&family=Noto+Sans+Mono:wght@500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap');
++@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Manrope:wght@600;700;800&display=swap');
+ @import 'tailwindcss';
+ @import 'tw-animate-css';
+ 
+ @custom-variant dark (&:is(.dark *));
+ 
+ @theme {
+-  --color-tk-ink: #111214;
+-  --color-tk-paper: #f7f8fa;
+-  --color-tk-strike: #ff5b3a;
+-  --color-tk-graphite: #646b75;
+-  --color-tk-mist: #e5e7eb;
+-  --font-tk-display: 'Noto Sans Display', system-ui, sans-serif;
+-  --font-tk-sans: 'Noto Sans', system-ui, sans-serif;
+-  --font-tk-mono: 'Noto Sans Mono', ui-monospace, monospace;
+-  --radius-tk: 12px;
++  --color-tk-ink: #171717;
++  --color-tk-paper: #f5f5f2;
++  --color-tk-strike: #ff6542;
++  --color-tk-graphite: #6f716f;
++  --color-tk-mist: #e5e5df;
++  --color-tk-blue: #5577ff;
++  --color-tk-green: #2f9b6c;
++  --font-tk-display: 'Manrope', system-ui, sans-serif;
++  --font-tk-sans: 'DM Sans', system-ui, sans-serif;
++  --font-tk-mono: 'JetBrains Mono', ui-monospace, monospace;
++  --radius-tk: 16px;
+ }
+ 
+ :root {
+@@ -21,29 +23,53 @@
+   color: var(--color-tk-ink);
+   background: var(--color-tk-paper);
+   font-synthesis: none;
+-  --background: #f7f8fa;
+-  --foreground: #111214;
++  --background: #f5f5f2;
++  --foreground: #171717;
+   --surface: #ffffff;
+-  --muted: #646b75;
+-  --border: #e5e7eb;
+-  --accent: #ff5b3a;
+-  --focus-ring: #ff5b3a;
++  --surface-raised: #ffffff;
++  --surface-subtle: #eeeeea;
++  --muted: #6f716f;
++  --border: #deded8;
++  --accent: #ff6542;
++  --focus-ring: #5577ff;
++  --danger: #d84444;
+ }
+ 
+ * { box-sizing: border-box; }
+ html { background: var(--background); }
+-body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--background); color: var(--foreground); }
++body {
++  margin: 0;
++  min-width: 320px;
++  min-height: 100vh;
++  background:
++    radial-gradient(circle at 85% -10%, rgba(85, 119, 255, 0.08), transparent 28rem),
++    radial-gradient(circle at 20% 0%, rgba(255, 101, 66, 0.07), transparent 26rem),
++    var(--background);
++  color: var(--foreground);
++}
+ button, input, textarea, select { font: inherit; }
+ a { color: inherit; text-decoration: none; }
+-::selection { background: #ff5b3a33; }
++::selection { background: rgb(255 101 66 / 22%); }
+ 
+ :focus-visible {
+   outline: 2px solid var(--focus-ring);
+   outline-offset: 2px;
+ }
+ 
+-.tk-display { font-family: var(--font-tk-display); letter-spacing: -0.03em; }
++.tk-display { font-family: var(--font-tk-display); letter-spacing: -0.045em; }
+ .tk-mono { font-family: var(--font-tk-mono); font-variant-numeric: tabular-nums; }
++.tk-surface {
++  border: 1px solid var(--border);
++  background: rgb(255 255 255 / 82%);
++  box-shadow: 0 1px 1px rgb(23 23 23 / 3%), 0 12px 35px rgb(23 23 23 / 4%);
++  backdrop-filter: blur(16px);
++}
++.tk-grid {
++  background-image:
++    linear-gradient(to right, rgb(23 23 23 / 3%) 1px, transparent 1px),
++    linear-gradient(to bottom, rgb(23 23 23 / 3%) 1px, transparent 1px);
++  background-size: 32px 32px;
++}
+ 
+ @media (prefers-reduced-motion: reduce) {
+   *, *::before, *::after {
+diff --git a/src/lib/api/auth.ts b/src/lib/api/auth.ts
+index 8b53711..d0d7053 100644
+--- a/src/lib/api/auth.ts
++++ b/src/lib/api/auth.ts
+@@ -24,6 +24,12 @@ export async function refresh() {
+   return refreshAccessToken();
+ }
+ 
++export async function getMe() {
++  const { data, error } = await api.GET('/api/v1/me');
++  if (error || !data) throw error ?? new Error('Profile returned no data.');
++  return data;
++}
++
+ export async function logout() {
+   try {
+     await api.POST('/api/v1/auth/logout');
+diff --git a/src/lib/api/generated/schema.d.ts b/src/lib/api/generated/schema.d.ts
+index 8e13a6e..dcc7b7d 100644
+--- a/src/lib/api/generated/schema.d.ts
++++ b/src/lib/api/generated/schema.d.ts
+@@ -1,5 +1,6 @@
+ /**
+- * Round-1 contract subset, transcribed from backend OpenAPI v1.0.0.
++ * Round-2 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
++ * at backend main 7792c34c49e6a09e7e20380e8b6becf93c863c67.
+  * Run `npm run api:update` against the deployed backend to replace this file
+  * with the complete openapi-typescript output.
+  */
+@@ -30,6 +31,35 @@ export interface components {
+     };
+     WorkItemKind: 'project' | 'sprint' | 'chore';
+     WorkItemStatus: 'draft' | 'ready' | 'in_progress' | 'completed' | 'cancelled' | 'archived';
++    CreateWorkItemRequest: {
++      kind: components['schemas']['WorkItemKind'];
++      name: string;
++      status?: components['schemas']['WorkItemStatus'];
++      parentId?: string | null;
++      workTypeId?: string | null;
++      description?: string | null;
++      priority?: number | null;
++      estimatedEffortSeconds?: number | null;
++      plannedStartAt?: string | null;
++      deadlineAt?: string | null;
++      targetStartDate?: string | null;
++      targetEndDate?: string | null;
++      characteristicOverrides?: unknown | null;
++    };
++    UpdateWorkItemRequest: {
++      name?: string | null;
++      status?: components['schemas']['WorkItemStatus'] | null;
++      parentId?: string | null;
++      workTypeId?: string | null;
++      description?: string | null;
++      priority?: number | null;
++      estimatedEffortSeconds?: number | null;
++      plannedStartAt?: string | null;
++      deadlineAt?: string | null;
++      targetStartDate?: string | null;
++      targetEndDate?: string | null;
++      characteristicOverrides?: unknown | null;
++    };
+     WorkItemResponse: {
+       id: string;
+       kind: components['schemas']['WorkItemKind'];
+@@ -54,8 +84,24 @@ export interface components {
+       effectiveCharacteristics?: unknown;
+     };
+     PageMeta: { hasMore: boolean; nextCursor: string | null };
+-    WorkItemPage: { items: components['schemas']['WorkItemResponse'][]; page: components['schemas']['PageMeta'] };
+-    FocusSegmentKind: 'work' | 'break' | 'long_break' | 'retrieval' | 'review' | 'planning' | 'transition';
++    WorkItemPage: {
++      items: components['schemas']['WorkItemResponse'][];
++      page: components['schemas']['PageMeta'];
++    };
++    WorkItemChildrenResponse: { items: components['schemas']['WorkItemResponse'][] };
++    WorkItemTreeNode: components['schemas']['WorkItemResponse'] & {
++      children: components['schemas']['WorkItemTreeNode'][];
++    };
++    ReorderWorkItemRequest: { beforeId?: string | null; afterId?: string | null };
++    ProjectNextActionResponse: { nextAction: components['schemas']['WorkItemResponse'] | null };
++    FocusSegmentKind:
++      | 'work'
++      | 'break'
++      | 'long_break'
++      | 'retrieval'
++      | 'review'
++      | 'planning'
++      | 'transition';
+     DurationMode: 'fixed' | 'flexible' | 'open';
+     FocusPlanSegmentInput: {
+       kind: components['schemas']['FocusSegmentKind'];
+@@ -68,7 +114,10 @@ export interface components {
+       label?: string | null;
+       instructions?: string | null;
+     };
+-    FocusPlanSnapshot: { strategy?: string | null; segments: components['schemas']['FocusPlanSegmentInput'][] };
++    FocusPlanSnapshot: {
++      strategy?: string | null;
++      segments: components['schemas']['FocusPlanSegmentInput'][];
++    };
+     ExecutionSessionState: 'running' | 'paused' | 'completed' | 'abandoned';
+     ExecutionSession: {
+       id: string;
+@@ -123,6 +172,9 @@ export interface paths {
+   '/api/v1/auth/logout': {
+     post: { responses: { 204: never; default: ProblemResponse } };
+   };
++  '/api/v1/me': {
++    get: { responses: { 200: JsonResponse<components['schemas']['UserResponse']>; default: ProblemResponse } };
++  };
+   '/api/v1/work-items': {
+     get: {
+       parameters: {
+@@ -139,21 +191,53 @@ export interface paths {
+     };
+     post: {
+       parameters: { header: { 'Idempotency-Key': string } };
+-      requestBody: {
+-        content: {
+-          'application/json': {
+-            kind: components['schemas']['WorkItemKind'];
+-            name: string;
+-            status?: components['schemas']['WorkItemStatus'];
+-            description?: string | null;
+-            estimatedEffortSeconds?: number | null;
+-            parentId?: string | null;
+-          };
+-        };
+-      };
++      requestBody: { content: { 'application/json': components['schemas']['CreateWorkItemRequest'] } };
+       responses: { 201: JsonResponse<components['schemas']['WorkItemResponse']>; default: ProblemResponse };
+     };
+   };
++  '/api/v1/work-items/{workItemId}': {
++    get: {
++      parameters: { path: { workItemId: string } };
++      responses: { 200: JsonResponse<components['schemas']['WorkItemResponse']>; default: ProblemResponse };
++    };
++    patch: {
++      parameters: { path: { workItemId: string }; header?: { 'If-Match'?: string | null } };
++      requestBody: { content: { 'application/json': components['schemas']['UpdateWorkItemRequest'] } };
++      responses: { 200: JsonResponse<components['schemas']['WorkItemResponse']>; default: ProblemResponse };
++    };
++    delete: {
++      parameters: { path: { workItemId: string }; header?: { 'If-Match'?: string | null } };
++      responses: { 204: never; default: ProblemResponse };
++    };
++  };
++  '/api/v1/work-items/{workItemId}/children': {
++    get: {
++      parameters: { path: { workItemId: string } };
++      responses: { 200: JsonResponse<components['schemas']['WorkItemChildrenResponse']>; default: ProblemResponse };
++    };
++  };
++  '/api/v1/work-items/{workItemId}/tree': {
++    get: {
++      parameters: { path: { workItemId: string } };
++      responses: { 200: JsonResponse<components['schemas']['WorkItemTreeNode']>; default: ProblemResponse };
++    };
++  };
++  '/api/v1/work-items/{workItemId}/reorder': {
++    post: {
++      parameters: {
++        path: { workItemId: string };
++        header: { 'Idempotency-Key': string; 'If-Match'?: string | null };
++      };
++      requestBody: { content: { 'application/json': components['schemas']['ReorderWorkItemRequest'] } };
++      responses: { 200: JsonResponse<components['schemas']['WorkItemResponse']>; default: ProblemResponse };
++    };
++  };
++  '/api/v1/projects/{projectId}/next-action': {
++    get: {
++      parameters: { path: { projectId: string } };
++      responses: { 200: JsonResponse<components['schemas']['ProjectNextActionResponse']>; default: ProblemResponse };
++    };
++  };
+   '/api/v1/execution-sessions/active': {
+     get: { responses: { 200: JsonResponse<components['schemas']['ActiveExecutionSession']>; default: ProblemResponse } };
+   };
+diff --git a/src/lib/api/query-keys.ts b/src/lib/api/query-keys.ts
+index d50a0bb..cae89de 100644
+--- a/src/lib/api/query-keys.ts
++++ b/src/lib/api/query-keys.ts
+@@ -1,7 +1,15 @@
+ export const queryKeys = {
++  me: ['me'] as const,
+   work: {
+     all: ['work'] as const,
+-    chores: ['work', 'chores'] as const
++    list: (filters: Record<string, unknown> = {}) => ['work', 'list', filters] as const,
++    chores: ['work', 'chores'] as const,
++    inbox: ['work', 'inbox'] as const,
++    projects: ['work', 'projects'] as const,
++    detail: (id: string) => ['work', 'detail', id] as const,
++    children: (id: string) => ['work', 'children', id] as const,
++    tree: (id: string) => ['work', 'tree', id] as const,
++    nextAction: (id: string) => ['work', 'next-action', id] as const
+   },
+   execution: {
+     active: ['execution', 'active'] as const
+diff --git a/src/lib/api/work.ts b/src/lib/api/work.ts
+index 2fe264f..ccc0f76 100644
+--- a/src/lib/api/work.ts
++++ b/src/lib/api/work.ts
+@@ -2,20 +2,162 @@ import type { components } from './generated/schema';
+ import { api } from './client';
+ 
+ export type WorkItem = components['schemas']['WorkItemResponse'];
++export type WorkTree = components['schemas']['WorkItemTreeNode'];
++export type WorkItemKind = components['schemas']['WorkItemKind'];
++export type WorkItemStatus = components['schemas']['WorkItemStatus'];
++export type CreateWorkItemInput = components['schemas']['CreateWorkItemRequest'];
++export type UpdateWorkItemInput = components['schemas']['UpdateWorkItemRequest'];
++export type ReorderWorkItemInput = components['schemas']['ReorderWorkItemRequest'];
+ 
+-export async function listChores() {
++export class WorkConflictError extends Error {
++  constructor(message = 'This work item changed on another client.') {
++    super(message);
++    this.name = 'WorkConflictError';
++  }
++}
++
++function mutationKey() {
++  return crypto.randomUUID();
++}
++
++export async function listWorkItems(filters: {
++  kind?: WorkItemKind;
++  status?: WorkItemStatus;
++  parentId?: string | null;
++  limit?: number;
++  includeDeleted?: boolean;
++} = {}) {
++  const query = {
++    limit: filters.limit ?? 100,
++    includeDeleted: filters.includeDeleted ?? false,
++    ...(filters.kind ? { kind: filters.kind } : {}),
++    ...(filters.status ? { status: filters.status } : {}),
++    ...(filters.parentId ? { parentId: filters.parentId } : {})
++  };
+   const { data, error } = await api.GET('/api/v1/work-items', {
+-    params: { query: { kind: 'chore', limit: 50, includeDeleted: false } }
++    params: { query }
+   });
+   if (error || !data) throw error ?? new Error('Work items returned no data.');
+   return data;
+ }
+ 
+-export async function quickCaptureChore(name: string) {
++export async function listChores() {
++  return listWorkItems({ kind: 'chore', limit: 100 });
++}
++
++export async function listProjects() {
++  return listWorkItems({ kind: 'project', limit: 100 });
++}
++
++export async function listInboxChores() {
++  const page = await listChores();
++  return {
++    ...page,
++    items: page.items.filter((item) => item.parentId === null && item.deletedAt === null)
++  };
++}
++
++export async function getWorkItem(id: string) {
++  const { data, error, response } = await api.GET('/api/v1/work-items/{workItemId}', {
++    params: { path: { workItemId: id } }
++  });
++  if (error || !data) throw error ?? new Error('Work item returned no data.');
++  return { item: data, etag: response.headers.get('etag') };
++}
++
++export async function getWorkItemChildren(id: string) {
++  const { data, error } = await api.GET('/api/v1/work-items/{workItemId}/children', {
++    params: { path: { workItemId: id } }
++  });
++  if (error || !data) throw error ?? new Error('Work item children returned no data.');
++  return data;
++}
++
++export async function getWorkItemTree(id: string) {
++  const { data, error } = await api.GET('/api/v1/work-items/{workItemId}/tree', {
++    params: { path: { workItemId: id } }
++  });
++  if (error || !data) throw error ?? new Error('Work item tree returned no data.');
++  return data;
++}
++
++export async function getProjectNextAction(id: string) {
++  const { data, error } = await api.GET('/api/v1/projects/{projectId}/next-action', {
++    params: { path: { projectId: id } }
++  });
++  if (error || !data) throw error ?? new Error('Project next action returned no data.');
++  return data;
++}
++
++export async function createWorkItem(input: CreateWorkItemInput) {
+   const { data, error } = await api.POST('/api/v1/work-items', {
+-    params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+-    body: { kind: 'chore', name, status: 'draft' }
++    params: { header: { 'Idempotency-Key': mutationKey() } },
++    body: input
+   });
+   if (error || !data) throw error ?? new Error('Create work item returned no data.');
+   return data;
+ }
++
++export async function quickCaptureChore(name: string) {
++  return createWorkItem({ kind: 'chore', name, status: 'draft' });
++}
++
++export async function updateWorkItem(
++  id: string,
++  input: UpdateWorkItemInput,
++  etag?: string | null
++) {
++  const { data, error, response } = await api.PATCH('/api/v1/work-items/{workItemId}', {
++    params: {
++      path: { workItemId: id },
++      header: etag ? { 'If-Match': etag } : undefined
++    },
++    body: input
++  });
++  if (response.status === 412) throw new WorkConflictError();
++  if (error || !data) throw error ?? new Error('Update work item returned no data.');
++  return { item: data, etag: response.headers.get('etag') };
++}
++
++export async function deleteWorkItem(id: string, etag?: string | null) {
++  const { error, response } = await api.DELETE('/api/v1/work-items/{workItemId}', {
++    params: {
++      path: { workItemId: id },
++      header: etag ? { 'If-Match': etag } : undefined
++    }
++  });
++  if (response.status === 412) throw new WorkConflictError();
++  if (error) throw error;
++}
++
++export async function reorderWorkItem(
++  id: string,
++  input: ReorderWorkItemInput,
++  etag?: string | null
++) {
++  const { data, error, response } = await api.POST('/api/v1/work-items/{workItemId}/reorder', {
++    params: {
++      path: { workItemId: id },
++      header: {
++        'Idempotency-Key': mutationKey(),
++        ...(etag ? { 'If-Match': etag } : {})
++      }
++    },
++    body: input
++  });
++  if (response.status === 412) throw new WorkConflictError();
++  if (error || !data) throw error ?? new Error('Reorder work item returned no data.');
++  return data;
++}
++
++export type FlatTreeRow = { item: WorkTree; depth: number };
++
++export function flattenWorkTree(root: WorkTree): FlatTreeRow[] {
++  const rows: FlatTreeRow[] = [];
++  function visit(item: WorkTree, depth: number) {
++    rows.push({ item, depth });
++    for (const child of item.children) visit(child, depth + 1);
++  }
++  visit(root, 0);
++  return rows;
++}
+diff --git a/src/lib/auth/session.ts b/src/lib/auth/session.ts
+index 163f80b..b305010 100644
+--- a/src/lib/auth/session.ts
++++ b/src/lib/auth/session.ts
+@@ -10,13 +10,19 @@ export const auth = { subscribe: state.subscribe };
+ 
+ export async function bootstrapAuth() {
+   const ok = await authApi.refresh();
+-  // Round 1 refresh returns the token but not the user through this helper.
+-  // The login/register flows do populate the user. `getMe` is added in Round 2.
+-  state.update((current) => ({
+-    status: ok ? 'authenticated' : 'anonymous',
+-    user: ok ? current.user : null
+-  }));
+-  return ok;
++  if (!ok) {
++    state.set({ status: 'anonymous', user: null });
++    return false;
++  }
++
++  try {
++    const user = await authApi.getMe();
++    state.set({ status: 'authenticated', user });
++    return true;
++  } catch {
++    state.set({ status: 'anonymous', user: null });
++    return false;
++  }
+ }
+ 
+ export async function login(input: authApi.LoginInput) {
+diff --git a/src/lib/components/execution/ActiveSessionCard.svelte b/src/lib/components/execution/ActiveSessionCard.svelte
+index f997f30..f2ca59f 100644
+--- a/src/lib/components/execution/ActiveSessionCard.svelte
++++ b/src/lib/components/execution/ActiveSessionCard.svelte
+@@ -1,5 +1,7 @@
+ <script lang="ts">
+   import { onMount } from 'svelte';
++  import ArrowUpRightIcon from 'phosphor-svelte/lib/ArrowUpRightIcon';
++  import LightningIcon from 'phosphor-svelte/lib/LightningIcon';
+   import type { components } from '$lib/api/generated/schema';
+   import { formatClock, formatDuration } from '$lib/utils';
+ 
+@@ -14,24 +16,37 @@
+ 
+   const segment = $derived(session.planSnapshot.segments[session.currentSegmentIndex] ?? null);
+   const startedAt = $derived(session.currentSegmentStartedAt ? Date.parse(session.currentSegmentStartedAt) : null);
+-  const elapsed = $derived(startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0);
++  const displayNow = $derived(
++    session.state === 'paused' && session.pausedAt ? Date.parse(session.pausedAt) : now
++  );
++  const elapsed = $derived(
++    startedAt ? Math.max(0, Math.floor((displayNow - startedAt) / 1000)) : 0
++  );
+   const target = $derived(segment?.targetSeconds ?? null);
+   const remaining = $derived(target === null ? elapsed : Math.max(0, target - elapsed));
+   const progress = $derived(target ? Math.min(100, (elapsed / target) * 100) : 0);
+ </script>
+ 
+-<section class="rounded-[18px] bg-tk-ink p-7 text-white lg:p-8" aria-label="Active focus session">
+-  <p class="text-sm font-semibold text-white/60">Active focus</p>
+-  <h2 class="tk-display mt-5 text-2xl font-bold leading-tight">Current session</h2>
+-  <div class="tk-mono mt-8 text-5xl font-semibold tracking-tight lg:text-6xl">
+-    {formatClock(remaining)}
++<section class="relative overflow-hidden rounded-[24px] bg-[#171717] p-6 text-white sm:p-7 lg:grid lg:grid-cols-[1fr_auto] lg:items-end lg:gap-10" aria-label="Active focus session">
++  <div class="absolute -right-16 -top-24 size-72 rounded-full bg-tk-strike/15 blur-3xl"></div>
++  <div class="relative">
++    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/50">
++      <LightningIcon size={15} weight="fill" class="text-tk-strike" /> Active session
++    </div>
++    <h2 class="tk-display mt-5 text-2xl font-bold">{segment?.label || segment?.kind?.replace('_', ' ') || 'Current segment'}</h2>
++    <div class="mt-7 h-1.5 overflow-hidden rounded-full bg-white/12">
++      <div class="h-full rounded-full bg-tk-strike transition-[width] duration-1000" style={`width:${progress}%`}></div>
++    </div>
++    <div class="mt-3 flex items-center gap-3 text-xs text-white/45">
++      <span class="capitalize">{session.state}</span>
++      {#if session.state === 'paused'}<span class="rounded-full bg-white/10 px-2 py-0.5 text-white/70">Timer frozen</span>{/if}
++      <span>·</span>
++      <span>Segment {session.currentSegmentIndex + 1} of {session.planSnapshot.segments.length}</span>
++      {#if target}<span>· {formatDuration(target)}</span>{/if}
++    </div>
+   </div>
+-  <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/15">
+-    <div class="h-full rounded-full bg-tk-strike transition-[width] duration-1000" style={`width:${progress}%`}></div>
++  <div class="relative mt-7 flex items-end justify-between gap-6 lg:mt-0 lg:block lg:text-right">
++    <div class="tk-mono text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">{formatClock(remaining)}</div>
++    <a href={`/work/${session.workItemId}`} class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white/55 hover:text-white">Open work <ArrowUpRightIcon size={14} /></a>
+   </div>
+-  <div class="mt-5 flex items-center justify-between text-sm">
+-    <span class="capitalize text-white/80">{segment?.kind?.replace('_', ' ') ?? session.state}</span>
+-    <span class="tk-mono text-white/65">{formatDuration(target)}</span>
+-  </div>
+-  <p class="mt-7 text-xs text-white/50">Server state refreshes periodically; the visible timer is reconstructed locally from server timestamps.</p>
+ </section>
+diff --git a/src/lib/components/layout/AppShell.svelte b/src/lib/components/layout/AppShell.svelte
+index 6b10ed5..3ab7f5b 100644
+--- a/src/lib/components/layout/AppShell.svelte
++++ b/src/lib/components/layout/AppShell.svelte
+@@ -3,7 +3,7 @@
+   import { goto } from '$app/navigation';
+   import Logo from '$lib/components/brand/Logo.svelte';
+   import Button from '$lib/components/ui/Button.svelte';
+-  import { logout } from '$lib/auth/session';
++  import { auth, logout } from '$lib/auth/session';
+   import { cn } from '$lib/utils';
+   import HouseIcon from 'phosphor-svelte/lib/HouseIcon';
+   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
+@@ -11,8 +11,10 @@
+   import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
+   import GearSixIcon from 'phosphor-svelte/lib/GearSixIcon';
+   import SignOutIcon from 'phosphor-svelte/lib/SignOutIcon';
++  import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
+ 
+   let { children }: { children?: import('svelte').Snippet } = $props();
++
+   const nav = [
+     { href: '/today', label: 'Today', icon: HouseIcon },
+     { href: '/inbox', label: 'Inbox', icon: TrayIcon },
+@@ -20,51 +22,86 @@
+     { href: '/analytics', label: 'Analytics', icon: ChartLineUpIcon }
+   ];
+ 
++  const initials = $derived(
++    ($auth.user?.displayName || $auth.user?.email || 'T')
++      .split(/\s+/)
++      .slice(0, 2)
++      .map((part) => part[0]?.toUpperCase() ?? '')
++      .join('')
++  );
++
+   async function signOut() {
+     await logout();
+     await goto('/login');
+   }
+ </script>
+ 
+-<div class="min-h-screen bg-tk-paper lg:grid lg:grid-cols-[232px_1fr]">
+-  <aside class="hidden min-h-screen bg-tk-ink px-5 py-8 text-white lg:flex lg:flex-col">
+-    <Logo inverse class="h-7 w-auto" />
+-    <nav class="mt-16 space-y-2" aria-label="Primary navigation">
++<div class="min-h-screen lg:grid lg:grid-cols-[246px_minmax(0,1fr)]">
++  <aside class="sticky top-0 hidden h-screen border-r border-[var(--border)] bg-white/72 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
++    <div class="flex h-12 items-center px-2">
++      <Logo class="h-6 w-auto" />
++    </div>
++
++    <a href="/inbox?capture=1" class="mt-6 flex h-11 items-center justify-center gap-2 rounded-[13px] bg-tk-ink px-4 text-sm font-bold text-white transition hover:bg-black">
++      <PlusIcon size={17} weight="bold" /> Capture work
++    </a>
++
++    <nav class="mt-7 space-y-1" aria-label="Primary navigation">
+       {#each nav as item}
+         <a
+           href={item.href}
+           class={cn(
+-            'flex h-12 items-center gap-3 rounded-[12px] px-4 text-[15px] font-medium transition hover:bg-white/5',
+-            page.url.pathname.startsWith(item.href) && 'bg-white/[0.07]'
++            'group relative flex h-11 items-center gap-3 rounded-[13px] px-3.5 text-sm font-semibold text-tk-graphite transition hover:bg-black/[0.04] hover:text-tk-ink',
++            page.url.pathname.startsWith(item.href) && 'bg-black/[0.055] text-tk-ink'
+           )}
+         >
+-          <item.icon size={20} weight="regular" />
++          {#if page.url.pathname.startsWith(item.href)}
++            <span class="absolute left-0 h-5 w-[3px] rounded-full bg-tk-strike"></span>
++          {/if}
++          <item.icon size={19} weight={page.url.pathname.startsWith(item.href) ? 'fill' : 'regular'} />
+           {item.label}
+         </a>
+       {/each}
+     </nav>
+-    <div class="mt-auto space-y-2">
+-      <a href="/settings" class="flex h-11 items-center gap-3 rounded-[12px] px-4 text-sm text-white/75 hover:bg-white/5 hover:text-white">
+-        <GearSixIcon size={19} /> Settings
++
++    <div class="mt-auto">
++      <a href="/settings" class="flex h-10 items-center gap-3 rounded-[12px] px-3.5 text-sm font-semibold text-tk-graphite hover:bg-black/[0.04] hover:text-tk-ink">
++        <GearSixIcon size={18} /> Settings
+       </a>
+-      <Button variant="ghost" class="w-full justify-start px-4 text-white/75 hover:bg-white/5 hover:text-white" onclick={signOut}>
+-        <SignOutIcon size={19} /> Sign out
+-      </Button>
++      <div class="mt-3 flex items-center gap-3 rounded-[15px] border border-[var(--border)] bg-white p-2.5">
++        <div class="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[#ecece7] text-xs font-black">{initials}</div>
++        <div class="min-w-0 flex-1">
++          <p class="truncate text-sm font-bold">{$auth.user?.displayName || 'Taskiller user'}</p>
++          <p class="truncate text-[11px] text-tk-graphite">{$auth.user?.email}</p>
++        </div>
++        <Button variant="ghost" size="icon" class="size-8" aria-label="Sign out" onclick={signOut}>
++          <SignOutIcon size={16} />
++        </Button>
++      </div>
+     </div>
+   </aside>
+ 
+-  <main class="min-w-0 pb-20 lg:pb-0">{@render children?.()}</main>
++  <div class="min-w-0">
++    <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[rgb(245_245_242/0.82)] px-5 backdrop-blur-xl lg:hidden">
++      <Logo class="h-6 w-auto" />
++      <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[12px] bg-tk-ink text-white" aria-label="Capture work">
++        <PlusIcon size={18} weight="bold" />
++      </a>
++    </header>
++
++    <main class="min-w-0 pb-24 lg:pb-0">{@render children?.()}</main>
++  </div>
+ 
+-  <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-tk-mist bg-white/95 px-2 py-2 backdrop-blur lg:hidden" aria-label="Mobile navigation">
++  <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
+     {#each nav as item}
+       <a
+         href={item.href}
+         class={cn(
+-          'flex flex-col items-center gap-1 rounded-lg py-1.5 text-[11px] text-tk-graphite',
+-          page.url.pathname.startsWith(item.href) && 'text-tk-ink'
++          'flex flex-col items-center gap-1 rounded-[13px] py-2 text-[10px] font-bold text-tk-graphite transition',
++          page.url.pathname.startsWith(item.href) && 'bg-[#eeeeea] text-tk-ink'
+         )}
+       >
+-        <item.icon size={22} weight={page.url.pathname.startsWith(item.href) ? 'fill' : 'regular'} />
++        <item.icon size={20} weight={page.url.pathname.startsWith(item.href) ? 'fill' : 'regular'} />
+         {item.label}
+       </a>
+     {/each}
+diff --git a/src/lib/components/ui/Badge.svelte b/src/lib/components/ui/Badge.svelte
+new file mode 100644
+index 0000000..ddb40a0
+--- /dev/null
++++ b/src/lib/components/ui/Badge.svelte
+@@ -0,0 +1,23 @@
++<script lang="ts">
++  import { cn } from '$lib/utils';
++  let {
++    class: className,
++    tone = 'neutral',
++    children
++  }: {
++    class?: string;
++    tone?: 'neutral' | 'accent' | 'blue' | 'green' | 'danger';
++    children?: import('svelte').Snippet;
++  } = $props();
++
++  const tones = {
++    neutral: 'bg-black/[0.055] text-tk-graphite',
++    accent: 'bg-tk-strike/15 text-[#a63820]',
++    blue: 'bg-tk-blue/10 text-[#3553c8]',
++    green: 'bg-tk-green/10 text-[#237754]',
++    danger: 'bg-red-500/10 text-red-700'
++  } as const;
++</script>
++<span class={cn('inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-bold uppercase tracking-[0.08em]', tones[tone], className)}>
++  {@render children?.()}
++</span>
+diff --git a/src/lib/components/ui/Button.svelte b/src/lib/components/ui/Button.svelte
+index b0baedc..688aaf6 100644
+--- a/src/lib/components/ui/Button.svelte
++++ b/src/lib/components/ui/Button.svelte
+@@ -10,24 +10,31 @@
+     children,
+     ...rest
+   }: HTMLButtonAttributes & {
+-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+-    size?: 'sm' | 'md' | 'lg';
++    variant?: 'primary' | 'secondary' | 'soft' | 'dark' | 'ghost' | 'danger';
++    size?: 'sm' | 'md' | 'lg' | 'icon';
+     children?: import('svelte').Snippet;
+   } = $props();
+ 
+   const variants = {
+-    primary: 'bg-tk-strike text-tk-ink hover:brightness-[0.97] border-transparent',
+-    secondary: 'bg-white text-tk-ink hover:bg-tk-paper border-tk-mist',
+-    ghost: 'bg-transparent text-inherit hover:bg-black/5 border-transparent',
+-    danger: 'bg-red-600 text-white hover:bg-red-700 border-transparent'
++    primary: 'border-transparent bg-tk-ink text-white hover:bg-black',
++    secondary: 'border-[var(--border)] bg-white text-tk-ink hover:bg-[#f7f7f4]',
++    soft: 'border-transparent bg-[#ecece7] text-tk-ink hover:bg-[#e4e4de]',
++    dark: 'border-transparent bg-tk-strike text-[#1a1512] hover:brightness-[0.98]',
++    ghost: 'border-transparent bg-transparent text-inherit hover:bg-black/[0.055]',
++    danger: 'border-transparent bg-red-600 text-white hover:bg-red-700'
++  } as const;
++  const sizes = {
++    sm: 'h-9 rounded-[11px] px-3 text-sm',
++    md: 'h-11 rounded-[13px] px-4 text-sm',
++    lg: 'h-13 rounded-[14px] px-5 text-[15px]',
++    icon: 'size-10 rounded-[12px] p-0'
+   } as const;
+-  const sizes = { sm: 'h-9 px-3 text-sm', md: 'h-11 px-4 text-sm', lg: 'h-14 px-6 text-base' } as const;
+ </script>
+ 
+ <button
+   {type}
+   class={cn(
+-    'inline-flex items-center justify-center gap-2 rounded-[12px] border font-semibold transition duration-150 disabled:pointer-events-none disabled:opacity-50',
++    'inline-flex shrink-0 items-center justify-center gap-2 border font-semibold transition duration-150 disabled:pointer-events-none disabled:opacity-45',
+     variants[variant],
+     sizes[size],
+     className
+diff --git a/src/lib/components/ui/Card.svelte b/src/lib/components/ui/Card.svelte
+index 3cf8fa3..7291d88 100644
+--- a/src/lib/components/ui/Card.svelte
++++ b/src/lib/components/ui/Card.svelte
+@@ -2,4 +2,4 @@
+   import { cn } from '$lib/utils';
+   let { class: className, children }: { class?: string; children?: import('svelte').Snippet } = $props();
+ </script>
+-<div class={cn('rounded-[12px] border border-tk-mist bg-white', className)}>{@render children?.()}</div>
++<div class={cn('tk-surface rounded-[18px]', className)}>{@render children?.()}</div>
+diff --git a/src/lib/components/ui/Input.svelte b/src/lib/components/ui/Input.svelte
+index f2fc626..be3ad67 100644
+--- a/src/lib/components/ui/Input.svelte
++++ b/src/lib/components/ui/Input.svelte
+@@ -12,7 +12,7 @@
+ <input
+   bind:value
+   class={cn(
+-    'h-11 w-full rounded-[12px] border border-tk-mist bg-white px-3 text-[15px] text-tk-ink shadow-none placeholder:text-tk-graphite/70 focus:border-tk-graphite',
++    'h-11 w-full rounded-[13px] border border-[var(--border)] bg-white/90 px-3.5 text-[15px] text-tk-ink shadow-none placeholder:text-tk-graphite/65 focus:border-tk-blue/50',
+     className
+   )}
+   {...rest}
+diff --git a/src/lib/components/ui/Select.svelte b/src/lib/components/ui/Select.svelte
+new file mode 100644
+index 0000000..dfe389f
+--- /dev/null
++++ b/src/lib/components/ui/Select.svelte
+@@ -0,0 +1,22 @@
++<script lang="ts">
++  import type { HTMLSelectAttributes } from 'svelte/elements';
++  import { cn } from '$lib/utils';
++
++  let {
++    class: className,
++    value = $bindable(),
++    children,
++    ...rest
++  }: HTMLSelectAttributes & { children?: import('svelte').Snippet } = $props();
++</script>
++
++<select
++  bind:value
++  class={cn(
++    'h-11 w-full rounded-[13px] border border-[var(--border)] bg-white/90 px-3.5 text-[15px] text-tk-ink focus:border-tk-blue/50',
++    className
++  )}
++  {...rest}
++>
++  {@render children?.()}
++</select>
+diff --git a/src/lib/components/ui/Textarea.svelte b/src/lib/components/ui/Textarea.svelte
+new file mode 100644
+index 0000000..13020f8
+--- /dev/null
++++ b/src/lib/components/ui/Textarea.svelte
+@@ -0,0 +1,19 @@
++<script lang="ts">
++  import type { HTMLTextareaAttributes } from 'svelte/elements';
++  import { cn } from '$lib/utils';
++
++  let {
++    class: className,
++    value = $bindable(),
++    ...rest
++  }: HTMLTextareaAttributes = $props();
++</script>
++
++<textarea
++  bind:value
++  class={cn(
++    'min-h-28 w-full resize-y rounded-[13px] border border-[var(--border)] bg-white/90 px-3.5 py-3 text-[15px] leading-6 text-tk-ink placeholder:text-tk-graphite/65 focus:border-tk-blue/50',
++    className
++  )}
++  {...rest}
++></textarea>
+diff --git a/src/lib/components/work/KindMark.svelte b/src/lib/components/work/KindMark.svelte
+new file mode 100644
+index 0000000..865e0b5
+--- /dev/null
++++ b/src/lib/components/work/KindMark.svelte
+@@ -0,0 +1,28 @@
++<script lang="ts">
++  import FolderNotchOpenIcon from 'phosphor-svelte/lib/FolderNotchOpenIcon';
++  import StackIcon from 'phosphor-svelte/lib/StackIcon';
++  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
++  import type { WorkItemKind } from '$lib/api/work';
++  import { cn } from '$lib/utils';
++
++  let { kind, class: className }: { kind: WorkItemKind; class?: string } = $props();
++</script>
++
++<span
++  class={cn(
++    'grid size-9 shrink-0 place-items-center rounded-[12px] border',
++    kind === 'project' && 'border-tk-blue/15 bg-tk-blue/10 text-tk-blue',
++    kind === 'sprint' && 'border-violet-500/15 bg-violet-500/10 text-violet-600',
++    kind === 'chore' && 'border-black/[0.06] bg-black/[0.045] text-tk-graphite',
++    className
++  )}
++  aria-hidden="true"
++>
++  {#if kind === 'project'}
++    <FolderNotchOpenIcon size={18} weight="fill" />
++  {:else if kind === 'sprint'}
++    <StackIcon size={18} weight="fill" />
++  {:else}
++    <CheckCircleIcon size={18} />
++  {/if}
++</span>
+diff --git a/src/lib/components/work/ProjectCard.svelte b/src/lib/components/work/ProjectCard.svelte
+new file mode 100644
+index 0000000..421a2d0
+--- /dev/null
++++ b/src/lib/components/work/ProjectCard.svelte
+@@ -0,0 +1,50 @@
++<script lang="ts">
++  import { createQuery } from '@tanstack/svelte-query';
++  import ArrowUpRightIcon from 'phosphor-svelte/lib/ArrowUpRightIcon';
++  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
++  import type { WorkItem } from '$lib/api/work';
++  import { getProjectNextAction } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++  import KindMark from './KindMark.svelte';
++  import StatusBadge from './StatusBadge.svelte';
++  import { formatShortDate } from '$lib/utils';
++
++  let { project }: { project: WorkItem } = $props();
++
++  const nextAction = createQuery(() => ({
++    queryKey: queryKeys.work.nextAction(project.id),
++    queryFn: () => getProjectNextAction(project.id),
++    staleTime: 30_000
++  }));
++</script>
++
++<article class="group relative overflow-hidden rounded-[22px] border border-[var(--border)] bg-white/86 p-5 shadow-[0_12px_38px_rgb(23_23_23/0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgb(23_23_23/0.07)]">
++  <div class="absolute -right-14 -top-14 size-40 rounded-full bg-tk-blue/[0.06] blur-2xl"></div>
++  <div class="relative flex items-start justify-between gap-4">
++    <KindMark kind="project" />
++    <StatusBadge status={project.status} />
++  </div>
++  <a href={`/work/${project.id}`} class="relative mt-8 block">
++    <h2 class="tk-display text-2xl font-extrabold leading-tight">{project.name}</h2>
++    <p class="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-tk-graphite">{project.description || 'No description yet. Open the project to shape the work.'}</p>
++  </a>
++
++  <div class="relative mt-8 border-t border-[var(--border)] pt-4">
++    <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Next actionable</p>
++    {#if nextAction.isPending}
++      <div class="mt-2 h-5 w-2/3 animate-pulse rounded bg-black/[0.05]"></div>
++    {:else if nextAction.data?.nextAction}
++      <a href={`/work/${nextAction.data.nextAction.id}`} class="mt-2 flex items-center justify-between gap-3 rounded-[11px] bg-[#f3f3ef] px-3 py-2.5 text-sm font-semibold hover:bg-[#ecece7]">
++        <span class="truncate">{nextAction.data.nextAction.name}</span>
++        <ArrowRightIcon size={16} />
++      </a>
++    {:else}
++      <p class="mt-2 text-sm text-tk-graphite">No executable descendant right now.</p>
++    {/if}
++  </div>
++
++  <div class="relative mt-5 flex items-center justify-between text-xs text-tk-graphite">
++    <span>{project.targetEndDate ? `Target ${formatShortDate(project.targetEndDate)}` : 'No target date'}</span>
++    <a href={`/work/${project.id}`} class="flex items-center gap-1 font-bold text-tk-ink">Open <ArrowUpRightIcon size={14} /></a>
++  </div>
++</article>
+diff --git a/src/lib/components/work/StatusBadge.svelte b/src/lib/components/work/StatusBadge.svelte
+new file mode 100644
+index 0000000..b76a32b
+--- /dev/null
++++ b/src/lib/components/work/StatusBadge.svelte
+@@ -0,0 +1,20 @@
++<script lang="ts">
++  import Badge from '$lib/components/ui/Badge.svelte';
++  import type { WorkItemStatus } from '$lib/api/work';
++  import { statusLabel } from '$lib/utils';
++
++  let { status }: { status: WorkItemStatus } = $props();
++  const tone = $derived(
++    status === 'in_progress'
++      ? 'accent'
++      : status === 'ready'
++        ? 'blue'
++        : status === 'completed'
++          ? 'green'
++          : status === 'cancelled'
++            ? 'danger'
++            : 'neutral'
++  );
++</script>
++
++<Badge {tone}>{statusLabel(status)}</Badge>
+diff --git a/src/lib/components/work/WorkComposer.svelte b/src/lib/components/work/WorkComposer.svelte
+new file mode 100644
+index 0000000..d67a5c5
+--- /dev/null
++++ b/src/lib/components/work/WorkComposer.svelte
+@@ -0,0 +1,142 @@
++<script lang="ts">
++  import { createMutation, useQueryClient } from '@tanstack/svelte-query';
++  import CaretDownIcon from 'phosphor-svelte/lib/CaretDownIcon';
++  import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
++  import Button from '$lib/components/ui/Button.svelte';
++  import Input from '$lib/components/ui/Input.svelte';
++  import Textarea from '$lib/components/ui/Textarea.svelte';
++  import Select from '$lib/components/ui/Select.svelte';
++  import { createWorkItem, type WorkItem, type WorkItemKind } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++  import { problemMessage } from '$lib/api/problem';
++  import { toIsoOrNull } from '$lib/utils';
++
++  let {
++    parentId = null,
++    defaultKind = 'chore',
++    allowedKinds = ['chore'],
++    compact = false,
++    label = 'Create work',
++    oncreated
++  }: {
++    parentId?: string | null;
++    defaultKind?: WorkItemKind;
++    allowedKinds?: WorkItemKind[];
++    compact?: boolean;
++    label?: string;
++    oncreated?: (item: WorkItem) => void;
++  } = $props();
++
++  const queryClient = useQueryClient();
++  let name = $state('');
++  let kind = $state<WorkItemKind>(defaultKind);
++  let description = $state('');
++  let estimateMinutes = $state('');
++  let priority = $state('');
++  let deadline = $state('');
++  let targetStartDate = $state('');
++  let targetEndDate = $state('');
++  let advanced = $state(!compact);
++  let error = $state('');
++
++  const create = createMutation(() => ({
++    mutationFn: createWorkItem,
++    onSuccess: async (item) => {
++      name = '';
++      description = '';
++      estimateMinutes = '';
++      priority = '';
++      deadline = '';
++      targetStartDate = '';
++      targetEndDate = '';
++      error = '';
++      await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
++      oncreated?.(item);
++    },
++    onError: (cause) => {
++      error = problemMessage(cause, 'Could not create this work item.');
++    }
++  }));
++
++  async function submit(event: SubmitEvent) {
++    event.preventDefault();
++    const trimmed = name.trim();
++    if (!trimmed) return;
++
++    const estimate = estimateMinutes ? Math.max(0, Math.round(Number(estimateMinutes) * 60)) : null;
++    create.mutate({
++      kind,
++      name: trimmed,
++      parentId,
++      status: 'draft',
++      description: description.trim() || null,
++      estimatedEffortSeconds: Number.isFinite(estimate) ? estimate : null,
++      priority: priority ? Number(priority) : null,
++      deadlineAt: toIsoOrNull(deadline),
++      targetStartDate: targetStartDate || null,
++      targetEndDate: targetEndDate || null
++    });
++  }
++</script>
++
++<form class="rounded-[18px] border border-[var(--border)] bg-white/80 p-3 shadow-[0_8px_28px_rgb(23_23_23/0.04)] backdrop-blur" onsubmit={submit}>
++  <div class="flex gap-2">
++    {#if allowedKinds.length > 1}
++      <Select class="w-32 shrink-0" bind:value={kind} aria-label="Work type">
++        {#each allowedKinds as option}
++          <option value={option}>{option === 'sprint' ? 'Sprint' : option === 'project' ? 'Project' : 'Chore'}</option>
++        {/each}
++      </Select>
++    {/if}
++    <Input class="flex-1 border-transparent bg-transparent focus:border-transparent" bind:value={name} placeholder={kind === 'project' ? 'Name the project…' : kind === 'sprint' ? 'Name the sprint…' : 'What needs to be done?'} maxlength="300" required />
++    <Button type="submit" disabled={create.isPending || !name.trim()}>
++      <PlusIcon size={17} weight="bold" />
++      <span class="hidden sm:inline">{create.isPending ? 'Saving…' : label}</span>
++    </Button>
++  </div>
++
++  <button type="button" class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite hover:bg-black/[0.035]" onclick={() => (advanced = !advanced)}>
++    <CaretDownIcon size={13} class={advanced ? 'rotate-180' : ''} />
++    {advanced ? 'Fewer fields' : 'Add details'}
++  </button>
++
++  {#if advanced}
++    <div class="mt-3 grid gap-3 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
++      <label class="sm:col-span-2">
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
++        <Textarea bind:value={description} placeholder="Optional context, outcome, or notes…" maxlength="20000" />
++      </label>
++      <label>
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Estimate (minutes)</span>
++        <Input type="number" min="0" step="5" bind:value={estimateMinutes} placeholder="45" />
++      </label>
++      <label>
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Priority</span>
++        <Select bind:value={priority}>
++          <option value="">None</option>
++          <option value="1">1 · Low</option>
++          <option value="2">2</option>
++          <option value="3">3 · Medium</option>
++          <option value="4">4</option>
++          <option value="5">5 · High</option>
++        </Select>
++      </label>
++      <label class="sm:col-span-2">
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Deadline</span>
++        <Input type="datetime-local" bind:value={deadline} />
++      </label>
++      {#if kind === 'project'}
++        <label>
++          <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Target start</span>
++          <Input type="date" bind:value={targetStartDate} />
++        </label>
++        <label>
++          <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Target end</span>
++          <Input type="date" bind:value={targetEndDate} />
++        </label>
++      {/if}
++    </div>
++  {/if}
++
++  {#if error}<p class="mt-3 px-2 text-sm text-red-700" role="alert">{error}</p>{/if}
++</form>
+diff --git a/src/lib/components/work/WorkEditor.svelte b/src/lib/components/work/WorkEditor.svelte
+new file mode 100644
+index 0000000..b78a881
+--- /dev/null
++++ b/src/lib/components/work/WorkEditor.svelte
+@@ -0,0 +1,213 @@
++<script lang="ts">
++  import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
++  import FloppyDiskIcon from 'phosphor-svelte/lib/FloppyDiskIcon';
++  import ArrowsClockwiseIcon from 'phosphor-svelte/lib/ArrowsClockwiseIcon';
++  import Button from '$lib/components/ui/Button.svelte';
++  import Input from '$lib/components/ui/Input.svelte';
++  import Textarea from '$lib/components/ui/Textarea.svelte';
++  import Select from '$lib/components/ui/Select.svelte';
++  import {
++    listWorkItems,
++    updateWorkItem,
++    WorkConflictError,
++    type WorkItem,
++    type WorkItemStatus,
++    type UpdateWorkItemInput
++  } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++  import { problemMessage } from '$lib/api/problem';
++  import { toIsoOrNull, toLocalDateTime } from '$lib/utils';
++
++  let {
++    item,
++    etag,
++    onupdated
++  }: {
++    item: WorkItem;
++    etag: string | null;
++    onupdated?: () => void;
++  } = $props();
++
++  const queryClient = useQueryClient();
++  let name = $state(item.name);
++  let description = $state(item.description ?? '');
++  let status = $state<WorkItemStatus>(item.status);
++  let parentId = $state(item.parentId ?? '');
++  let estimateMinutes = $state(item.estimatedEffortSeconds === null ? '' : String(Math.round(item.estimatedEffortSeconds / 60)));
++  let priority = $state(item.priority === null ? '' : String(item.priority));
++  let plannedStart = $state(toLocalDateTime(item.plannedStartAt));
++  let deadline = $state(toLocalDateTime(item.deadlineAt));
++  let targetStartDate = $state(item.targetStartDate ?? '');
++  let targetEndDate = $state(item.targetEndDate ?? '');
++  let conflict = $state(false);
++  let error = $state('');
++
++  const projects = createQuery(() => ({
++    queryKey: queryKeys.work.list({ kind: 'project' }),
++    queryFn: () => listWorkItems({ kind: 'project' }),
++    enabled: item.kind !== 'project'
++  }));
++
++  const sprints = createQuery(() => ({
++    queryKey: queryKeys.work.list({ kind: 'sprint' }),
++    queryFn: () => listWorkItems({ kind: 'sprint' }),
++    enabled: item.kind === 'chore'
++  }));
++
++  function resetFromServer() {
++    name = item.name;
++    description = item.description ?? '';
++    status = item.status;
++    parentId = item.parentId ?? '';
++    estimateMinutes = item.estimatedEffortSeconds === null ? '' : String(Math.round(item.estimatedEffortSeconds / 60));
++    priority = item.priority === null ? '' : String(item.priority);
++    plannedStart = toLocalDateTime(item.plannedStartAt);
++    deadline = toLocalDateTime(item.deadlineAt);
++    targetStartDate = item.targetStartDate ?? '';
++    targetEndDate = item.targetEndDate ?? '';
++    conflict = false;
++    error = '';
++  }
++
++  const save = createMutation(() => ({
++    mutationFn: (input: UpdateWorkItemInput) => updateWorkItem(item.id, input, etag),
++    onSuccess: async () => {
++      conflict = false;
++      error = '';
++      await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
++      onupdated?.();
++    },
++    onError: async (cause) => {
++      if (cause instanceof WorkConflictError) {
++        conflict = true;
++        await queryClient.invalidateQueries({ queryKey: queryKeys.work.detail(item.id) });
++        return;
++      }
++      error = problemMessage(cause, 'Could not save changes.');
++    }
++  }));
++
++  function submit(event: SubmitEvent) {
++    event.preventDefault();
++    const trimmed = name.trim();
++    if (!trimmed) return;
++    const estimate = estimateMinutes ? Math.max(0, Math.round(Number(estimateMinutes) * 60)) : null;
++    save.mutate({
++      name: trimmed,
++      description: description.trim() || null,
++      status,
++      ...(item.kind === 'project' ? {} : { parentId: parentId || null }),
++      estimatedEffortSeconds: Number.isFinite(estimate) ? estimate : null,
++      priority: priority ? Number(priority) : null,
++      plannedStartAt: toIsoOrNull(plannedStart),
++      deadlineAt: toIsoOrNull(deadline),
++      targetStartDate: targetStartDate || null,
++      targetEndDate: targetEndDate || null
++    });
++  }
++</script>
++
++<form class="rounded-[20px] border border-[var(--border)] bg-white/88 p-5" onsubmit={submit}>
++  <div class="flex items-center justify-between gap-3">
++    <div>
++      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Edit</p>
++      <h2 class="mt-1 font-bold">Work details</h2>
++    </div>
++    <Button type="submit" size="sm" disabled={save.isPending}>
++      <FloppyDiskIcon size={16} /> {save.isPending ? 'Saving…' : 'Save'}
++    </Button>
++  </div>
++
++  {#if conflict}
++    <div class="mt-4 rounded-[13px] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
++      <p class="font-bold">This item changed somewhere else.</p>
++      <p class="mt-1 leading-5">The newest server version was fetched in the background. Your current draft is still here.</p>
++      <Button type="button" variant="ghost" size="sm" class="mt-2 text-amber-950" onclick={resetFromServer}>
++        <ArrowsClockwiseIcon size={15} /> Use server version
++      </Button>
++    </div>
++  {/if}
++
++  <div class="mt-5 space-y-4">
++    <label class="block">
++      <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Name</span>
++      <Input bind:value={name} maxlength="300" required />
++    </label>
++    <label class="block">
++      <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
++      <Textarea bind:value={description} maxlength="20000" />
++    </label>
++    <div class="grid grid-cols-2 gap-3">
++      <label>
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Status</span>
++        <Select bind:value={status}>
++          <option value="draft">Draft</option>
++          <option value="ready">Ready</option>
++          <option value="in_progress">In progress</option>
++          <option value="completed">Completed</option>
++          <option value="cancelled">Cancelled</option>
++          <option value="archived">Archived</option>
++        </Select>
++      </label>
++      <label>
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Priority</span>
++        <Select bind:value={priority}>
++          <option value="">None</option>
++          <option value="1">1 · Low</option>
++          <option value="2">2</option>
++          <option value="3">3</option>
++          <option value="4">4</option>
++          <option value="5">5 · High</option>
++        </Select>
++      </label>
++    </div>
++    {#if item.kind !== 'project'}
++      <label class="block">
++        <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Parent</span>
++        <Select bind:value={parentId}>
++          {#if item.kind === 'chore'}<option value="">Inbox / no parent</option>{/if}
++          {#if projects.data?.items.length}
++            <optgroup label="Projects">
++              {#each projects.data.items as project}
++                <option value={project.id}>{project.name}</option>
++              {/each}
++            </optgroup>
++          {/if}
++          {#if item.kind === 'chore' && sprints.data?.items.length}
++            <optgroup label="Sprints">
++              {#each sprints.data.items as sprint}
++                <option value={sprint.id}>{sprint.name}</option>
++              {/each}
++            </optgroup>
++          {/if}
++        </Select>
++      </label>
++    {/if}
++    <label class="block">
++      <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Estimate (minutes)</span>
++      <Input type="number" min="0" step="5" bind:value={estimateMinutes} />
++    </label>
++    <label class="block">
++      <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Planned start</span>
++      <Input type="datetime-local" bind:value={plannedStart} />
++    </label>
++    <label class="block">
++      <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Deadline</span>
++      <Input type="datetime-local" bind:value={deadline} />
++    </label>
++    {#if item.kind === 'project'}
++      <div class="grid grid-cols-2 gap-3">
++        <label>
++          <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Target start</span>
++          <Input type="date" bind:value={targetStartDate} />
++        </label>
++        <label>
++          <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Target end</span>
++          <Input type="date" bind:value={targetEndDate} />
++        </label>
++      </div>
++    {/if}
++  </div>
++
++  {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
++</form>
+diff --git a/src/lib/components/work/WorkItemRow.svelte b/src/lib/components/work/WorkItemRow.svelte
+new file mode 100644
+index 0000000..df6e4f8
+--- /dev/null
++++ b/src/lib/components/work/WorkItemRow.svelte
+@@ -0,0 +1,63 @@
++<script lang="ts">
++  import CaretUpIcon from 'phosphor-svelte/lib/CaretUpIcon';
++  import CaretDownIcon from 'phosphor-svelte/lib/CaretDownIcon';
++  import ArrowUpRightIcon from 'phosphor-svelte/lib/ArrowUpRightIcon';
++  import type { WorkItem } from '$lib/api/work';
++  import Button from '$lib/components/ui/Button.svelte';
++  import KindMark from './KindMark.svelte';
++  import StatusBadge from './StatusBadge.svelte';
++  import { formatDuration, formatShortDate, kindLabel } from '$lib/utils';
++
++  let {
++    item,
++    depth = 0,
++    showKind = true,
++    canMoveUp = false,
++    canMoveDown = false,
++    onmoveup,
++    onmovedown
++  }: {
++    item: WorkItem;
++    depth?: number;
++    showKind?: boolean;
++    canMoveUp?: boolean;
++    canMoveDown?: boolean;
++    onmoveup?: () => void;
++    onmovedown?: () => void;
++  } = $props();
++</script>
++
++<div
++  class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--border)] py-3.5 last:border-b-0"
++  style={`padding-left:${Math.min(depth, 4) * 22}px`}
++>
++  <a href={`/work/${item.id}`} class="flex min-w-0 items-center gap-3 rounded-[12px] py-1.5">
++    {#if showKind}<KindMark kind={item.kind} />{/if}
++    <div class="min-w-0 flex-1">
++      <div class="flex min-w-0 items-center gap-2.5">
++        <span class="truncate font-semibold text-tk-ink">{item.name}</span>
++        <StatusBadge status={item.status} />
++      </div>
++      <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-tk-graphite">
++        {#if showKind}<span>{kindLabel(item.kind)}</span>{/if}
++        {#if item.estimatedEffortSeconds !== null}<span class="tk-mono">{formatDuration(item.estimatedEffortSeconds)}</span>{/if}
++        {#if item.deadlineAt}<span>Due {formatShortDate(item.deadlineAt)}</span>{/if}
++        {#if item.priority}<span>P{item.priority}</span>{/if}
++      </div>
++    </div>
++  </a>
++
++  <div class="flex items-center gap-1">
++    {#if onmoveup || onmovedown}
++      <Button size="icon" variant="ghost" disabled={!canMoveUp} aria-label={`Move ${item.name} up`} onclick={onmoveup}>
++        <CaretUpIcon size={16} weight="bold" />
++      </Button>
++      <Button size="icon" variant="ghost" disabled={!canMoveDown} aria-label={`Move ${item.name} down`} onclick={onmovedown}>
++        <CaretDownIcon size={16} weight="bold" />
++      </Button>
++    {/if}
++    <a class="grid size-9 place-items-center rounded-[11px] text-tk-graphite opacity-70 transition hover:bg-black/[0.05] hover:text-tk-ink group-hover:opacity-100" href={`/work/${item.id}`} aria-label={`Open ${item.name}`}>
++      <ArrowUpRightIcon size={17} />
++    </a>
++  </div>
++</div>
+diff --git a/src/lib/utils.ts b/src/lib/utils.ts
+index f4eac10..5ed24b2 100644
+--- a/src/lib/utils.ts
++++ b/src/lib/utils.ts
+@@ -1,12 +1,13 @@
+ import { clsx, type ClassValue } from 'clsx';
+ import { twMerge } from 'tailwind-merge';
++import type { WorkItemKind, WorkItemStatus, WorkTree } from '$lib/api/work';
+ 
+ export function cn(...inputs: ClassValue[]) {
+   return twMerge(clsx(inputs));
+ }
+ 
+ export function formatDuration(seconds: number | null | undefined): string {
+-  if (!seconds) return '—';
++  if (seconds === null || seconds === undefined) return '—';
+   if (seconds < 60) return `${seconds}s`;
+   const minutes = Math.round(seconds / 60);
+   if (minutes < 60) return `${minutes} min`;
+@@ -21,3 +22,55 @@ export function formatClock(seconds: number): string {
+   const secs = (safe % 60).toString().padStart(2, '0');
+   return `${mins}:${secs}`;
+ }
++
++export function formatDate(value: string | null | undefined): string {
++  if (!value) return '—';
++  const date = new Date(value);
++  if (Number.isNaN(date.getTime())) return value;
++  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
++}
++
++export function formatShortDate(value: string | null | undefined): string {
++  if (!value) return '—';
++  const date = new Date(value);
++  if (Number.isNaN(date.getTime())) return value;
++  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
++}
++
++export function toLocalDateTime(value: string | null | undefined): string {
++  if (!value) return '';
++  const date = new Date(value);
++  if (Number.isNaN(date.getTime())) return '';
++  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
++  return local.toISOString().slice(0, 16);
++}
++
++export function toIsoOrNull(value: string): string | null {
++  if (!value) return null;
++  const date = new Date(value);
++  return Number.isNaN(date.getTime()) ? null : date.toISOString();
++}
++
++export function kindLabel(kind: WorkItemKind): string {
++  return kind === 'project' ? 'Project' : kind === 'sprint' ? 'Sprint' : 'Chore';
++}
++
++export function statusLabel(status: WorkItemStatus): string {
++  return status.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
++}
++
++export function isTerminalStatus(status: WorkItemStatus): boolean {
++  return status === 'completed' || status === 'cancelled' || status === 'archived';
++}
++
++export type FlatTreeRow = { item: WorkTree; depth: number };
++
++export function flattenTree(root: WorkTree): FlatTreeRow[] {
++  const rows: FlatTreeRow[] = [];
++  const walk = (item: WorkTree, depth: number) => {
++    rows.push({ item, depth });
++    item.children.forEach((child) => walk(child, depth + 1));
++  };
++  walk(root, 0);
++  return rows;
++}
+diff --git a/src/routes/(app)/analytics/+page.svelte b/src/routes/(app)/analytics/+page.svelte
+index 4bc9222..b923289 100644
+--- a/src/routes/(app)/analytics/+page.svelte
++++ b/src/routes/(app)/analytics/+page.svelte
+@@ -1,2 +1,15 @@
++<script lang="ts">
++  import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
++</script>
++
+ <svelte:head><title>Analytics — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:px-14 lg:py-16"><h1 class="tk-display text-5xl font-black">Analytics</h1><p class="mt-4 max-w-2xl text-lg leading-8 text-tk-graphite">Descriptive insights over decoration. Full analytics lands after execution flows.</p><div class="mt-12 rounded-[16px] border border-dashed border-tk-mist bg-white/60 p-10 text-sm text-tk-graphite">Route foundation is in place. This screen is scheduled for the next development rounds.</div></div>
+\ No newline at end of file
++<div class="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><ChartLineUpIcon size={15} /> Descriptive, not decorative</div>
++  <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Analytics</h1>
++  <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">This route stays deliberately quiet until the execution flow is complete. Round 5 will turn backend analytics into questions and useful observations, not dashboard wallpaper.</p>
++  <div class="mt-10 grid gap-4 sm:grid-cols-3">
++    <div class="rounded-[20px] border border-[var(--border)] bg-white/65 p-5"><p class="text-xs font-bold text-tk-graphite">Estimate calibration</p><p class="mt-5 text-sm leading-6 text-tk-graphite">Median estimate error by work type and period.</p></div>
++    <div class="rounded-[20px] border border-[var(--border)] bg-white/65 p-5"><p class="text-xs font-bold text-tk-graphite">Uninterrupted work</p><p class="mt-5 text-sm leading-6 text-tk-graphite">Observed block lengths without claiming causation.</p></div>
++    <div class="rounded-[20px] border border-[var(--border)] bg-white/65 p-5"><p class="text-xs font-bold text-tk-graphite">Plan adherence</p><p class="mt-5 text-sm leading-6 text-tk-graphite">What was planned versus what was actually completed.</p></div>
++  </div>
++</div>
+diff --git a/src/routes/(app)/inbox/+page.svelte b/src/routes/(app)/inbox/+page.svelte
+index e226f36..79df6c2 100644
+--- a/src/routes/(app)/inbox/+page.svelte
++++ b/src/routes/(app)/inbox/+page.svelte
+@@ -1,2 +1,91 @@
++<script lang="ts">
++  import { createQuery } from '@tanstack/svelte-query';
++  import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
++  import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
++  import WorkComposer from '$lib/components/work/WorkComposer.svelte';
++  import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
++  import { listInboxChores } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++  import { cn } from '$lib/utils';
++
++  type Filter = 'open' | 'draft' | 'ready' | 'in_progress' | 'completed';
++  let filter = $state<Filter>('open');
++
++  const inbox = createQuery(() => ({
++    queryKey: queryKeys.work.inbox,
++    queryFn: listInboxChores
++  }));
++
++  const filtered = $derived(
++    (inbox.data?.items ?? [])
++      .filter((item) => {
++        if (filter === 'open') return !['completed', 'cancelled', 'archived'].includes(item.status);
++        return item.status === filter;
++      })
++      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
++  );
++
++  const filters: { value: Filter; label: string }[] = [
++    { value: 'open', label: 'Open' },
++    { value: 'draft', label: 'Draft' },
++    { value: 'ready', label: 'Ready' },
++    { value: 'in_progress', label: 'In progress' },
++    { value: 'completed', label: 'Completed' }
++  ];
++</script>
++
+ <svelte:head><title>Inbox — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:px-14 lg:py-16"><h1 class="tk-display text-5xl font-black">Inbox</h1><p class="mt-4 max-w-2xl text-lg leading-8 text-tk-graphite">Everything captured but not yet shaped into executable work.</p><div class="mt-12 rounded-[16px] border border-dashed border-tk-mist bg-white/60 p-10 text-sm text-tk-graphite">Route foundation is in place. This screen is scheduled for the next development rounds.</div></div>
+\ No newline at end of file
++
++<div class="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <header class="flex flex-wrap items-end justify-between gap-5">
++    <div>
++      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite">
++        <TrayIcon size={15} /> Unsorted capture
++      </div>
++      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Inbox</h1>
++      <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">A holding area, not a guilt wall. Capture first; decide where it belongs when you have the context.</p>
++    </div>
++    <div class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5 text-sm text-tk-graphite">{inbox.data?.items.length ?? 0} root chores</div>
++  </header>
++
++  <div class="mt-9 max-w-3xl">
++    <WorkComposer compact label="Capture" />
++  </div>
++
++  <div class="mt-10 flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-4">
++    <FunnelSimpleIcon size={16} class="mr-1 text-tk-graphite" />
++    {#each filters as option}
++      <button
++        type="button"
++        class={cn(
++          'rounded-full px-3 py-1.5 text-xs font-bold transition',
++          filter === option.value ? 'bg-tk-ink text-white' : 'bg-white/65 text-tk-graphite hover:bg-white hover:text-tk-ink'
++        )}
++        onclick={() => (filter = option.value)}
++      >
++        {option.label}
++      </button>
++    {/each}
++  </div>
++
++  <section class="mt-5">
++    {#if inbox.isPending}
++      <div class="space-y-2">
++        {#each Array(5) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}
++      </div>
++    {:else if inbox.isError}
++      <p class="py-10 text-sm text-red-700">Couldn’t load Inbox.</p>
++    {:else if filtered.length === 0}
++      <div class="rounded-[20px] border border-dashed border-[var(--border)] bg-white/45 p-12 text-center">
++        <p class="text-lg font-bold">Nothing in this view.</p>
++        <p class="mt-2 text-sm text-tk-graphite">Capture something above or switch filters.</p>
++      </div>
++    {:else}
++      <div class="rounded-[20px] border border-[var(--border)] bg-white/72 px-4 sm:px-5">
++        {#each filtered as item}
++          <WorkItemRow {item} />
++        {/each}
++      </div>
++    {/if}
++  </section>
++</div>
+diff --git a/src/routes/(app)/projects/+page.svelte b/src/routes/(app)/projects/+page.svelte
+index 9c985ba..142d7bc 100644
+--- a/src/routes/(app)/projects/+page.svelte
++++ b/src/routes/(app)/projects/+page.svelte
+@@ -1,2 +1,62 @@
++<script lang="ts">
++  import { createQuery } from '@tanstack/svelte-query';
++  import FolderSimpleIcon from 'phosphor-svelte/lib/FolderSimpleIcon';
++  import WorkComposer from '$lib/components/work/WorkComposer.svelte';
++  import ProjectCard from '$lib/components/work/ProjectCard.svelte';
++  import { listProjects } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++
++  const projects = createQuery(() => ({
++    queryKey: queryKeys.work.projects,
++    queryFn: listProjects
++  }));
++
++  const visible = $derived(
++    (projects.data?.items ?? [])
++      .filter((item) => !['archived', 'cancelled'].includes(item.status))
++      .sort((a, b) => {
++        const rank = { in_progress: 0, ready: 1, draft: 2, completed: 3 } as Record<string, number>;
++        return (rank[a.status] ?? 4) - (rank[b.status] ?? 4) || Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
++      })
++  );
++</script>
++
+ <svelte:head><title>Projects — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:px-14 lg:py-16"><h1 class="tk-display text-5xl font-black">Projects</h1><p class="mt-4 max-w-2xl text-lg leading-8 text-tk-graphite">Projects group Sprints and Chores. We build the hierarchy workspace next.</p><div class="mt-12 rounded-[16px] border border-dashed border-tk-mist bg-white/60 p-10 text-sm text-tk-graphite">Route foundation is in place. This screen is scheduled for the next development rounds.</div></div>
+\ No newline at end of file
++
++<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <header class="flex flex-wrap items-end justify-between gap-6">
++    <div>
++      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite">
++        <FolderSimpleIcon size={15} weight="fill" class="text-tk-blue" /> Outcomes with structure
++      </div>
++      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Projects</h1>
++      <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">Projects hold Sprints and direct Chores. The workspace stays oriented around the next actionable descendant.</p>
++    </div>
++    <div class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5 text-sm text-tk-graphite">{visible.length} visible</div>
++  </header>
++
++  <div class="mt-9 max-w-3xl">
++    <WorkComposer defaultKind="project" allowedKinds={['project']} compact label="New project" />
++  </div>
++
++  <section class="mt-10">
++    {#if projects.isPending}
++      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
++        {#each Array(6) as _}<div class="h-64 animate-pulse rounded-[22px] bg-black/[0.045]"></div>{/each}
++      </div>
++    {:else if projects.isError}
++      <p class="py-10 text-sm text-red-700">Couldn’t load projects.</p>
++    {:else if visible.length === 0}
++      <div class="rounded-[22px] border border-dashed border-[var(--border)] bg-white/45 p-14 text-center">
++        <p class="text-xl font-bold">No projects yet.</p>
++        <p class="mt-2 text-sm text-tk-graphite">Create an outcome above, then break it into a Sprint or direct Chore.</p>
++      </div>
++    {:else}
++      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
++        {#each visible as project}
++          <ProjectCard {project} />
++        {/each}
++      </div>
++    {/if}
++  </section>
++</div>
+diff --git a/src/routes/(app)/settings/+page.svelte b/src/routes/(app)/settings/+page.svelte
+index ce79d89..31f5e91 100644
+--- a/src/routes/(app)/settings/+page.svelte
++++ b/src/routes/(app)/settings/+page.svelte
+@@ -1,2 +1,14 @@
++<script lang="ts">
++  import GearSixIcon from 'phosphor-svelte/lib/GearSixIcon';
++</script>
++
+ <svelte:head><title>Settings — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:px-14 lg:py-16"><h1 class="tk-display text-5xl font-black">Settings</h1><p class="mt-4 max-w-2xl text-lg leading-8 text-tk-graphite">Profile, preferences, devices, exports and privacy controls will live here.</p><div class="mt-12 rounded-[16px] border border-dashed border-tk-mist bg-white/60 p-10 text-sm text-tk-graphite">Route foundation is in place. This screen is scheduled for the next development rounds.</div></div>
+\ No newline at end of file
++<div class="mx-auto max-w-[1000px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><GearSixIcon size={15} /> Account & behavior</div>
++  <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Settings</h1>
++  <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">Profile, preferences, device sessions, exports and privacy controls are reserved for Round 6. The authenticated shell already carries the real profile after refresh bootstrap.</p>
++  <div class="mt-10 rounded-[22px] border border-[var(--border)] bg-white/65 p-6">
++    <p class="text-sm font-bold">Nothing here is needed to manage work in Round 2.</p>
++    <p class="mt-2 text-sm leading-6 text-tk-graphite">Preferences will remain defaults rather than hidden mandatory behavior when this screen becomes active.</p>
++  </div>
++</div>
+diff --git a/src/routes/(app)/today/+page.svelte b/src/routes/(app)/today/+page.svelte
+index 1168acf..9848f55 100644
+--- a/src/routes/(app)/today/+page.svelte
++++ b/src/routes/(app)/today/+page.svelte
+@@ -1,18 +1,18 @@
+ <script lang="ts">
+   import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
++  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
+   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
+-  import CircleIcon from 'phosphor-svelte/lib/CircleIcon';
++  import SparkleIcon from 'phosphor-svelte/lib/SparkleIcon';
+   import Button from '$lib/components/ui/Button.svelte';
+   import Input from '$lib/components/ui/Input.svelte';
+   import ActiveSessionCard from '$lib/components/execution/ActiveSessionCard.svelte';
++  import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
+   import { listChores, quickCaptureChore } from '$lib/api/work';
+   import { getActiveSession } from '$lib/api/execution';
+   import { queryKeys } from '$lib/api/query-keys';
+-  import { formatDuration } from '$lib/utils';
+ 
+   const queryClient = useQueryClient();
+   let quickName = $state('');
+-  let captureOpen = $state(false);
+ 
+   const chores = createQuery(() => ({
+     queryKey: queryKeys.work.chores,
+@@ -26,22 +26,39 @@
+   const capture = createMutation(() => ({
+     mutationFn: quickCaptureChore,
+     onSuccess: async () => {
+-      quickName = ''; captureOpen = false;
++      quickName = '';
+       await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
+     }
+   }));
+ 
+-  const visibleChores = $derived(
+-    (chores.data?.items ?? [])
+-      .filter((item) => !['completed', 'cancelled', 'archived'].includes(item.status))
++  const openChores = $derived(
++    (chores.data?.items ?? []).filter((item) => !['completed', 'cancelled', 'archived'].includes(item.status))
++  );
++  const nextWork = $derived(
++    [...openChores]
+       .sort((a, b) => {
+         const rank = { in_progress: 0, ready: 1, draft: 2 } as Record<string, number>;
+-        return (rank[a.status] ?? 3) - (rank[b.status] ?? 3) || (b.priority ?? 0) - (a.priority ?? 0);
++        return (
++          (rank[a.status] ?? 3) - (rank[b.status] ?? 3) ||
++          (b.priority ?? 0) - (a.priority ?? 0) ||
++          a.position - b.position
++        );
+       })
+-      .slice(0, 6)
++      .slice(0, 7)
+   );
++  const plannedSoon = $derived(
++    openChores
++      .filter((item) => item.plannedStartAt || item.deadlineAt)
++      .sort((a, b) => {
++        const aa = Date.parse(a.plannedStartAt || a.deadlineAt || '9999-12-31');
++        const bb = Date.parse(b.plannedStartAt || b.deadlineAt || '9999-12-31');
++        return aa - bb;
++      })
++      .slice(0, 3)
++  );
++  const inboxCount = $derived(openChores.filter((item) => item.parentId === null).length);
+ 
+-  async function submitQuickCapture(event: SubmitEvent) {
++  function submitQuickCapture(event: SubmitEvent) {
+     event.preventDefault();
+     const name = quickName.trim();
+     if (name) capture.mutate(name);
+@@ -49,49 +66,99 @@
+ </script>
+ 
+ <svelte:head><title>Today — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-[1160px] px-5 py-7 sm:px-8 lg:px-14 lg:py-14">
+-  <header class="flex items-start justify-between gap-6">
+-    <div><h1 class="tk-display text-5xl font-black sm:text-6xl">Today</h1><p class="mt-2 text-base text-tk-graphite sm:text-lg">Choose the next executable piece of work.</p></div>
+-    <Button class="hidden min-w-48 sm:inline-flex" size="lg" onclick={() => (captureOpen = !captureOpen)}><PlusIcon size={20} weight="bold" /> Create task</Button>
++
++<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <header class="flex flex-wrap items-end justify-between gap-6">
++    <div>
++      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite">
++        <SparkleIcon size={15} class="text-tk-strike" /> Execution runway
++      </div>
++      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Today</h1>
++      <p class="mt-3 max-w-xl text-base leading-7 text-tk-graphite">Keep the queue small. Pick something executable, then disappear into the work.</p>
++    </div>
++    <div class="flex items-center gap-2 text-sm text-tk-graphite">
++      <span class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5">{openChores.length} open chores</span>
++      <span class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5">{inboxCount} unfiled</span>
++    </div>
+   </header>
+ 
+-  {#if captureOpen}
+-    <form class="mt-8 flex max-w-2xl gap-2 rounded-[14px] border border-tk-mist bg-white p-2" onsubmit={submitQuickCapture}>
+-      <Input class="border-0 bg-transparent focus:ring-0" placeholder="What needs to be done?" bind:value={quickName} autofocus />
+-      <Button type="submit" disabled={capture.isPending || !quickName.trim()}>{capture.isPending ? 'Saving…' : 'Add to Inbox'}</Button>
+-    </form>
++  {#if active.data?.session}
++    <div class="mt-9">
++      <ActiveSessionCard session={active.data.session} />
++    </div>
+   {/if}
+ 
+-  <div class="mt-12 grid gap-10 xl:grid-cols-[minmax(0,1fr)_342px]">
+-    <section>
+-      <div class="flex items-center justify-between border-b border-tk-mist pb-4"><h2 class="text-xl font-bold">Next work</h2><span class="text-sm text-tk-graphite">{visibleChores.length} shown</span></div>
++  <form class="mt-9 flex max-w-3xl gap-2 rounded-[17px] border border-[var(--border)] bg-white/86 p-2 shadow-[0_12px_35px_rgb(23_23_23/0.045)] backdrop-blur" onsubmit={submitQuickCapture}>
++    <Input class="border-transparent bg-transparent focus:border-transparent" placeholder="Capture a chore without breaking your flow…" bind:value={quickName} aria-label="Quick capture chore" />
++    <Button type="submit" disabled={capture.isPending || !quickName.trim()}>
++      <PlusIcon size={17} weight="bold" />
++      <span class="hidden sm:inline">{capture.isPending ? 'Saving…' : 'Capture'}</span>
++    </Button>
++  </form>
++
++  <div class="mt-11 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
++    <section class="min-w-0">
++      <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
++        <div>
++          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Do next</p>
++          <h2 class="mt-1 text-xl font-bold">Executable work</h2>
++        </div>
++        <a href="/inbox" class="flex items-center gap-1 text-sm font-bold text-tk-graphite hover:text-tk-ink">Full inbox <ArrowRightIcon size={15} /></a>
++      </div>
++
+       {#if chores.isPending}
+-        <div class="space-y-4 py-6">{#each Array(3) as _}<div class="h-20 animate-pulse rounded-[12px] bg-tk-mist/50"></div>{/each}</div>
++        <div class="space-y-2 py-5">
++          {#each Array(4) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}
++        </div>
+       {:else if chores.isError}
+-        <p class="py-8 text-sm text-red-700">Couldn’t load your work. Check the API URL/CORS and retry.</p>
+-      {:else if visibleChores.length === 0}
+-        <div class="py-14 text-center"><p class="text-lg font-semibold">Nothing queued yet.</p><p class="mt-2 text-sm text-tk-graphite">Capture a Chore now; advanced fields can wait.</p><Button class="mt-6 sm:hidden" onclick={() => (captureOpen = true)}><PlusIcon size={18} /> Create task</Button></div>
++        <div class="py-10 text-sm text-red-700">Couldn’t load your work. Check the API URL and CORS configuration.</div>
++      {:else if nextWork.length === 0}
++        <div class="rounded-[18px] border border-dashed border-[var(--border)] bg-white/45 py-14 text-center">
++          <p class="text-lg font-bold">The runway is clear.</p>
++          <p class="mt-2 text-sm text-tk-graphite">Capture one Chore above. A name is enough.</p>
++        </div>
+       {:else}
+-        <div>
+-          {#each visibleChores as item}
+-            <a href={`/work/${item.id}`} class="grid grid-cols-[28px_1fr_auto] items-center gap-4 border-b border-tk-mist py-5 transition hover:bg-white/50 sm:px-1">
+-              <CircleIcon size={24} class="text-tk-graphite" />
+-              <div class="min-w-0"><p class="truncate font-semibold">{item.name}</p><p class="mt-1 text-sm capitalize text-tk-graphite">{item.status.replace('_', ' ')}</p></div>
+-              <span class="tk-mono text-sm text-tk-graphite">{formatDuration(item.estimatedEffortSeconds)}</span>
+-            </a>
++        <div class="rounded-[18px] border border-[var(--border)] bg-white/72 px-4 sm:px-5">
++          {#each nextWork as item}
++            <WorkItemRow {item} />
+           {/each}
+         </div>
+       {/if}
+-
+-      <section class="mt-14"><h2 class="mb-5 text-xl font-bold">Focus plan</h2><div class="grid gap-3 sm:grid-cols-3"><div class="rounded-[12px] border border-tk-mist bg-white p-5"><b>Work</b><p class="tk-mono mt-3 text-sm text-tk-graphite">45m</p></div><div class="rounded-[12px] border border-tk-mist bg-white p-5"><b>Break</b><p class="tk-mono mt-3 text-sm text-tk-graphite">8m</p></div><div class="rounded-[12px] border border-tk-mist bg-white p-5"><b>Review</b><p class="tk-mono mt-3 text-sm text-tk-graphite">5m</p></div></div></section>
+     </section>
+ 
+-    <aside>
+-      {#if active.isPending}<div class="h-[360px] animate-pulse rounded-[18px] bg-tk-ink/90"></div>
+-      {:else if active.data?.session}<ActiveSessionCard session={active.data.session} />
+-      {:else}<div class="rounded-[18px] border border-tk-mist bg-white p-8"><p class="text-sm font-semibold text-tk-graphite">No active session</p><h2 class="tk-display mt-4 text-2xl font-bold">Pick the next thing and start deliberately.</h2><p class="mt-4 text-sm leading-6 text-tk-graphite">Plan & Start arrives in Round 3. The active-session client is already wired to the backend.</p></div>{/if}
++    <aside class="space-y-4">
++      {#if !active.data?.session}
++        <div class="overflow-hidden rounded-[20px] bg-tk-ink p-6 text-white">
++          <div class="mb-10 flex size-10 items-center justify-center rounded-[12px] bg-white/10 text-tk-strike">
++            <SparkleIcon size={20} weight="fill" />
++          </div>
++          <p class="text-xs font-bold uppercase tracking-[0.12em] text-white/45">No active session</p>
++          <h2 class="tk-display mt-3 text-2xl font-bold leading-tight">Choose the next thing before choosing the timer.</h2>
++          <p class="mt-4 text-sm leading-6 text-white/55">Plan & Start lands in Round 3. The session client already reconstructs active server state.</p>
++        </div>
++      {/if}
++
++      <div class="rounded-[20px] border border-[var(--border)] bg-white/72 p-5">
++        <div class="flex items-center justify-between">
++          <div>
++            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Calendar pressure</p>
++            <h2 class="mt-1 font-bold">Coming up</h2>
++          </div>
++          <a href="/projects" class="text-xs font-bold text-tk-graphite hover:text-tk-ink">Projects</a>
++        </div>
++        {#if plannedSoon.length}
++          <div class="mt-4 space-y-2">
++            {#each plannedSoon as item}
++              <a href={`/work/${item.id}`} class="block rounded-[13px] bg-[#efefeb] p-3 hover:bg-[#e9e9e3]">
++                <p class="truncate text-sm font-bold">{item.name}</p>
++                <p class="mt-1 text-xs text-tk-graphite">{item.plannedStartAt ? 'Planned' : 'Deadline'} · {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(item.plannedStartAt || item.deadlineAt || ''))}</p>
++              </a>
++            {/each}
++          </div>
++        {:else}
++          <p class="mt-4 text-sm leading-6 text-tk-graphite">No planned starts or deadlines in the current queue.</p>
++        {/if}
++      </div>
+     </aside>
+   </div>
+-
+-  <Button class="fixed bottom-20 right-5 rounded-full shadow-lg sm:hidden" size="lg" onclick={() => (captureOpen = true)}><PlusIcon size={20} /> Task</Button>
+ </div>
+diff --git a/src/routes/(app)/work/[id]/+page.svelte b/src/routes/(app)/work/[id]/+page.svelte
+index 351d9a9..4a76c5c 100644
+--- a/src/routes/(app)/work/[id]/+page.svelte
++++ b/src/routes/(app)/work/[id]/+page.svelte
+@@ -1,5 +1,232 @@
+ <script lang="ts">
+   import { page } from '$app/state';
++  import { goto } from '$app/navigation';
++  import { createQuery, useQueryClient } from '@tanstack/svelte-query';
++  import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
++  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
++  import TrashIcon from 'phosphor-svelte/lib/TrashIcon';
++  import LightningIcon from 'phosphor-svelte/lib/LightningIcon';
++  import TreeStructureIcon from 'phosphor-svelte/lib/TreeStructureIcon';
++  import Button from '$lib/components/ui/Button.svelte';
++  import Badge from '$lib/components/ui/Badge.svelte';
++  import WorkComposer from '$lib/components/work/WorkComposer.svelte';
++  import WorkEditor from '$lib/components/work/WorkEditor.svelte';
++  import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
++  import KindMark from '$lib/components/work/KindMark.svelte';
++  import StatusBadge from '$lib/components/work/StatusBadge.svelte';
++  import {
++    deleteWorkItem,
++    flattenWorkTree,
++    getProjectNextAction,
++    getWorkItem,
++    getWorkItemTree,
++    reorderWorkItem,
++    WorkConflictError,
++    type WorkItem,
++    type WorkItemKind
++  } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++  import { problemMessage } from '$lib/api/problem';
++  import { formatDate, formatDuration, kindLabel } from '$lib/utils';
++
++  const id = page.params.id;
++  const queryClient = useQueryClient();
++  let actionError = $state('');
++  let movingId = $state<string | null>(null);
++  let deleting = $state(false);
++
++  const detail = createQuery(() => ({
++    queryKey: queryKeys.work.detail(id),
++    queryFn: () => getWorkItem(id)
++  }));
++
++  const tree = createQuery(() => ({
++    queryKey: queryKeys.work.tree(id),
++    queryFn: () => getWorkItemTree(id),
++    enabled: Boolean(detail.data?.item && detail.data.item.kind !== 'chore')
++  }));
++
++  const nextAction = createQuery(() => ({
++    queryKey: queryKeys.work.nextAction(id),
++    queryFn: () => getProjectNextAction(id),
++    enabled: detail.data?.item.kind === 'project'
++  }));
++
++  const item = $derived(detail.data?.item ?? null);
++  const rows = $derived(tree.data ? flattenWorkTree(tree.data).slice(1) : []);
++  const directChildren = $derived(tree.data?.children ?? []);
++  const backHref = $derived(
++    item?.parentId ? `/work/${item.parentId}` : item?.kind === 'project' ? '/projects' : '/inbox'
++  );
++  const childKinds = $derived<WorkItemKind[]>(
++    item?.kind === 'project' ? ['sprint', 'chore'] : item?.kind === 'sprint' ? ['chore'] : []
++  );
++
++  async function refreshWork() {
++    await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
++  }
++
++  async function moveChild(child: WorkItem, index: number, direction: -1 | 1) {
++    const sibling = directChildren[index + direction];
++    if (!sibling) return;
++    movingId = child.id;
++    actionError = '';
++    try {
++      const current = await getWorkItem(child.id);
++      await reorderWorkItem(
++        child.id,
++        direction < 0 ? { beforeId: sibling.id } : { afterId: sibling.id },
++        current.etag
++      );
++      await refreshWork();
++    } catch (cause) {
++      actionError = cause instanceof WorkConflictError
++        ? 'The order changed on another client. The latest hierarchy has been loaded; try again.'
++        : problemMessage(cause, 'Could not reorder this item.');
++      await refreshWork();
++    } finally {
++      movingId = null;
++    }
++  }
++
++  async function removeItem() {
++    if (!item || !confirm(`Delete “${item.name}”? This uses Taskiller’s normal soft-delete rules.`)) return;
++    deleting = true;
++    actionError = '';
++    try {
++      await deleteWorkItem(item.id, detail.data?.etag);
++      await refreshWork();
++      await goto(backHref);
++    } catch (cause) {
++      actionError = cause instanceof WorkConflictError
++        ? 'This item changed elsewhere. Reload the latest version before deleting.'
++        : problemMessage(cause, 'Could not delete this item.');
++      await detail.refetch();
++    } finally {
++      deleting = false;
++    }
++  }
+ </script>
+-<svelte:head><title>Work item — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-4xl px-5 py-10 sm:px-8 lg:px-14 lg:py-16"><a href="/today" class="text-sm font-semibold text-tk-graphite">← Today</a><h1 class="tk-display mt-7 text-4xl font-black">Work item</h1><p class="mt-3 text-tk-graphite">Detail route wired for <span class="tk-mono text-xs">{page.params.id}</span>. Full edit + Plan & Start comes in Round 2/3.</p></div>
++
++<svelte:head><title>{item?.name || 'Work item'} — Taskiller</title></svelte:head>
++
++<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  {#if detail.isPending}
++    <div class="space-y-5">
++      <div class="h-8 w-32 animate-pulse rounded bg-black/[0.05]"></div>
++      <div class="h-20 max-w-2xl animate-pulse rounded-[18px] bg-black/[0.05]"></div>
++      <div class="grid gap-7 lg:grid-cols-[minmax(0,1fr)_350px]"><div class="h-96 animate-pulse rounded-[20px] bg-black/[0.05]"></div><div class="h-96 animate-pulse rounded-[20px] bg-black/[0.05]"></div></div>
++    </div>
++  {:else if detail.isError || !item}
++    <a href="/today" class="inline-flex items-center gap-2 text-sm font-bold text-tk-graphite"><ArrowLeftIcon size={16} /> Today</a>
++    <div class="mt-8 rounded-[20px] border border-red-200 bg-red-50 p-6 text-red-800">Couldn’t load this work item.</div>
++  {:else}
++    <a href={backHref} class="inline-flex items-center gap-2 rounded-lg py-1 text-sm font-bold text-tk-graphite hover:text-tk-ink">
++      <ArrowLeftIcon size={16} /> Back
++    </a>
++
++    <header class="mt-6 flex flex-wrap items-start justify-between gap-6 border-b border-[var(--border)] pb-8">
++      <div class="flex min-w-0 items-start gap-4">
++        <KindMark kind={item.kind} class="mt-1 size-11" />
++        <div class="min-w-0">
++          <div class="flex flex-wrap items-center gap-2.5">
++            <Badge tone={item.kind === 'project' ? 'blue' : item.kind === 'sprint' ? 'neutral' : 'accent'}>{kindLabel(item.kind)}</Badge>
++            <StatusBadge status={item.status} />
++          </div>
++          <h1 class="tk-display mt-3 max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl">{item.name}</h1>
++          {#if item.description}<p class="mt-4 max-w-3xl whitespace-pre-wrap text-base leading-7 text-tk-graphite">{item.description}</p>{/if}
++        </div>
++      </div>
++      <Button variant="ghost" class="text-red-700 hover:bg-red-50" disabled={deleting} onclick={removeItem}>
++        <TrashIcon size={17} /> {deleting ? 'Deleting…' : 'Delete'}
++      </Button>
++    </header>
++
++    {#if actionError}<div class="mt-5 rounded-[14px] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">{actionError}</div>{/if}
++
++    <div class="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_350px]">
++      <main class="min-w-0 space-y-7">
++        {#if item.kind === 'project'}
++          <section class="relative overflow-hidden rounded-[22px] bg-tk-ink p-6 text-white sm:p-7">
++            <div class="absolute -right-16 -top-16 size-48 rounded-full bg-tk-blue/20 blur-3xl"></div>
++            <div class="relative flex flex-wrap items-end justify-between gap-5">
++              <div>
++                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-white/45"><LightningIcon size={15} class="text-tk-strike" /> Next actionable work</div>
++                {#if nextAction.isPending}
++                  <div class="mt-5 h-8 w-56 animate-pulse rounded bg-white/10"></div>
++                {:else if nextAction.data?.nextAction}
++                  <h2 class="tk-display mt-4 text-2xl font-bold sm:text-3xl">{nextAction.data.nextAction.name}</h2>
++                  <p class="mt-2 text-sm text-white/50">{kindLabel(nextAction.data.nextAction.kind)} · {nextAction.data.nextAction.status.replace('_', ' ')}</p>
++                {:else}
++                  <h2 class="tk-display mt-4 text-2xl font-bold">Nothing executable right now.</h2>
++                  <p class="mt-2 text-sm text-white/50">Add or reactivate a Sprint or Chore below.</p>
++                {/if}
++              </div>
++              {#if nextAction.data?.nextAction}
++                <a href={`/work/${nextAction.data.nextAction.id}`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-white px-4 text-sm font-bold text-tk-ink">Open next <ArrowRightIcon size={16} /></a>
++              {/if}
++            </div>
++          </section>
++        {/if}
++
++        {#if item.kind !== 'chore'}
++          <section>
++            <div class="flex flex-wrap items-end justify-between gap-4">
++              <div>
++                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-tk-graphite"><TreeStructureIcon size={15} /> Hierarchy</div>
++                <h2 class="mt-1 text-xl font-bold">{item.kind === 'project' ? 'Sprints & chores' : 'Sprint chores'}</h2>
++              </div>
++              <span class="text-sm text-tk-graphite">{rows.length} descendants</span>
++            </div>
++
++            <div class="mt-4">
++              <WorkComposer parentId={item.id} defaultKind={childKinds[0] ?? 'chore'} allowedKinds={childKinds} compact label="Add" />
++            </div>
++
++            {#if tree.isPending}
++              <div class="mt-5 space-y-2">{#each Array(4) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}</div>
++            {:else if rows.length === 0}
++              <div class="mt-5 rounded-[20px] border border-dashed border-[var(--border)] bg-white/45 p-10 text-center text-sm text-tk-graphite">No children yet. Add the next layer above.</div>
++            {:else}
++              <div class="mt-5 rounded-[20px] border border-[var(--border)] bg-white/72 px-4 sm:px-5">
++                {#each rows as row}
++                  {@const directIndex = row.depth === 1 ? directChildren.findIndex((child) => child.id === row.item.id) : -1}
++                  <div class:opacity-50={movingId === row.item.id}>
++                    <WorkItemRow
++                      item={row.item}
++                      depth={Math.max(0, row.depth - 1)}
++                      canMoveUp={directIndex > 0}
++                      canMoveDown={directIndex >= 0 && directIndex < directChildren.length - 1}
++                      onmoveup={directIndex >= 0 ? () => moveChild(row.item, directIndex, -1) : undefined}
++                      onmovedown={directIndex >= 0 ? () => moveChild(row.item, directIndex, 1) : undefined}
++                    />
++                  </div>
++                {/each}
++              </div>
++            {/if}
++            <p class="mt-3 text-xs leading-5 text-tk-graphite">Direct children have explicit up/down controls so reordering never depends on drag-and-drop. Nested descendants keep their own parent’s order.</p>
++          </section>
++        {:else}
++          <section class="rounded-[20px] border border-[var(--border)] bg-white/68 p-6">
++            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Execution</p>
++            <h2 class="tk-display mt-2 text-2xl font-bold">This Chore is an executable unit.</h2>
++            <p class="mt-3 max-w-xl text-sm leading-6 text-tk-graphite">Round 3 connects this workspace to recommendation generation, editable Focus Plans, and Start Session.</p>
++          </section>
++        {/if}
++      </main>
++
++      <aside class="space-y-4">
++        <WorkEditor item={item} etag={detail.data?.etag ?? null} onupdated={() => detail.refetch()} />
++        <section class="rounded-[20px] border border-[var(--border)] bg-white/70 p-5">
++          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">At a glance</p>
++          <dl class="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-sm">
++            <div><dt class="text-xs text-tk-graphite">Estimate</dt><dd class="tk-mono mt-1 font-semibold">{formatDuration(item.estimatedEffortSeconds)}</dd></div>
++            <div><dt class="text-xs text-tk-graphite">Priority</dt><dd class="mt-1 font-semibold">{item.priority ?? '—'}</dd></div>
++            <div><dt class="text-xs text-tk-graphite">Planned</dt><dd class="mt-1 font-semibold">{formatDate(item.plannedStartAt)}</dd></div>
++            <div><dt class="text-xs text-tk-graphite">Deadline</dt><dd class="mt-1 font-semibold">{formatDate(item.deadlineAt)}</dd></div>
++          </dl>
++        </section>
++      </aside>
++    </div>
++  {/if}
++</div>
+diff --git a/src/routes/+layout.svelte b/src/routes/+layout.svelte
+index 5bef9f2..0cdd133 100644
+--- a/src/routes/+layout.svelte
++++ b/src/routes/+layout.svelte
+@@ -11,7 +11,7 @@
+ </script>
+ 
+ <svelte:head>
+-  <meta name="theme-color" content="#111214" />
++  <meta name="theme-color" content="#f5f5f2" />
+   <link rel="icon" href="/favicon.svg" />
+   <link rel="manifest" href="/site.webmanifest" />
+ </svelte:head>
+diff --git a/src/routes/+page.svelte b/src/routes/+page.svelte
+index d72b091..14a73bc 100644
+--- a/src/routes/+page.svelte
++++ b/src/routes/+page.svelte
+@@ -1,34 +1,68 @@
+ <script lang="ts">
++  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
++  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
++  import FolderNotchOpenIcon from 'phosphor-svelte/lib/FolderNotchOpenIcon';
++  import LightningIcon from 'phosphor-svelte/lib/LightningIcon';
++  import StackIcon from 'phosphor-svelte/lib/StackIcon';
+   import Logo from '$lib/components/brand/Logo.svelte';
+   import Button from '$lib/components/ui/Button.svelte';
+ </script>
+ 
+-<svelte:head><title>Taskiller — Plan it. Focus. Finish.</title></svelte:head>
++<svelte:head><title>Taskiller — Turn plans into finished work</title></svelte:head>
+ 
+-<div class="min-h-screen bg-tk-paper">
+-  <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
+-    <Logo class="h-7 w-auto" />
+-    <div class="flex items-center gap-2">
++<div class="min-h-screen overflow-hidden">
++  <header class="mx-auto flex max-w-[1240px] items-center justify-between px-5 py-6 sm:px-8">
++    <Logo class="h-6 w-auto" />
++    <div class="flex items-center gap-1 sm:gap-2">
+       <a href="/login"><Button variant="ghost">Log in</Button></a>
+-      <a href="/register"><Button>Get started</Button></a>
++      <a href="/register"><Button>Start working</Button></a>
+     </div>
+   </header>
+-  <main class="mx-auto grid max-w-6xl items-center gap-16 px-6 pb-24 pt-20 lg:grid-cols-[1.1fr_.9fr] lg:pt-28">
+-    <section>
+-      <p class="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-tk-strike">Execution, not backlog worship</p>
+-      <h1 class="tk-display max-w-3xl text-6xl font-black leading-[0.96] sm:text-7xl">Plan it.<br />Focus.<br />Finish.</h1>
+-      <p class="mt-8 max-w-xl text-lg leading-8 text-tk-graphite">Taskiller turns projects, sprints and chores into focused execution sessions—without pretending there is one scientifically perfect timer.</p>
+-      <div class="mt-10 flex flex-wrap gap-3">
+-        <a href="/register"><Button size="lg">Create your account</Button></a>
+-        <a href="/login"><Button size="lg" variant="secondary">Log in</Button></a>
++
++  <main>
++    <section class="mx-auto grid max-w-[1240px] gap-14 px-5 pb-24 pt-14 sm:px-8 lg:grid-cols-[1.04fr_.96fr] lg:items-center lg:pb-32 lg:pt-24">
++      <div>
++        <div class="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white/75 px-3 py-1.5 text-xs font-bold text-tk-graphite">
++          <span class="size-2 rounded-full bg-tk-strike"></span>
++          From backlog to executable work
++        </div>
++        <h1 class="tk-display mt-7 max-w-3xl text-6xl font-extrabold leading-[0.94] sm:text-7xl lg:text-[5.4rem]">
++          Make the next move obvious.
++        </h1>
++        <p class="mt-7 max-w-xl text-lg leading-8 text-tk-graphite">Taskiller turns messy Projects into Sprints, Chores, and focused execution sessions—without forcing you into one productivity ritual.</p>
++        <div class="mt-9 flex flex-wrap gap-3">
++          <a href="/register"><Button size="lg">Create your workspace <ArrowRightIcon size={17} /></Button></a>
++          <a href="/login"><Button size="lg" variant="secondary">I already have an account</Button></a>
++        </div>
++      </div>
++
++      <div class="relative min-h-[480px]">
++        <div class="absolute inset-x-4 top-3 rotate-[-2deg] rounded-[26px] border border-[var(--border)] bg-white/75 p-6 shadow-[0_24px_70px_rgb(23_23_23/0.08)] sm:inset-x-12">
++          <div class="flex items-center justify-between">
++            <div class="flex items-center gap-3"><span class="grid size-10 place-items-center rounded-[12px] bg-tk-blue/10 text-tk-blue"><FolderNotchOpenIcon size={20} weight="fill" /></span><div><p class="text-xs font-bold uppercase tracking-[0.1em] text-tk-graphite">Project</p><p class="font-bold">Launch Taskiller</p></div></div>
++            <span class="rounded-full bg-black/[0.05] px-2.5 py-1 text-[10px] font-bold text-tk-graphite">IN PROGRESS</span>
++          </div>
++          <div class="ml-5 mt-5 border-l border-[var(--border)] pl-5">
++            <div class="flex items-center gap-3 rounded-[14px] bg-[#f1f1ed] p-3"><StackIcon size={18} class="text-violet-600" weight="fill" /><div><p class="text-xs text-tk-graphite">Sprint</p><p class="text-sm font-bold">Frontend foundation</p></div></div>
++            <div class="ml-7 mt-2 flex items-center gap-3 rounded-[14px] bg-white p-3"><CheckCircleIcon size={18} class="text-tk-strike" /><div><p class="text-xs text-tk-graphite">Chore</p><p class="text-sm font-bold">Build project hierarchy</p></div></div>
++          </div>
++        </div>
++
++        <div class="absolute bottom-0 right-0 w-[78%] rotate-[2deg] rounded-[26px] bg-tk-ink p-6 text-white shadow-[0_28px_80px_rgb(23_23_23/0.18)] sm:p-7">
++          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-white/45"><LightningIcon size={15} class="text-tk-strike" weight="fill" /> Active focus</div>
++          <div class="tk-mono mt-10 text-6xl font-semibold tracking-[-0.06em]">24:18</div>
++          <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-white/12"><div class="h-full w-[68%] rounded-full bg-tk-strike"></div></div>
++          <div class="mt-4 flex items-center justify-between text-xs text-white/45"><span>Work · segment 1/3</span><span>45 min target</span></div>
++        </div>
+       </div>
+     </section>
+-    <section class="rounded-[28px] bg-tk-ink p-8 text-white shadow-none sm:p-10">
+-      <p class="text-sm font-semibold text-white/55">Focus session</p>
+-      <h2 class="tk-display mt-6 text-3xl font-bold">Ship the first Taskiller frontend</h2>
+-      <div class="tk-mono mt-16 text-7xl font-semibold">24:18</div>
+-      <div class="mt-7 h-2 overflow-hidden rounded-full bg-white/15"><div class="h-full w-[68%] rounded-full bg-tk-strike"></div></div>
+-      <div class="mt-12 border-t border-white/15 pt-5 text-sm text-white/60">Work 1 of 3 · server-authoritative state</div>
++
++    <section class="border-y border-[var(--border)] bg-white/55">
++      <div class="mx-auto grid max-w-[1240px] gap-px px-5 sm:grid-cols-3 sm:px-8">
++        <div class="py-8 sm:pr-8"><p class="text-xs font-bold uppercase tracking-[0.12em] text-tk-graphite">Capture</p><h2 class="mt-2 text-xl font-bold">A name is enough.</h2><p class="mt-2 text-sm leading-6 text-tk-graphite">Add detail later instead of turning task entry into paperwork.</p></div>
++        <div class="border-[var(--border)] py-8 sm:border-x sm:px-8"><p class="text-xs font-bold uppercase tracking-[0.12em] text-tk-graphite">Structure</p><h2 class="mt-2 text-xl font-bold">Project → Sprint → Chore.</h2><p class="mt-2 text-sm leading-6 text-tk-graphite">Enough hierarchy to plan serious work without becoming project-management theater.</p></div>
++        <div class="py-8 sm:pl-8"><p class="text-xs font-bold uppercase tracking-[0.12em] text-tk-graphite">Execute</p><h2 class="mt-2 text-xl font-bold">Server-backed focus.</h2><p class="mt-2 text-sm leading-6 text-tk-graphite">Sessions reconstruct across devices from durable timestamps and events.</p></div>
++      </div>
+     </section>
+   </main>
+ </div>
+diff --git a/src/routes/login/+page.svelte b/src/routes/login/+page.svelte
+index 2cfc238..d291948 100644
+--- a/src/routes/login/+page.svelte
++++ b/src/routes/login/+page.svelte
+@@ -1,5 +1,6 @@
+ <script lang="ts">
+   import { goto } from '$app/navigation';
++  import LightningIcon from 'phosphor-svelte/lib/LightningIcon';
+   import Button from '$lib/components/ui/Button.svelte';
+   import Input from '$lib/components/ui/Input.svelte';
+   import Logo from '$lib/components/brand/Logo.svelte';
+@@ -13,31 +14,44 @@
+ 
+   async function submit(event: SubmitEvent) {
+     event.preventDefault();
+-    loading = true; error = '';
++    loading = true;
++    error = '';
+     try {
+       await login({ email, password, deviceName: navigator.userAgent.slice(0, 200) });
+       await goto('/today');
+     } catch (cause) {
+       error = problemMessage(cause, 'Could not log in.');
+-    } finally { loading = false; }
++    } finally {
++      loading = false;
++    }
+   }
+ </script>
+ 
+ <svelte:head><title>Log in — Taskiller</title></svelte:head>
+-<div class="grid min-h-screen lg:grid-cols-2">
+-  <aside class="hidden bg-tk-ink p-12 text-white lg:flex lg:flex-col"><Logo inverse class="h-8 w-auto" /><div class="mt-auto"><p class="tk-display max-w-lg text-5xl font-black leading-tight">Get back to the work that matters.</p><p class="mt-5 text-white/55">Your refresh credential stays in an HttpOnly cookie; the access token stays in memory.</p></div></aside>
+-  <main class="flex items-center justify-center bg-tk-paper px-6 py-16">
+-    <form class="w-full max-w-md" onsubmit={submit}>
+-      <Logo class="mb-14 h-8 w-auto lg:hidden" />
+-      <h1 class="tk-display text-4xl font-extrabold">Log in</h1>
+-      <p class="mt-3 text-tk-graphite">Continue your Taskiller session.</p>
+-      <div class="mt-9 space-y-5">
++
++<div class="grid min-h-screen lg:grid-cols-[.9fr_1.1fr]">
++  <aside class="relative hidden overflow-hidden bg-tk-ink p-12 text-white lg:flex lg:flex-col">
++    <div class="absolute -left-20 top-24 size-72 rounded-full bg-tk-strike/12 blur-3xl"></div>
++    <Logo inverse class="relative h-7 w-auto" />
++    <div class="relative mt-auto max-w-lg">
++      <div class="mb-5 grid size-11 place-items-center rounded-[13px] bg-white/10 text-tk-strike"><LightningIcon size={21} weight="fill" /></div>
++      <p class="tk-display text-5xl font-extrabold leading-[1.02]">Your queue can wait. The next action can’t.</p>
++      <p class="mt-5 max-w-md text-sm leading-6 text-white/50">Return to the same server-backed work state from any client.</p>
++    </div>
++  </aside>
++  <main class="flex items-center justify-center px-6 py-16">
++    <form class="w-full max-w-md rounded-[24px] border border-[var(--border)] bg-white/76 p-6 shadow-[0_22px_60px_rgb(23_23_23/0.06)] backdrop-blur sm:p-8" onsubmit={submit}>
++      <Logo class="mb-12 h-7 w-auto lg:hidden" />
++      <p class="text-xs font-bold uppercase tracking-[0.13em] text-tk-graphite">Welcome back</p>
++      <h1 class="tk-display mt-2 text-4xl font-extrabold">Log in</h1>
++      <p class="mt-3 text-sm leading-6 text-tk-graphite">Continue from the latest server state.</p>
++      <div class="mt-8 space-y-5">
+         <label class="block text-sm font-semibold">Email<Input class="mt-2" type="email" bind:value={email} autocomplete="email" required /></label>
+         <label class="block text-sm font-semibold">Password<Input class="mt-2" type="password" bind:value={password} autocomplete="current-password" required /></label>
+       </div>
+       {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+       <Button class="mt-7 w-full" size="lg" type="submit" disabled={loading}>{loading ? 'Logging in…' : 'Log in'}</Button>
+-      <p class="mt-6 text-center text-sm text-tk-graphite">New to Taskiller? <a class="font-semibold text-tk-ink underline underline-offset-4" href="/register">Create an account</a></p>
++      <p class="mt-6 text-center text-sm text-tk-graphite">New to Taskiller? <a class="font-bold text-tk-ink underline decoration-tk-strike decoration-2 underline-offset-4" href="/register">Create an account</a></p>
+     </form>
+   </main>
+ </div>
+diff --git a/src/routes/register/+page.svelte b/src/routes/register/+page.svelte
+index 21193e1..1f760ce 100644
+--- a/src/routes/register/+page.svelte
++++ b/src/routes/register/+page.svelte
+@@ -1,44 +1,64 @@
+ <script lang="ts">
+   import { goto } from '$app/navigation';
++  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
+   import Button from '$lib/components/ui/Button.svelte';
+   import Input from '$lib/components/ui/Input.svelte';
+   import Logo from '$lib/components/brand/Logo.svelte';
+   import { register } from '$lib/auth/session';
+   import { problemMessage } from '$lib/api/problem';
+ 
+-  let displayName = $state(''); let email = $state(''); let password = $state('');
+-  let loading = $state(false); let error = $state('');
++  let displayName = $state('');
++  let email = $state('');
++  let password = $state('');
++  let loading = $state(false);
++  let error = $state('');
+ 
+   async function submit(event: SubmitEvent) {
+-    event.preventDefault(); loading = true; error = '';
++    event.preventDefault();
++    loading = true;
++    error = '';
+     try {
+       await register({
+-        email, password, displayName: displayName || null,
++        email,
++        password,
++        displayName: displayName || null,
+         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+         locale: navigator.language || 'en'
+       });
+       await goto('/today');
+-    } catch (cause) { error = problemMessage(cause, 'Could not create your account.'); }
+-    finally { loading = false; }
++    } catch (cause) {
++      error = problemMessage(cause, 'Could not create your account.');
++    } finally {
++      loading = false;
++    }
+   }
+ </script>
+ 
+ <svelte:head><title>Create account — Taskiller</title></svelte:head>
+-<div class="grid min-h-screen lg:grid-cols-2">
+-  <aside class="hidden bg-tk-ink p-12 text-white lg:flex lg:flex-col"><Logo inverse class="h-8 w-auto" /><div class="mt-auto"><p class="tk-display max-w-lg text-5xl font-black leading-tight">Capture quickly. Plan deliberately. Finish explicitly.</p></div></aside>
+-  <main class="flex items-center justify-center bg-tk-paper px-6 py-16">
+-    <form class="w-full max-w-md" onsubmit={submit}>
+-      <Logo class="mb-14 h-8 w-auto lg:hidden" />
+-      <h1 class="tk-display text-4xl font-extrabold">Create account</h1>
+-      <p class="mt-3 text-tk-graphite">We’ll use your browser timezone as the initial default.</p>
+-      <div class="mt-9 space-y-5">
++
++<div class="grid min-h-screen lg:grid-cols-[.9fr_1.1fr]">
++  <aside class="relative hidden overflow-hidden bg-[#ecece7] p-12 lg:flex lg:flex-col">
++    <Logo class="relative h-7 w-auto" />
++    <div class="relative mt-auto max-w-lg">
++      <div class="mb-5 grid size-11 place-items-center rounded-[13px] bg-white text-tk-green"><CheckCircleIcon size={21} weight="fill" /></div>
++      <p class="tk-display text-5xl font-extrabold leading-[1.02]">Capture quickly. Shape it later. Finish deliberately.</p>
++      <p class="mt-5 max-w-md text-sm leading-6 text-tk-graphite">No onboarding personality test. Taskiller can start with safe defaults and learn from real work.</p>
++    </div>
++  </aside>
++  <main class="flex items-center justify-center px-6 py-16">
++    <form class="w-full max-w-md rounded-[24px] border border-[var(--border)] bg-white/76 p-6 shadow-[0_22px_60px_rgb(23_23_23/0.06)] backdrop-blur sm:p-8" onsubmit={submit}>
++      <Logo class="mb-12 h-7 w-auto lg:hidden" />
++      <p class="text-xs font-bold uppercase tracking-[0.13em] text-tk-graphite">Start simple</p>
++      <h1 class="tk-display mt-2 text-4xl font-extrabold">Create account</h1>
++      <p class="mt-3 text-sm leading-6 text-tk-graphite">Your browser timezone becomes the initial default. You can change it later.</p>
++      <div class="mt-8 space-y-5">
+         <label class="block text-sm font-semibold">Name <span class="font-normal text-tk-graphite">(optional)</span><Input class="mt-2" bind:value={displayName} autocomplete="name" /></label>
+         <label class="block text-sm font-semibold">Email<Input class="mt-2" type="email" bind:value={email} autocomplete="email" required /></label>
+         <label class="block text-sm font-semibold">Password<Input class="mt-2" type="password" bind:value={password} autocomplete="new-password" minlength="10" required /></label>
+       </div>
+       {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+       <Button class="mt-7 w-full" size="lg" type="submit" disabled={loading}>{loading ? 'Creating…' : 'Create account'}</Button>
+-      <p class="mt-6 text-center text-sm text-tk-graphite">Already have an account? <a class="font-semibold text-tk-ink underline underline-offset-4" href="/login">Log in</a></p>
++      <p class="mt-6 text-center text-sm text-tk-graphite">Already have an account? <a class="font-bold text-tk-ink underline decoration-tk-strike decoration-2 underline-offset-4" href="/login">Log in</a></p>
+     </form>
+   </main>
+ </div>

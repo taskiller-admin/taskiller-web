@@ -1,18 +1,18 @@
 <script lang="ts">
   import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
-  import CircleIcon from 'phosphor-svelte/lib/CircleIcon';
+  import SparkleIcon from 'phosphor-svelte/lib/SparkleIcon';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import ActiveSessionCard from '$lib/components/execution/ActiveSessionCard.svelte';
+  import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
   import { listChores, quickCaptureChore } from '$lib/api/work';
   import { getActiveSession } from '$lib/api/execution';
   import { queryKeys } from '$lib/api/query-keys';
-  import { formatDuration } from '$lib/utils';
 
   const queryClient = useQueryClient();
   let quickName = $state('');
-  let captureOpen = $state(false);
 
   const chores = createQuery(() => ({
     queryKey: queryKeys.work.chores,
@@ -26,22 +26,39 @@
   const capture = createMutation(() => ({
     mutationFn: quickCaptureChore,
     onSuccess: async () => {
-      quickName = ''; captureOpen = false;
+      quickName = '';
       await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
     }
   }));
 
-  const visibleChores = $derived(
-    (chores.data?.items ?? [])
-      .filter((item) => !['completed', 'cancelled', 'archived'].includes(item.status))
+  const openChores = $derived(
+    (chores.data?.items ?? []).filter((item) => !['completed', 'cancelled', 'archived'].includes(item.status))
+  );
+  const nextWork = $derived(
+    [...openChores]
       .sort((a, b) => {
         const rank = { in_progress: 0, ready: 1, draft: 2 } as Record<string, number>;
-        return (rank[a.status] ?? 3) - (rank[b.status] ?? 3) || (b.priority ?? 0) - (a.priority ?? 0);
+        return (
+          (rank[a.status] ?? 3) - (rank[b.status] ?? 3) ||
+          (b.priority ?? 0) - (a.priority ?? 0) ||
+          a.position - b.position
+        );
       })
-      .slice(0, 6)
+      .slice(0, 7)
   );
+  const plannedSoon = $derived(
+    openChores
+      .filter((item) => item.plannedStartAt || item.deadlineAt)
+      .sort((a, b) => {
+        const aa = Date.parse(a.plannedStartAt || a.deadlineAt || '9999-12-31');
+        const bb = Date.parse(b.plannedStartAt || b.deadlineAt || '9999-12-31');
+        return aa - bb;
+      })
+      .slice(0, 3)
+  );
+  const inboxCount = $derived(openChores.filter((item) => item.parentId === null).length);
 
-  async function submitQuickCapture(event: SubmitEvent) {
+  function submitQuickCapture(event: SubmitEvent) {
     event.preventDefault();
     const name = quickName.trim();
     if (name) capture.mutate(name);
@@ -49,49 +66,99 @@
 </script>
 
 <svelte:head><title>Today — Taskiller</title></svelte:head>
-<div class="mx-auto max-w-[1160px] px-5 py-7 sm:px-8 lg:px-14 lg:py-14">
-  <header class="flex items-start justify-between gap-6">
-    <div><h1 class="tk-display text-5xl font-black sm:text-6xl">Today</h1><p class="mt-2 text-base text-tk-graphite sm:text-lg">Choose the next executable piece of work.</p></div>
-    <Button class="hidden min-w-48 sm:inline-flex" size="lg" onclick={() => (captureOpen = !captureOpen)}><PlusIcon size={20} weight="bold" /> Create task</Button>
+
+<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+  <header class="flex flex-wrap items-end justify-between gap-6">
+    <div>
+      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite">
+        <SparkleIcon size={15} class="text-tk-strike" /> Execution runway
+      </div>
+      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Today</h1>
+      <p class="mt-3 max-w-xl text-base leading-7 text-tk-graphite">Keep the queue small. Pick something executable, then disappear into the work.</p>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-tk-graphite">
+      <span class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5">{openChores.length} open chores</span>
+      <span class="rounded-full border border-[var(--border)] bg-white/70 px-3 py-1.5">{inboxCount} unfiled</span>
+    </div>
   </header>
 
-  {#if captureOpen}
-    <form class="mt-8 flex max-w-2xl gap-2 rounded-[14px] border border-tk-mist bg-white p-2" onsubmit={submitQuickCapture}>
-      <Input class="border-0 bg-transparent focus:ring-0" placeholder="What needs to be done?" bind:value={quickName} autofocus />
-      <Button type="submit" disabled={capture.isPending || !quickName.trim()}>{capture.isPending ? 'Saving…' : 'Add to Inbox'}</Button>
-    </form>
+  {#if active.data?.session}
+    <div class="mt-9">
+      <ActiveSessionCard session={active.data.session} />
+    </div>
   {/if}
 
-  <div class="mt-12 grid gap-10 xl:grid-cols-[minmax(0,1fr)_342px]">
-    <section>
-      <div class="flex items-center justify-between border-b border-tk-mist pb-4"><h2 class="text-xl font-bold">Next work</h2><span class="text-sm text-tk-graphite">{visibleChores.length} shown</span></div>
-      {#if chores.isPending}
-        <div class="space-y-4 py-6">{#each Array(3) as _}<div class="h-20 animate-pulse rounded-[12px] bg-tk-mist/50"></div>{/each}</div>
-      {:else if chores.isError}
-        <p class="py-8 text-sm text-red-700">Couldn’t load your work. Check the API URL/CORS and retry.</p>
-      {:else if visibleChores.length === 0}
-        <div class="py-14 text-center"><p class="text-lg font-semibold">Nothing queued yet.</p><p class="mt-2 text-sm text-tk-graphite">Capture a Chore now; advanced fields can wait.</p><Button class="mt-6 sm:hidden" onclick={() => (captureOpen = true)}><PlusIcon size={18} /> Create task</Button></div>
-      {:else}
+  <form class="mt-9 flex max-w-3xl gap-2 rounded-[17px] border border-[var(--border)] bg-white/86 p-2 shadow-[0_12px_35px_rgb(23_23_23/0.045)] backdrop-blur" onsubmit={submitQuickCapture}>
+    <Input class="border-transparent bg-transparent focus:border-transparent" placeholder="Capture a chore without breaking your flow…" bind:value={quickName} aria-label="Quick capture chore" />
+    <Button type="submit" disabled={capture.isPending || !quickName.trim()}>
+      <PlusIcon size={17} weight="bold" />
+      <span class="hidden sm:inline">{capture.isPending ? 'Saving…' : 'Capture'}</span>
+    </Button>
+  </form>
+
+  <div class="mt-11 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <section class="min-w-0">
+      <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
         <div>
-          {#each visibleChores as item}
-            <a href={`/work/${item.id}`} class="grid grid-cols-[28px_1fr_auto] items-center gap-4 border-b border-tk-mist py-5 transition hover:bg-white/50 sm:px-1">
-              <CircleIcon size={24} class="text-tk-graphite" />
-              <div class="min-w-0"><p class="truncate font-semibold">{item.name}</p><p class="mt-1 text-sm capitalize text-tk-graphite">{item.status.replace('_', ' ')}</p></div>
-              <span class="tk-mono text-sm text-tk-graphite">{formatDuration(item.estimatedEffortSeconds)}</span>
-            </a>
+          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Do next</p>
+          <h2 class="mt-1 text-xl font-bold">Executable work</h2>
+        </div>
+        <a href="/inbox" class="flex items-center gap-1 text-sm font-bold text-tk-graphite hover:text-tk-ink">Full inbox <ArrowRightIcon size={15} /></a>
+      </div>
+
+      {#if chores.isPending}
+        <div class="space-y-2 py-5">
+          {#each Array(4) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}
+        </div>
+      {:else if chores.isError}
+        <div class="py-10 text-sm text-red-700">Couldn’t load your work. Check the API URL and CORS configuration.</div>
+      {:else if nextWork.length === 0}
+        <div class="rounded-[18px] border border-dashed border-[var(--border)] bg-white/45 py-14 text-center">
+          <p class="text-lg font-bold">The runway is clear.</p>
+          <p class="mt-2 text-sm text-tk-graphite">Capture one Chore above. A name is enough.</p>
+        </div>
+      {:else}
+        <div class="rounded-[18px] border border-[var(--border)] bg-white/72 px-4 sm:px-5">
+          {#each nextWork as item}
+            <WorkItemRow {item} />
           {/each}
         </div>
       {/if}
-
-      <section class="mt-14"><h2 class="mb-5 text-xl font-bold">Focus plan</h2><div class="grid gap-3 sm:grid-cols-3"><div class="rounded-[12px] border border-tk-mist bg-white p-5"><b>Work</b><p class="tk-mono mt-3 text-sm text-tk-graphite">45m</p></div><div class="rounded-[12px] border border-tk-mist bg-white p-5"><b>Break</b><p class="tk-mono mt-3 text-sm text-tk-graphite">8m</p></div><div class="rounded-[12px] border border-tk-mist bg-white p-5"><b>Review</b><p class="tk-mono mt-3 text-sm text-tk-graphite">5m</p></div></div></section>
     </section>
 
-    <aside>
-      {#if active.isPending}<div class="h-[360px] animate-pulse rounded-[18px] bg-tk-ink/90"></div>
-      {:else if active.data?.session}<ActiveSessionCard session={active.data.session} />
-      {:else}<div class="rounded-[18px] border border-tk-mist bg-white p-8"><p class="text-sm font-semibold text-tk-graphite">No active session</p><h2 class="tk-display mt-4 text-2xl font-bold">Pick the next thing and start deliberately.</h2><p class="mt-4 text-sm leading-6 text-tk-graphite">Plan & Start arrives in Round 3. The active-session client is already wired to the backend.</p></div>{/if}
+    <aside class="space-y-4">
+      {#if !active.data?.session}
+        <div class="overflow-hidden rounded-[20px] bg-tk-ink p-6 text-white">
+          <div class="mb-10 flex size-10 items-center justify-center rounded-[12px] bg-white/10 text-tk-strike">
+            <SparkleIcon size={20} weight="fill" />
+          </div>
+          <p class="text-xs font-bold uppercase tracking-[0.12em] text-white/45">No active session</p>
+          <h2 class="tk-display mt-3 text-2xl font-bold leading-tight">Choose the next thing before choosing the timer.</h2>
+          <p class="mt-4 text-sm leading-6 text-white/55">Plan & Start lands in Round 3. The session client already reconstructs active server state.</p>
+        </div>
+      {/if}
+
+      <div class="rounded-[20px] border border-[var(--border)] bg-white/72 p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Calendar pressure</p>
+            <h2 class="mt-1 font-bold">Coming up</h2>
+          </div>
+          <a href="/projects" class="text-xs font-bold text-tk-graphite hover:text-tk-ink">Projects</a>
+        </div>
+        {#if plannedSoon.length}
+          <div class="mt-4 space-y-2">
+            {#each plannedSoon as item}
+              <a href={`/work/${item.id}`} class="block rounded-[13px] bg-[#efefeb] p-3 hover:bg-[#e9e9e3]">
+                <p class="truncate text-sm font-bold">{item.name}</p>
+                <p class="mt-1 text-xs text-tk-graphite">{item.plannedStartAt ? 'Planned' : 'Deadline'} · {new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(item.plannedStartAt || item.deadlineAt || ''))}</p>
+              </a>
+            {/each}
+          </div>
+        {:else}
+          <p class="mt-4 text-sm leading-6 text-tk-graphite">No planned starts or deadlines in the current queue.</p>
+        {/if}
+      </div>
     </aside>
   </div>
-
-  <Button class="fixed bottom-20 right-5 rounded-full shadow-lg sm:hidden" size="lg" onclick={() => (captureOpen = true)}><PlusIcon size={20} /> Task</Button>
 </div>

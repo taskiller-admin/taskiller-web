@@ -10,13 +10,19 @@ export const auth = { subscribe: state.subscribe };
 
 export async function bootstrapAuth() {
   const ok = await authApi.refresh();
-  // Round 1 refresh returns the token but not the user through this helper.
-  // The login/register flows do populate the user. `getMe` is added in Round 2.
-  state.update((current) => ({
-    status: ok ? 'authenticated' : 'anonymous',
-    user: ok ? current.user : null
-  }));
-  return ok;
+  if (!ok) {
+    state.set({ status: 'anonymous', user: null });
+    return false;
+  }
+
+  try {
+    const user = await authApi.getMe();
+    state.set({ status: 'authenticated', user });
+    return true;
+  } catch {
+    state.set({ status: 'anonymous', user: null });
+    return false;
+  }
 }
 
 export async function login(input: authApi.LoginInput) {

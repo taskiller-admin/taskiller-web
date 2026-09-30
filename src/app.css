@@ -1,19 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Display:wght@700;800;900&family=Noto+Sans+Mono:wght@500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Manrope:wght@600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-tk-ink: #111214;
-  --color-tk-paper: #f7f8fa;
-  --color-tk-strike: #ff5b3a;
-  --color-tk-graphite: #646b75;
-  --color-tk-mist: #e5e7eb;
-  --font-tk-display: 'Noto Sans Display', system-ui, sans-serif;
-  --font-tk-sans: 'Noto Sans', system-ui, sans-serif;
-  --font-tk-mono: 'Noto Sans Mono', ui-monospace, monospace;
-  --radius-tk: 12px;
+  --color-tk-ink: #171717;
+  --color-tk-paper: #f5f5f2;
+  --color-tk-strike: #ff6542;
+  --color-tk-graphite: #6f716f;
+  --color-tk-mist: #e5e5df;
+  --color-tk-blue: #5577ff;
+  --color-tk-green: #2f9b6c;
+  --font-tk-display: 'Manrope', system-ui, sans-serif;
+  --font-tk-sans: 'DM Sans', system-ui, sans-serif;
+  --font-tk-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --radius-tk: 16px;
 }
 
 :root {
@@ -21,29 +23,53 @@
   color: var(--color-tk-ink);
   background: var(--color-tk-paper);
   font-synthesis: none;
-  --background: #f7f8fa;
-  --foreground: #111214;
+  --background: #f5f5f2;
+  --foreground: #171717;
   --surface: #ffffff;
-  --muted: #646b75;
-  --border: #e5e7eb;
-  --accent: #ff5b3a;
-  --focus-ring: #ff5b3a;
+  --surface-raised: #ffffff;
+  --surface-subtle: #eeeeea;
+  --muted: #6f716f;
+  --border: #deded8;
+  --accent: #ff6542;
+  --focus-ring: #5577ff;
+  --danger: #d84444;
 }
 
 * { box-sizing: border-box; }
 html { background: var(--background); }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--background); color: var(--foreground); }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 85% -10%, rgba(85, 119, 255, 0.08), transparent 28rem),
+    radial-gradient(circle at 20% 0%, rgba(255, 101, 66, 0.07), transparent 26rem),
+    var(--background);
+  color: var(--foreground);
+}
 button, input, textarea, select { font: inherit; }
 a { color: inherit; text-decoration: none; }
-::selection { background: #ff5b3a33; }
+::selection { background: rgb(255 101 66 / 22%); }
 
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-.tk-display { font-family: var(--font-tk-display); letter-spacing: -0.03em; }
+.tk-display { font-family: var(--font-tk-display); letter-spacing: -0.045em; }
 .tk-mono { font-family: var(--font-tk-mono); font-variant-numeric: tabular-nums; }
+.tk-surface {
+  border: 1px solid var(--border);
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 1px rgb(23 23 23 / 3%), 0 12px 35px rgb(23 23 23 / 4%);
+  backdrop-filter: blur(16px);
+}
+.tk-grid {
+  background-image:
+    linear-gradient(to right, rgb(23 23 23 / 3%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(23 23 23 / 3%) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

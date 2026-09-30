@@ -24,6 +24,12 @@ export async function refresh() {
   return refreshAccessToken();
 }
 
+export async function getMe() {
+  const { data, error } = await api.GET('/api/v1/me');
+  if (error || !data) throw error ?? new Error('Profile returned no data.');
+  return data;
+}
+
 export async function logout() {
   try {
     await api.POST('/api/v1/auth/logout');

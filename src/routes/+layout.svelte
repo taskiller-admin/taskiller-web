@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-  <meta name="theme-color" content="#111214" />
+  <meta name="theme-color" content="#f5f5f2" />
   <link rel="icon" href="/favicon.svg" />
   <link rel="manifest" href="/site.webmanifest" />
 </svelte:head>
