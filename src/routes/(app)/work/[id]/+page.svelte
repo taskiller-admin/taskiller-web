@@ -30,7 +30,7 @@
   import { problemMessage } from '$lib/api/problem';
   import { formatDate, formatDuration, kindLabel } from '$lib/utils';
 
-  const id = page.params.id;
+  let id = $derived(page.params.id ?? '');
   const queryClient = useQueryClient();
   let actionError = $state('');
   let movingId = $state<string | null>(null);

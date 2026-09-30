@@ -34,7 +34,7 @@
   import { problemMessage } from '$lib/api/problem';
   import { formatDuration, kindLabel } from '$lib/utils';
 
-  const id = page.params.id;
+  let id = $derived(page.params.id ?? '');
   const queryClient = useQueryClient();
 
   let strategy = $state<RecommendationStrategy>('auto');
@@ -107,8 +107,14 @@
   function moveSegment(index: number, direction: -1 | 1) {
     const target = index + direction;
     if (target < 0 || target >= segments.length) return;
+
     const next = [...segments];
-    [next[index], next[target]] = [next[target], next[index]];
+    const currentSegment = next[index];
+    const targetSegment = next[target];
+    if (!currentSegment || !targetSegment) return;
+
+    next[index] = targetSegment;
+    next[target] = currentSegment;
     segments = next;
   }
 
@@ -409,8 +415,8 @@
         <section class="rounded-[22px] border border-[var(--border)] bg-[#f4f4f0] p-4 sm:p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-[220px] flex-1">
-              <label class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Plan name</label>
-              <Input class="mt-1.5 bg-white" bind:value={planName} placeholder="Focus plan" />
+              <label for="focus-plan-name" class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Plan name</label>
+              <Input id="focus-plan-name" class="mt-1.5 bg-white" bind:value={planName} placeholder="Focus plan" />
             </div>
             <div class="rounded-[14px] bg-white px-4 py-3 text-right">
               <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-tk-graphite">Target time</p>

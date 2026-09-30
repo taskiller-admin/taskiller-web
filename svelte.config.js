@@ -1,5 +1,8 @@
-import adapter from '@sveltejs/adapter-vercel';
+import nodeAdapter from '@sveltejs/adapter-node';
+import vercelAdapter from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+const productionVercelBuild = Boolean(process.env.VERCEL || process.env.CI);
 
 function apiOrigin() {
   const value =
@@ -18,7 +21,7 @@ function apiOrigin() {
 const config = {
   preprocess: vitePreprocess(),
   kit: {
-    adapter: adapter(),
+    adapter: productionVercelBuild ? vercelAdapter() : nodeAdapter({ out: 'build' }),
     version: { pollInterval: 60_000 },
     csp: {
       mode: 'auto',

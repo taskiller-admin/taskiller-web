@@ -32,7 +32,7 @@
   import { problemMessage } from '$lib/api/problem';
   import { formatDuration } from '$lib/utils';
 
-  const id = page.params.id;
+  let id = $derived(page.params.id ?? '');
   const queryClient = useQueryClient();
 
   let etag = $state<string | null>(null);

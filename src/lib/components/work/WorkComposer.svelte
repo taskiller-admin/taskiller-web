@@ -28,15 +28,24 @@
   } = $props();
 
   const queryClient = useQueryClient();
+
+  function initialKind(): WorkItemKind {
+    return defaultKind;
+  }
+
+  function initialAdvanced(): boolean {
+    return !compact;
+  }
+
   let name = $state('');
-  let kind = $state<WorkItemKind>(defaultKind);
+  let kind = $state<WorkItemKind>(initialKind());
   let description = $state('');
   let estimateMinutes = $state('');
   let priority = $state('');
   let deadline = $state('');
   let targetStartDate = $state('');
   let targetEndDate = $state('');
-  let advanced = $state(!compact);
+  let advanced = $state(initialAdvanced());
   let error = $state('');
 
   const create = createMutation(() => ({

@@ -29,16 +29,36 @@
   } = $props();
 
   const queryClient = useQueryClient();
-  let name = $state(item.name);
-  let description = $state(item.description ?? '');
-  let status = $state<WorkItemStatus>(item.status);
-  let parentId = $state(item.parentId ?? '');
-  let estimateMinutes = $state(item.estimatedEffortSeconds === null ? '' : String(Math.round(item.estimatedEffortSeconds / 60)));
-  let priority = $state(item.priority === null ? '' : String(item.priority));
-  let plannedStart = $state(toLocalDateTime(item.plannedStartAt));
-  let deadline = $state(toLocalDateTime(item.deadlineAt));
-  let targetStartDate = $state(item.targetStartDate ?? '');
-  let targetEndDate = $state(item.targetEndDate ?? '');
+
+  function initialDraft() {
+    return {
+      name: item.name,
+      description: item.description ?? '',
+      status: item.status,
+      parentId: item.parentId ?? '',
+      estimateMinutes:
+        item.estimatedEffortSeconds === null
+          ? ''
+          : String(Math.round(item.estimatedEffortSeconds / 60)),
+      priority: item.priority === null ? '' : String(item.priority),
+      plannedStart: toLocalDateTime(item.plannedStartAt),
+      deadline: toLocalDateTime(item.deadlineAt),
+      targetStartDate: item.targetStartDate ?? '',
+      targetEndDate: item.targetEndDate ?? ''
+    };
+  }
+
+  const initial = initialDraft();
+  let name = $state(initial.name);
+  let description = $state(initial.description);
+  let status = $state<WorkItemStatus>(initial.status);
+  let parentId = $state(initial.parentId);
+  let estimateMinutes = $state(initial.estimateMinutes);
+  let priority = $state(initial.priority);
+  let plannedStart = $state(initial.plannedStart);
+  let deadline = $state(initial.deadline);
+  let targetStartDate = $state(initial.targetStartDate);
+  let targetEndDate = $state(initial.targetEndDate);
   let conflict = $state(false);
   let error = $state('');
 
