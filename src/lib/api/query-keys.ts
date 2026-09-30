@@ -11,7 +11,13 @@ export const queryKeys = {
     tree: (id: string) => ['work', 'tree', id] as const,
     nextAction: (id: string) => ['work', 'next-action', id] as const
   },
+  focus: {
+    all: ['focus'] as const,
+    plans: (workItemId: string) => ['focus', 'plans', workItemId] as const,
+    plan: (id: string) => ['focus', 'plan', id] as const
+  },
   execution: {
-    active: ['execution', 'active'] as const
+    active: ['execution', 'active'] as const,
+    detail: (id: string) => ['execution', 'detail', id] as const
   }
 };

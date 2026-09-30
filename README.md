@@ -1,90 +1,48 @@
 # Taskiller Web
 
-Svelte 5 / SvelteKit web client for Taskiller.
+SvelteKit/Svelte 5 frontend for the Taskiller API.
 
-This package includes **Rounds 1–2**:
+## Current implementation
 
-- production frontend foundation;
-- login/register + rotating refresh-cookie bootstrap;
-- memory-only access token;
-- typed OpenAPI client boundary;
-- TanStack Svelte Query state;
-- responsive Taskiller application shell;
-- Today execution runway + quick capture;
-- active-session reconstruction display;
-- Inbox;
-- Projects;
-- Project/Sprint/Chore workspaces;
-- create/edit/delete/re-parent work;
-- work hierarchy rendering;
-- Project next-action;
-- accessible reorder controls;
-- ETag / `If-Match` conflict handling;
-- Vercel adapter.
+Round 3 is complete:
 
-## Stack
+- auth + refresh-cookie bootstrap;
+- responsive application shell;
+- Today, Inbox, Projects and adaptive Project/Sprint/Chore workspaces;
+- work CRUD, hierarchy, re-parenting, reorder, ETags and conflict recovery;
+- Focus Plan recommendation generation;
+- recommendation rationale/provenance;
+- editable Focus Plan segment sequencing;
+- saved-plan load/update with ETags;
+- Save & Start session flow;
+- one-open-session recovery;
+- active-session handoff and server-time reconstruction.
 
-- Svelte 5
-- SvelteKit
-- TypeScript
-- Tailwind CSS v4
-- shadcn-svelte-compatible local component structure
-- Phosphor Icons
-- TanStack Svelte Query
-- openapi-typescript
-- openapi-fetch
-- Vercel adapter
+See `docs/ROUND_1.md`, `docs/ROUND_2.md`, and `docs/ROUND_3.md`.
 
-## Run locally
+## Setup
 
 ```bash
 cp .env.example .env
 npm install
+npm run api:update
 npm run check
+npm run build
 npm run dev
 ```
 
-Set the deployed API origin in `.env`:
+Set:
 
 ```env
-PUBLIC_TASKILLER_API_URL=https://YOUR-RENDER-API.onrender.com
+PUBLIC_TASKILLER_API_URL=https://YOUR-API.onrender.com
 ```
 
-No trailing slash.
+The API URL must not end with `/`.
 
-The backend must allow your frontend origin in `TASKILLER_CORS_ORIGINS`. For local development that normally includes:
+## Backend contract
 
-```json
-["http://localhost:5173"]
-```
+Round 3 was built against Taskiller backend main:
 
-## API contract
+`7792c34c49e6a09e7e20380e8b6becf93c863c67`
 
-The committed `src/lib/api/generated/schema.d.ts` is a focused bootstrap subset matching backend OpenAPI v1.0.0 and the Round-2 endpoints.
-
-Once the deployed backend is available, replace it with the full generated contract:
-
-```bash
-npm run api:update
-npm run check
-```
-
-`api:update` downloads `/openapi.json` and runs `openapi-typescript`.
-
-All component code talks to Taskiller through `src/lib/api/*`; components do not reproduce backend state machines.
-
-## Round 2
-
-See [`docs/ROUND_2.md`](docs/ROUND_2.md).
-
-## Next — Round 3
-
-Round 3 will implement Focus Plan recommendations and **Plan & Start**:
-
-1. request recommendation for a Chore/Sprint;
-2. show rationale/provenance without claiming scientific optimality;
-3. edit recommended segments into the user's selected plan;
-4. save Focus Plan;
-5. create Execution Session;
-6. reconcile one-open-session conflicts;
-7. transition into the active focus surface.
+Run `npm run api:update` against the deployed backend before release so `openapi/taskiller.json` and `src/lib/api/generated/schema.d.ts` match production exactly.

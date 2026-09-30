@@ -134,7 +134,7 @@
           </div>
           <p class="text-xs font-bold uppercase tracking-[0.12em] text-white/45">No active session</p>
           <h2 class="tk-display mt-3 text-2xl font-bold leading-tight">Choose the next thing before choosing the timer.</h2>
-          <p class="mt-4 text-sm leading-6 text-white/55">Plan & Start lands in Round 3. The session client already reconstructs active server state.</p>
+          <p class="mt-4 text-sm leading-6 text-white/55">Open a Chore or Sprint and use Plan & Start to generate or edit its Focus Plan before entering execution.</p>
         </div>
       {/if}
 

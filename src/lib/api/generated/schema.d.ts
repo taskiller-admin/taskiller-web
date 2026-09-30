@@ -1,5 +1,5 @@
 /**
- * Round-2 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
+ * Round-3 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
  * at backend main 7792c34c49e6a09e7e20380e8b6becf93c863c67.
  * Run `npm run api:update` against the deployed backend to replace this file
  * with the complete openapi-typescript output.
@@ -137,6 +137,69 @@ export interface components {
       version: number;
     };
     ActiveExecutionSession: { session: components['schemas']['ExecutionSession'] | null };
+    RecommendationStrategy: 'auto' | 'continuous' | 'structured' | 'flexible';
+    RecommendationProvenance: 'bootstrap' | 'preference_informed' | 'history_informed';
+    RecommendationReasonLabel:
+      | 'evidence_backed_general'
+      | 'evidence_mixed'
+      | 'product_heuristic'
+      | 'personal_pattern'
+      | 'user_preference';
+    RecommendationReason: {
+      code: string;
+      label: components['schemas']['RecommendationReasonLabel'];
+      message: string;
+    };
+    CreateRecommendationRequest: {
+      workItemId: string;
+      availableTimeSeconds?: number | null;
+      preferredStrategy?: components['schemas']['RecommendationStrategy'];
+    };
+    FocusPlanRecommendation: {
+      id: string;
+      workItemId: string;
+      engineVersion: string;
+      provenance: components['schemas']['RecommendationProvenance'];
+      plan: components['schemas']['FocusPlanSnapshot'];
+      reasons: components['schemas']['RecommendationReason'][];
+      createdAt: string;
+    };
+    FocusPlanSource: 'manual' | 'recommendation' | 'template';
+    FocusPlanSegment: components['schemas']['FocusPlanSegmentInput'] & { id: string; index: number };
+    FocusPlan: {
+      id: string;
+      workItemId: string | null;
+      recommendationId: string | null;
+      source: components['schemas']['FocusPlanSource'];
+      name: string;
+      template: boolean;
+      segments: components['schemas']['FocusPlanSegment'][];
+      createdAt: string;
+      updatedAt: string;
+      version: number;
+    };
+    FocusPlanPage: {
+      items: components['schemas']['FocusPlan'][];
+      page: components['schemas']['PageMeta'];
+    };
+    CreateFocusPlanRequest: {
+      workItemId?: string | null;
+      recommendationId?: string | null;
+      source: components['schemas']['FocusPlanSource'];
+      name: string;
+      template?: boolean;
+      segments: components['schemas']['FocusPlanSegmentInput'][];
+    };
+    UpdateFocusPlanRequest: {
+      name?: string | null;
+      template?: boolean | null;
+      segments?: components['schemas']['FocusPlanSegmentInput'][] | null;
+    };
+    StartExecutionSessionRequest: {
+      workItemId: string;
+      focusPlanId: string;
+      recommendationId?: string | null;
+    };
     Problem: {
       type: string;
       title: string;
@@ -236,6 +299,58 @@ export interface paths {
     get: {
       parameters: { path: { projectId: string } };
       responses: { 200: JsonResponse<components['schemas']['ProjectNextActionResponse']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/focus-plan-recommendations': {
+    post: {
+      parameters: { header: { 'Idempotency-Key': string } };
+      requestBody: { content: { 'application/json': components['schemas']['CreateRecommendationRequest'] } };
+      responses: { 201: JsonResponse<components['schemas']['FocusPlanRecommendation']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/focus-plan-recommendations/{recommendationId}': {
+    get: {
+      parameters: { path: { recommendationId: string } };
+      responses: { 200: JsonResponse<components['schemas']['FocusPlanRecommendation']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/focus-plans': {
+    get: {
+      parameters: { query?: { limit?: number; cursor?: string | null; workItemId?: string | null; templateOnly?: boolean } };
+      responses: { 200: JsonResponse<components['schemas']['FocusPlanPage']>; default: ProblemResponse };
+    };
+    post: {
+      parameters: { header: { 'Idempotency-Key': string } };
+      requestBody: { content: { 'application/json': components['schemas']['CreateFocusPlanRequest'] } };
+      responses: { 201: JsonResponse<components['schemas']['FocusPlan']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/focus-plans/{focusPlanId}': {
+    get: {
+      parameters: { path: { focusPlanId: string } };
+      responses: { 200: JsonResponse<components['schemas']['FocusPlan']>; default: ProblemResponse };
+    };
+    patch: {
+      parameters: { path: { focusPlanId: string }; header?: { 'If-Match'?: string | null } };
+      requestBody: { content: { 'application/json': components['schemas']['UpdateFocusPlanRequest'] } };
+      responses: { 200: JsonResponse<components['schemas']['FocusPlan']>; default: ProblemResponse };
+    };
+    delete: {
+      parameters: { path: { focusPlanId: string }; header?: { 'If-Match'?: string | null } };
+      responses: { 204: never; default: ProblemResponse };
+    };
+  };
+  '/api/v1/execution-sessions': {
+    post: {
+      parameters: { header: { 'Idempotency-Key': string } };
+      requestBody: { content: { 'application/json': components['schemas']['StartExecutionSessionRequest'] } };
+      responses: { 201: JsonResponse<components['schemas']['ExecutionSession']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/execution-sessions/{executionSessionId}': {
+    get: {
+      parameters: { path: { executionSessionId: string } };
+      responses: { 200: JsonResponse<components['schemas']['ExecutionSession']>; default: ProblemResponse };
     };
   };
   '/api/v1/execution-sessions/active': {

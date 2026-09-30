@@ -163,8 +163,24 @@
                 {/if}
               </div>
               {#if nextAction.data?.nextAction}
-                <a href={`/work/${nextAction.data.nextAction.id}`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-white px-4 text-sm font-bold text-tk-ink">Open next <ArrowRightIcon size={16} /></a>
+                <div class="flex flex-wrap gap-2">
+                  <a href={`/work/${nextAction.data.nextAction.id}`} class="inline-flex h-11 items-center gap-2 rounded-[13px] border border-white/15 bg-white/10 px-4 text-sm font-bold text-white">Open next <ArrowRightIcon size={16} /></a>
+                  <a href={`/work/${nextAction.data.nextAction.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
+                </div>
               {/if}
+            </div>
+          </section>
+        {/if}
+
+        {#if item.kind === 'sprint'}
+          <section class="rounded-[22px] bg-tk-ink p-6 text-white sm:p-7">
+            <div class="flex flex-wrap items-end justify-between gap-5">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Execution</p>
+                <h2 class="tk-display mt-2 text-2xl font-bold">Build the Sprint plan around its Chores.</h2>
+                <p class="mt-3 max-w-xl text-sm leading-6 text-white/55">Recommendation generation can preserve linked Chores, and you can edit the segment sequence before starting.</p>
+              </div>
+              <a href={`/work/${item.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
             </div>
           </section>
         {/if}
@@ -207,10 +223,15 @@
             <p class="mt-3 text-xs leading-5 text-tk-graphite">Direct children have explicit up/down controls so reordering never depends on drag-and-drop. Nested descendants keep their own parent’s order.</p>
           </section>
         {:else}
-          <section class="rounded-[20px] border border-[var(--border)] bg-white/68 p-6">
-            <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Execution</p>
-            <h2 class="tk-display mt-2 text-2xl font-bold">This Chore is an executable unit.</h2>
-            <p class="mt-3 max-w-xl text-sm leading-6 text-tk-graphite">Round 3 connects this workspace to recommendation generation, editable Focus Plans, and Start Session.</p>
+          <section class="rounded-[22px] bg-tk-ink p-6 text-white sm:p-7">
+            <div class="flex flex-wrap items-end justify-between gap-5">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Execution</p>
+                <h2 class="tk-display mt-2 text-2xl font-bold">Turn this Chore into a Focus Plan.</h2>
+                <p class="mt-3 max-w-xl text-sm leading-6 text-white/55">Generate a recommendation from the task context, edit the timer structure, save it, then start.</p>
+              </div>
+              <a href={`/work/${item.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
+            </div>
           </section>
         {/if}
       </main>

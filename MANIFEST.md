@@ -1,64 +1,21 @@
-# Taskiller Web Round 2 manifest
+# Taskiller Web Round 3 manifest
 
-- `.env.example`
-- `.gitignore`
-- `README.md`
-- `VALIDATION.md`
-- `components.json`
-- `docs/ROUND_1.md`
-- `docs/ROUND_2.md`
-- `openapi/README.md`
-- `openapi/taskiller-planning.yaml`
-- `openapi/taskiller.json`
-- `package.json`
-- `scripts/sync-openapi.mjs`
-- `src/app.css`
-- `src/lib/api/access-token.ts`
-- `src/lib/api/auth.ts`
-- `src/lib/api/client.ts`
-- `src/lib/api/execution.ts`
-- `src/lib/api/generated/schema.d.ts`
-- `src/lib/api/problem.ts`
-- `src/lib/api/query-keys.ts`
-- `src/lib/api/work.ts`
-- `src/lib/auth/session.ts`
-- `src/lib/components/brand/Logo.svelte`
-- `src/lib/components/execution/ActiveSessionCard.svelte`
-- `src/lib/components/layout/AppShell.svelte`
-- `src/lib/components/ui/Badge.svelte`
-- `src/lib/components/ui/Button.svelte`
-- `src/lib/components/ui/Card.svelte`
-- `src/lib/components/ui/Input.svelte`
-- `src/lib/components/ui/Select.svelte`
-- `src/lib/components/ui/Textarea.svelte`
-- `src/lib/components/work/KindMark.svelte`
-- `src/lib/components/work/ProjectCard.svelte`
-- `src/lib/components/work/StatusBadge.svelte`
-- `src/lib/components/work/WorkComposer.svelte`
-- `src/lib/components/work/WorkEditor.svelte`
-- `src/lib/components/work/WorkItemRow.svelte`
-- `src/lib/utils.ts`
-- `src/routes/(app)/+layout.svelte`
-- `src/routes/(app)/+layout.ts`
-- `src/routes/(app)/analytics/+page.svelte`
-- `src/routes/(app)/inbox/+page.svelte`
-- `src/routes/(app)/projects/+page.svelte`
-- `src/routes/(app)/settings/+page.svelte`
-- `src/routes/(app)/today/+page.svelte`
-- `src/routes/(app)/work/[id]/+page.svelte`
-- `src/routes/+layout.svelte`
-- `src/routes/+page.svelte`
-- `src/routes/login/+page.svelte`
-- `src/routes/register/+page.svelte`
-- `static/brand/finish-cut-pattern.svg`
-- `static/brand/taskiller-logo-primary.svg`
-- `static/brand/taskiller-logo-reverse.svg`
-- `static/brand/taskiller-symbol-strike.svg`
-- `static/favicon.ico`
-- `static/favicon.svg`
-- `static/icon-192.png`
-- `static/icon-512.png`
-- `static/site.webmanifest`
-- `svelte.config.js`
-- `tsconfig.json`
-- `vite.config.ts`
+## New Round-3 surfaces
+
+- `src/lib/api/focus.ts`
+- expanded `src/lib/api/execution.ts`
+- expanded `src/lib/api/query-keys.ts`
+- expanded bootstrap `src/lib/api/generated/schema.d.ts`
+- `src/lib/components/focus/RecommendationReasons.svelte`
+- `src/lib/components/focus/SegmentEditor.svelte`
+- `src/routes/(app)/work/[id]/plan/+page.svelte`
+- `src/routes/(app)/session/[id]/+page.svelte`
+- updated work detail Plan & Start entry points
+- updated Today execution copy
+- `docs/ROUND_3.md`
+
+## Round-3 behavior
+
+Recommendation → editable draft → save/update Focus Plan → start execution session → focused session handoff.
+
+Concurrency and idempotency remain server-aligned: Focus Plan updates use ETags/If-Match, while recommendation/plan/session creation use Idempotency-Key.

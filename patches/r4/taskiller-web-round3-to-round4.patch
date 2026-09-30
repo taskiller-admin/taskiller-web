@@ -1,0 +1,1543 @@
+diff --git a/mnt/data/taskiller-web-round3-full/MANIFEST.md b/mnt/data/taskiller-web-round4/MANIFEST.md
+index 94fcf96..9bbb1f4 100644
+--- a/mnt/data/taskiller-web-round3-full/MANIFEST.md
++++ b/mnt/data/taskiller-web-round4/MANIFEST.md
+@@ -1,21 +1,18 @@
+-# Taskiller Web Round 3 manifest
++# Taskiller Web Round 4 manifest
+ 
+-## New Round-3 surfaces
++## New / expanded Round-4 surfaces
+ 
+-- `src/lib/api/focus.ts`
+ - expanded `src/lib/api/execution.ts`
+ - expanded `src/lib/api/query-keys.ts`
+ - expanded bootstrap `src/lib/api/generated/schema.d.ts`
+-- `src/lib/components/focus/RecommendationReasons.svelte`
+-- `src/lib/components/focus/SegmentEditor.svelte`
+-- `src/routes/(app)/work/[id]/plan/+page.svelte`
+-- `src/routes/(app)/session/[id]/+page.svelte`
+-- updated work detail Plan & Start entry points
+-- updated Today execution copy
+-- `docs/ROUND_3.md`
++- expanded `openapi/taskiller.json` execution/review subset
++- `src/lib/components/execution/SessionTimeline.svelte`
++- `src/lib/components/execution/SessionReviewForm.svelte`
++- upgraded `src/lib/components/execution/ActiveSessionCard.svelte`
++- upgraded `src/lib/components/layout/AppShell.svelte` with focus mode
++- rebuilt `src/routes/(app)/session/[id]/+page.svelte`
++- `docs/ROUND_4.md`
+ 
+-## Round-3 behavior
++## Round-4 behavior
+ 
+-Recommendation → editable draft → save/update Focus Plan → start execution session → focused session handoff.
+-
+-Concurrency and idempotency remain server-aligned: Focus Plan updates use ETags/If-Match, while recommendation/plan/session creation use Idempotency-Key.
++Plan & Start → live session → pause/resume → explicit segment/break progression → optional skip/work completion → finish/abandon → review, with reconnect and optimistic-concurrency recovery throughout.
+diff --git a/mnt/data/taskiller-web-round3-full/README.md b/mnt/data/taskiller-web-round4/README.md
+index 26064b9..2dc8422 100644
+--- a/mnt/data/taskiller-web-round3-full/README.md
++++ b/mnt/data/taskiller-web-round4/README.md
+@@ -4,21 +4,25 @@ SvelteKit/Svelte 5 frontend for the Taskiller API.
+ 
+ ## Current implementation
+ 
+-Round 3 is complete:
++Round 4 is complete:
+ 
+ - auth + refresh-cookie bootstrap;
+-- responsive application shell;
++- responsive application shell with dedicated full-screen focus mode;
+ - Today, Inbox, Projects and adaptive Project/Sprint/Chore workspaces;
+ - work CRUD, hierarchy, re-parenting, reorder, ETags and conflict recovery;
+-- Focus Plan recommendation generation;
+-- recommendation rationale/provenance;
+-- editable Focus Plan segment sequencing;
+-- saved-plan load/update with ETags;
+-- Save & Start session flow;
+-- one-open-session recovery;
+-- active-session handoff and server-time reconstruction.
+-
+-See `docs/ROUND_1.md`, `docs/ROUND_2.md`, and `docs/ROUND_3.md`.
++- Focus Plan recommendation generation, rationale and editable sequencing;
++- saved-plan load/update + Save & Start;
++- execution session reconstruction from server timestamps;
++- pause/resume;
++- explicit segment and break start/finish controls;
++- optional-segment skipping;
++- linked Chore/work-item completion;
++- session finish/abandon flows;
++- ETag conflict recovery and reconnect refresh;
++- complete session event timeline (paginated through the API);
++- post-session focus/fatigue/difficulty/satisfaction review.
++
++See `docs/ROUND_1.md` through `docs/ROUND_4.md`.
+ 
+ ## Setup
+ 
+@@ -41,7 +45,7 @@ The API URL must not end with `/`.
+ 
+ ## Backend contract
+ 
+-Round 3 was built against Taskiller backend main:
++Round 4 was built against Taskiller backend main:
+ 
+ `7792c34c49e6a09e7e20380e8b6becf93c863c67`
+ 
+diff --git a/mnt/data/taskiller-web-round3-full/VALIDATION.md b/mnt/data/taskiller-web-round4/VALIDATION.md
+index aafca8a..e0f755b 100644
+--- a/mnt/data/taskiller-web-round3-full/VALIDATION.md
++++ b/mnt/data/taskiller-web-round4/VALIDATION.md
+@@ -1,14 +1,16 @@
+-# Round 3 validation
++# Round 4 validation
+ 
+ Completed in the build workspace:
+ 
+-- parsed 42 TypeScript units, including every Svelte `<script lang="ts">`: OK;
++- backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`;
++- parsed 44 TypeScript units, including every Svelte `<script lang="ts">`: OK;
+ - bundled `openapi/taskiller.json`: valid JSON;
+-- all `$lib` and relative local imports resolve;
+-- Round-3 bootstrap schema includes recommendation, Focus Plan, and session-start operations;
+-- backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`.
++- Round-4 bootstrap schema includes execution events and reviews;
++- all `$lib` and relative local imports resolve, including `.d.ts` modules;
++- Svelte `{#if}`, `{#each}`, `{#await}`, and `{#key}` block counts balance;
++- full session event pagination, ETag mutation paths, and terminal review paths are represented in the client layer.
+ 
+-External npm installation is not reliably available in this environment, so the final Svelte compiler and Vite production build must be run locally.
++`npm install --prefer-offline --no-audit --no-fund` was attempted in the sandbox but timed out before dependencies were installed. Therefore the final Svelte compiler and Vite production build must be run locally.
+ 
+ Before committing/deploying:
+ 
+@@ -21,9 +23,15 @@ npm run build
+ 
+ Exercise these flows against the deployed API:
+ 
+-1. Chore → Plan & Start → recommendation → edit → Save only.
+-2. Load saved plan → edit → ETag update.
+-3. Sprint → recommendation with linked Chores → save.
+-4. Save & Start → `/session/{id}`.
+-5. Attempt Start while another session is open → Resume path.
+-6. Project → backend next action → Plan & Start.
++1. Start a Chore session from Plan & Start.
++2. Pause → Resume.
++3. Complete current work segment → explicitly start next break/segment.
++4. Skip an optional segment; confirm required segment cannot expose Skip.
++5. Mark the Chore complete from a Chore session.
++6. Sprint session → mark a linked child Chore complete.
++7. Finish after the final segment.
++8. Finish early and abandon paths.
++9. Trigger a stale ETag from another client/tab → confirm latest state reloads.
++10. Go offline → controls disable; reconnect → session/events refetch.
++11. Close a session → save and update a review.
++12. Reopen the session route → immutable plan snapshot and event history reconstruct correctly.
+diff --git a/mnt/data/taskiller-web-round4/docs/ROUND_4.md b/mnt/data/taskiller-web-round4/docs/ROUND_4.md
+new file mode 100644
+index 0000000..f003af9
+--- /dev/null
++++ b/mnt/data/taskiller-web-round4/docs/ROUND_4.md
+@@ -0,0 +1,46 @@
++# Round 4 — Execution and review
++
++Round 4 turns the Round-3 session handoff into the complete execution experience.
++
++## Shipped
++
++- Dedicated full-screen focus mode: normal Taskiller navigation is hidden on `/session/*`.
++- Server-authoritative timer reconstruction from session timestamps.
++- Pause and resume events.
++- Explicit segment start after advancing to the next segment.
++- Work/retrieval/review/planning completion through `segment_completed`.
++- Break/long-break start and completion through `break_started` / `break_ended`.
++- Optional segment skipping.
++- Work-item completion events:
++  - Chore session can complete its Chore;
++  - Sprint session can complete a segment-linked child Chore.
++- Finish session and abandon session flows.
++- ETag/If-Match on every execution mutation.
++- `412` recovery reloads the latest server session while preserving a clear conflict message.
++- Online/offline indicator and automatic session + event refresh on reconnect.
++- Active sessions refetch while open and refetch on window focus.
++- Event history retrieves all pages (up to the client safety cap) instead of only the first page.
++- Immutable plan snapshot remains visible during and after execution.
++- Post-terminal review with optional 1–5 focus, fatigue, difficulty, satisfaction scores and a note.
++- Review upsert uses Idempotency-Key.
++- Active-session cards now link directly back into the dedicated session view.
++
++## Server alignment
++
++The UI mirrors backend transition rules instead of inferring its own state machine:
++
++- advancing a segment does not auto-start the next segment;
++- break segments use break-specific event types;
++- only optional segments expose Skip;
++- reviews are only shown/saved after terminal session states;
++- Project remains non-executable and is still resolved through Project next-action before planning.
++
++## Deferred to Round 5
++
++Round 5 owns analytics/history surfaces: summary cards, time-series visualization, work-type/work-item breakdowns, focus patterns, and browsing past execution sessions.
++
++## API contract
++
++Built against `taskiller-backend` main:
++
++`7792c34c49e6a09e7e20380e8b6becf93c863c67`
+diff --git a/mnt/data/taskiller-web-round3-full/openapi/taskiller.json b/mnt/data/taskiller-web-round4/openapi/taskiller.json
+index fa9177b..5ebc71b 100644
+--- a/mnt/data/taskiller-web-round3-full/openapi/taskiller.json
++++ b/mnt/data/taskiller-web-round4/openapi/taskiller.json
+@@ -650,6 +650,235 @@
+           }
+         }
+       }
++    },
++    "/api/v1/execution-sessions/{executionSessionId}/events": {
++      "get": {
++        "operationId": "listExecutionSessionEvents",
++        "parameters": [
++          {
++            "name": "executionSessionId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          },
++          {
++            "name": "limit",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "type": "integer",
++              "minimum": 1,
++              "maximum": 100,
++              "default": 25
++            }
++          },
++          {
++            "name": "cursor",
++            "in": "query",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/SessionEventPage"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      },
++      "post": {
++        "operationId": "appendExecutionSessionEvent",
++        "parameters": [
++          {
++            "name": "executionSessionId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          },
++          {
++            "name": "Idempotency-Key",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "minLength": 8,
++              "maxLength": 200
++            }
++          },
++          {
++            "name": "If-Match",
++            "in": "header",
++            "required": false,
++            "schema": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          }
++        ],
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/CreateSessionEventRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "201": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/AppendSessionEventResponse"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
++    },
++    "/api/v1/execution-sessions/{executionSessionId}/review": {
++      "get": {
++        "operationId": "getExecutionSessionReview",
++        "parameters": [
++          {
++            "name": "executionSessionId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          }
++        ],
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/SessionReview"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      },
++      "put": {
++        "operationId": "upsertExecutionSessionReview",
++        "parameters": [
++          {
++            "name": "executionSessionId",
++            "in": "path",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "format": "uuid"
++            }
++          },
++          {
++            "name": "Idempotency-Key",
++            "in": "header",
++            "required": true,
++            "schema": {
++              "type": "string",
++              "minLength": 8,
++              "maxLength": 200
++            }
++          }
++        ],
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "$ref": "#/components/schemas/UpsertSessionReviewRequest"
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": {
++            "description": "Successful Response",
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/SessionReview"
++                }
++              }
++            }
++          },
++          "default": {
++            "description": "Taskiller problem response",
++            "content": {
++              "application/problem+json": {
++                "schema": {
++                  "$ref": "#/components/schemas/Problem"
++                }
++              }
++            }
++          }
++        }
++      }
+     }
+   },
+   "components": {
+@@ -1643,6 +1872,251 @@
+             "additionalProperties": true
+           }
+         }
++      },
++      "SessionEventType": {
++        "type": "string",
++        "enum": [
++          "session_started",
++          "paused",
++          "resumed",
++          "segment_started",
++          "segment_completed",
++          "segment_skipped",
++          "break_started",
++          "break_ended",
++          "work_item_completed",
++          "session_completed",
++          "session_abandoned"
++        ],
++        "title": "SessionEventType"
++      },
++      "CreateSessionEventRequest": {
++        "type": "object",
++        "additionalProperties": false,
++        "required": [
++          "type"
++        ],
++        "properties": {
++          "type": {
++            "$ref": "#/components/schemas/SessionEventType"
++          },
++          "segmentIndex": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 0
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "clientOccurredAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "payload": {
++            "type": "object",
++            "additionalProperties": true,
++            "default": {}
++          }
++        }
++      },
++      "SessionEvent": {
++        "type": "object",
++        "additionalProperties": false,
++        "required": [
++          "id",
++          "sessionId",
++          "type",
++          "occurredAt",
++          "clientOccurredAt",
++          "segmentIndex",
++          "payload"
++        ],
++        "properties": {
++          "id": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "sessionId": {
++            "type": "string",
++            "format": "uuid"
++          },
++          "type": {
++            "$ref": "#/components/schemas/SessionEventType"
++          },
++          "occurredAt": {
++            "type": "string",
++            "format": "date-time"
++          },
++          "clientOccurredAt": {
++            "anyOf": [
++              {
++                "type": "string",
++                "format": "date-time"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "segmentIndex": {
++            "anyOf": [
++              {
++                "type": "integer"
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "payload": {
++            "type": "object",
++            "additionalProperties": true
++          }
++        }
++      },
++      "SessionEventPage": {
++        "type": "object",
++        "additionalProperties": false,
++        "required": [
++          "items",
++          "page"
++        ],
++        "properties": {
++          "items": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/SessionEvent"
++            }
++          },
++          "page": {
++            "$ref": "#/components/schemas/PageMeta"
++          }
++        }
++      },
++      "AppendSessionEventResponse": {
++        "type": "object",
++        "additionalProperties": false,
++        "required": [
++          "event",
++          "session"
++        ],
++        "properties": {
++          "event": {
++            "$ref": "#/components/schemas/SessionEvent"
++          },
++          "session": {
++            "$ref": "#/components/schemas/ExecutionSession"
++          }
++        }
++      },
++      "UpsertSessionReviewRequest": {
++        "type": "object",
++        "additionalProperties": false,
++        "properties": {
++          "focusScore": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 1,
++                "maximum": 5
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "fatigueScore": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 1,
++                "maximum": 5
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "difficultyScore": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 1,
++                "maximum": 5
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "satisfactionScore": {
++            "anyOf": [
++              {
++                "type": "integer",
++                "minimum": 1,
++                "maximum": 5
++              },
++              {
++                "type": "null"
++              }
++            ]
++          },
++          "note": {
++            "anyOf": [
++              {
++                "type": "string",
++                "maxLength": 4000
++              },
++              {
++                "type": "null"
++              }
++            ]
++          }
++        }
++      },
++      "SessionReview": {
++        "allOf": [
++          {
++            "$ref": "#/components/schemas/UpsertSessionReviewRequest"
++          },
++          {
++            "type": "object",
++            "required": [
++              "sessionId",
++              "createdAt",
++              "updatedAt",
++              "version"
++            ],
++            "properties": {
++              "sessionId": {
++                "type": "string",
++                "format": "uuid"
++              },
++              "createdAt": {
++                "type": "string",
++                "format": "date-time"
++              },
++              "updatedAt": {
++                "type": "string",
++                "format": "date-time"
++              },
++              "version": {
++                "type": "integer",
++                "minimum": 1
++              }
++            }
++          }
++        ]
+       }
+     }
+   }
+diff --git a/mnt/data/taskiller-web-round3-full/package.json b/mnt/data/taskiller-web-round4/package.json
+index a604c4f..95180a7 100644
+--- a/mnt/data/taskiller-web-round3-full/package.json
++++ b/mnt/data/taskiller-web-round4/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "taskiller-web",
+   "private": true,
+-  "version": "0.3.0",
++  "version": "0.4.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite dev",
+diff --git a/mnt/data/taskiller-web-round3-full/src/lib/api/execution.ts b/mnt/data/taskiller-web-round4/src/lib/api/execution.ts
+index 4bea911..baaf775 100644
+--- a/mnt/data/taskiller-web-round3-full/src/lib/api/execution.ts
++++ b/mnt/data/taskiller-web-round4/src/lib/api/execution.ts
+@@ -3,6 +3,11 @@ import { api } from './client';
+ 
+ export type ExecutionSession = components['schemas']['ExecutionSession'];
+ export type StartExecutionSessionInput = components['schemas']['StartExecutionSessionRequest'];
++export type SessionEvent = components['schemas']['SessionEvent'];
++export type SessionEventType = components['schemas']['SessionEventType'];
++export type SessionEventInput = components['schemas']['CreateSessionEventRequest'];
++export type SessionReview = components['schemas']['SessionReview'];
++export type SessionReviewInput = components['schemas']['UpsertSessionReviewRequest'];
+ 
+ export class OpenSessionConflictError extends Error {
+   activeSession: ExecutionSession | null;
+@@ -14,10 +19,24 @@ export class OpenSessionConflictError extends Error {
+   }
+ }
+ 
++export class SessionConflictError extends Error {
++  latest: { session: ExecutionSession; etag: string | null } | null;
++
++  constructor(latest: { session: ExecutionSession; etag: string | null } | null) {
++    super('This session changed elsewhere.');
++    this.name = 'SessionConflictError';
++    this.latest = latest;
++  }
++}
++
+ function mutationKey() {
+   return crypto.randomUUID();
+ }
+ 
++function isProblemCode(value: unknown, code: string) {
++  return Boolean(value && typeof value === 'object' && 'code' in value && value.code === code);
++}
++
+ export async function getActiveSession() {
+   const { data, error } = await api.GET('/api/v1/execution-sessions/active');
+   if (error || !data) throw error ?? new Error('Active session returned no data.');
+@@ -38,13 +57,94 @@ export async function startExecutionSession(input: StartExecutionSessionInput) {
+     body: input
+   });
+ 
+-  if (response.status === 409 && error && typeof error === 'object' && 'code' in error) {
+-    if ((error as { code?: string }).code === 'open_session_exists') {
+-      const active = await getActiveSession();
+-      throw new OpenSessionConflictError(active.session);
+-    }
++  if (response.status === 409 && isProblemCode(error, 'open_session_exists')) {
++    const active = await getActiveSession();
++    throw new OpenSessionConflictError(active.session);
+   }
+ 
+   if (error || !data) throw error ?? new Error('Start session returned no data.');
+   return { session: data, etag: response.headers.get('etag') };
+ }
++
++export async function listSessionEvents(id: string) {
++  const items: SessionEvent[] = [];
++  let cursor: string | null = null;
++  let pages = 0;
++
++  do {
++    const { data, error } = await api.GET('/api/v1/execution-sessions/{executionSessionId}/events', {
++      params: {
++        path: { executionSessionId: id },
++        query: { limit: 100, ...(cursor ? { cursor } : {}) }
++      }
++    });
++    if (error || !data) throw error ?? new Error('Session events returned no data.');
++    items.push(...data.items);
++    cursor = data.page.hasMore ? data.page.nextCursor : null;
++    pages += 1;
++  } while (cursor && pages < 10);
++
++  return {
++    items,
++    page: { hasMore: Boolean(cursor), nextCursor: cursor }
++  };
++}
++
++export async function appendSessionEvent(
++  id: string,
++  input: SessionEventInput,
++  etag: string | null
++) {
++  const { data, error, response } = await api.POST(
++    '/api/v1/execution-sessions/{executionSessionId}/events',
++    {
++      params: {
++        path: { executionSessionId: id },
++        header: {
++          'Idempotency-Key': mutationKey(),
++          ...(etag ? { 'If-Match': etag } : {})
++        }
++      },
++      body: {
++        ...input,
++        clientOccurredAt: input.clientOccurredAt ?? new Date().toISOString(),
++        payload: input.payload ?? {}
++      }
++    }
++  );
++
++  if (response.status === 412) {
++    let latest: { session: ExecutionSession; etag: string | null } | null = null;
++    try {
++      latest = await getExecutionSession(id);
++    } catch {
++      // Keep the original conflict if the follow-up read also fails.
++    }
++    throw new SessionConflictError(latest);
++  }
++
++  if (error || !data) throw error ?? new Error('Session event returned no data.');
++  return { ...data, etag: response.headers.get('etag') };
++}
++
++export async function getSessionReview(id: string): Promise<SessionReview | null> {
++  const { data, error, response } = await api.GET(
++    '/api/v1/execution-sessions/{executionSessionId}/review',
++    { params: { path: { executionSessionId: id } } }
++  );
++  if (response.status === 404) return null;
++  if (error || !data) throw error ?? new Error('Session review returned no data.');
++  return data;
++}
++
++export async function upsertSessionReview(id: string, input: SessionReviewInput) {
++  const { data, error } = await api.PUT('/api/v1/execution-sessions/{executionSessionId}/review', {
++    params: {
++      path: { executionSessionId: id },
++      header: { 'Idempotency-Key': mutationKey() }
++    },
++    body: input
++  });
++  if (error || !data) throw error ?? new Error('Session review returned no data.');
++  return data;
++}
+diff --git a/mnt/data/taskiller-web-round3-full/src/lib/api/generated/schema.d.ts b/mnt/data/taskiller-web-round4/src/lib/api/generated/schema.d.ts
+index 3001c77..01cad3d 100644
+--- a/mnt/data/taskiller-web-round3-full/src/lib/api/generated/schema.d.ts
++++ b/mnt/data/taskiller-web-round4/src/lib/api/generated/schema.d.ts
+@@ -1,5 +1,5 @@
+ /**
+- * Round-3 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
++ * Round-4 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
+  * at backend main 7792c34c49e6a09e7e20380e8b6becf93c863c67.
+  * Run `npm run api:update` against the deployed backend to replace this file
+  * with the complete openapi-typescript output.
+@@ -200,6 +200,54 @@ export interface components {
+       focusPlanId: string;
+       recommendationId?: string | null;
+     };
++    SessionEventType:
++      | 'session_started'
++      | 'paused'
++      | 'resumed'
++      | 'segment_started'
++      | 'segment_completed'
++      | 'segment_skipped'
++      | 'break_started'
++      | 'break_ended'
++      | 'work_item_completed'
++      | 'session_completed'
++      | 'session_abandoned';
++    CreateSessionEventRequest: {
++      type: components['schemas']['SessionEventType'];
++      segmentIndex?: number | null;
++      clientOccurredAt?: string | null;
++      payload?: Record<string, unknown>;
++    };
++    SessionEvent: {
++      id: string;
++      sessionId: string;
++      type: components['schemas']['SessionEventType'];
++      occurredAt: string;
++      clientOccurredAt: string | null;
++      segmentIndex: number | null;
++      payload: Record<string, unknown>;
++    };
++    SessionEventPage: {
++      items: components['schemas']['SessionEvent'][];
++      page: components['schemas']['PageMeta'];
++    };
++    AppendSessionEventResponse: {
++      event: components['schemas']['SessionEvent'];
++      session: components['schemas']['ExecutionSession'];
++    };
++    UpsertSessionReviewRequest: {
++      focusScore?: number | null;
++      fatigueScore?: number | null;
++      difficultyScore?: number | null;
++      satisfactionScore?: number | null;
++      note?: string | null;
++    };
++    SessionReview: components['schemas']['UpsertSessionReviewRequest'] & {
++      sessionId: string;
++      createdAt: string;
++      updatedAt: string;
++      version: number;
++    };
+     Problem: {
+       type: string;
+       title: string;
+@@ -353,6 +401,37 @@ export interface paths {
+       responses: { 200: JsonResponse<components['schemas']['ExecutionSession']>; default: ProblemResponse };
+     };
+   };
++  '/api/v1/execution-sessions/{executionSessionId}/events': {
++    get: {
++      parameters: {
++        path: { executionSessionId: string };
++        query?: { limit?: number; cursor?: string | null };
++      };
++      responses: { 200: JsonResponse<components['schemas']['SessionEventPage']>; default: ProblemResponse };
++    };
++    post: {
++      parameters: {
++        path: { executionSessionId: string };
++        header: { 'Idempotency-Key': string; 'If-Match'?: string | null };
++      };
++      requestBody: { content: { 'application/json': components['schemas']['CreateSessionEventRequest'] } };
++      responses: { 201: JsonResponse<components['schemas']['AppendSessionEventResponse']>; default: ProblemResponse };
++    };
++  };
++  '/api/v1/execution-sessions/{executionSessionId}/review': {
++    get: {
++      parameters: { path: { executionSessionId: string } };
++      responses: { 200: JsonResponse<components['schemas']['SessionReview']>; default: ProblemResponse };
++    };
++    put: {
++      parameters: {
++        path: { executionSessionId: string };
++        header: { 'Idempotency-Key': string };
++      };
++      requestBody: { content: { 'application/json': components['schemas']['UpsertSessionReviewRequest'] } };
++      responses: { 200: JsonResponse<components['schemas']['SessionReview']>; default: ProblemResponse };
++    };
++  };
+   '/api/v1/execution-sessions/active': {
+     get: { responses: { 200: JsonResponse<components['schemas']['ActiveExecutionSession']>; default: ProblemResponse } };
+   };
+diff --git a/mnt/data/taskiller-web-round3-full/src/lib/api/query-keys.ts b/mnt/data/taskiller-web-round4/src/lib/api/query-keys.ts
+index 09b47fc..058105e 100644
+--- a/mnt/data/taskiller-web-round3-full/src/lib/api/query-keys.ts
++++ b/mnt/data/taskiller-web-round4/src/lib/api/query-keys.ts
+@@ -18,6 +18,8 @@ export const queryKeys = {
+   },
+   execution: {
+     active: ['execution', 'active'] as const,
+-    detail: (id: string) => ['execution', 'detail', id] as const
++    detail: (id: string) => ['execution', 'detail', id] as const,
++    events: (id: string) => ['execution', 'events', id] as const,
++    review: (id: string) => ['execution', 'review', id] as const
+   }
+ };
+diff --git a/mnt/data/taskiller-web-round3-full/src/lib/components/execution/ActiveSessionCard.svelte b/mnt/data/taskiller-web-round4/src/lib/components/execution/ActiveSessionCard.svelte
+index f2ca59f..878f5e0 100644
+--- a/mnt/data/taskiller-web-round3-full/src/lib/components/execution/ActiveSessionCard.svelte
++++ b/mnt/data/taskiller-web-round4/src/lib/components/execution/ActiveSessionCard.svelte
+@@ -47,6 +47,9 @@
+   </div>
+   <div class="relative mt-7 flex items-end justify-between gap-6 lg:mt-0 lg:block lg:text-right">
+     <div class="tk-mono text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">{formatClock(remaining)}</div>
+-    <a href={`/work/${session.workItemId}`} class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white/55 hover:text-white">Open work <ArrowUpRightIcon size={14} /></a>
++    <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
++      <a href={`/work/${session.workItemId}`} class="inline-flex items-center gap-1.5 text-xs font-bold text-white/45 hover:text-white">Open work</a>
++      <a href={`/session/${session.id}`} class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 hover:bg-white/15">Open session <ArrowUpRightIcon size={14} /></a>
++    </div>
+   </div>
+ </section>
+diff --git a/mnt/data/taskiller-web-round4/src/lib/components/execution/SessionReviewForm.svelte b/mnt/data/taskiller-web-round4/src/lib/components/execution/SessionReviewForm.svelte
+new file mode 100644
+index 0000000..35c5a8c
+--- /dev/null
++++ b/mnt/data/taskiller-web-round4/src/lib/components/execution/SessionReviewForm.svelte
+@@ -0,0 +1,101 @@
++<script lang="ts">
++  import Button from '$lib/components/ui/Button.svelte';
++  import Textarea from '$lib/components/ui/Textarea.svelte';
++  import type { SessionReview, SessionReviewInput } from '$lib/api/execution';
++
++  let {
++    review = null,
++    busy = false,
++    onsave
++  }: {
++    review?: SessionReview | null;
++    busy?: boolean;
++    onsave: (input: SessionReviewInput) => Promise<void> | void;
++  } = $props();
++
++  let focusScore = $state<number | null>(review?.focusScore ?? null);
++  let fatigueScore = $state<number | null>(review?.fatigueScore ?? null);
++  let difficultyScore = $state<number | null>(review?.difficultyScore ?? null);
++  let satisfactionScore = $state<number | null>(review?.satisfactionScore ?? null);
++  let note = $state(review?.note ?? '');
++
++  $effect(() => {
++    if (!review) return;
++    focusScore = review.focusScore ?? null;
++    fatigueScore = review.fatigueScore ?? null;
++    difficultyScore = review.difficultyScore ?? null;
++    satisfactionScore = review.satisfactionScore ?? null;
++    note = review.note ?? '';
++  });
++
++  const rows = [
++    { label: 'Focus', key: 'focus' },
++    { label: 'Fatigue', key: 'fatigue' },
++    { label: 'Difficulty', key: 'difficulty' },
++    { label: 'Satisfaction', key: 'satisfaction' }
++  ] as const;
++
++  function current(key: (typeof rows)[number]['key']) {
++    if (key === 'focus') return focusScore;
++    if (key === 'fatigue') return fatigueScore;
++    if (key === 'difficulty') return difficultyScore;
++    return satisfactionScore;
++  }
++
++  function setScore(key: (typeof rows)[number]['key'], score: number) {
++    const next = current(key) === score ? null : score;
++    if (key === 'focus') focusScore = next;
++    else if (key === 'fatigue') fatigueScore = next;
++    else if (key === 'difficulty') difficultyScore = next;
++    else satisfactionScore = next;
++  }
++
++  async function submit() {
++    await onsave({
++      focusScore,
++      fatigueScore,
++      difficultyScore,
++      satisfactionScore,
++      note: note.trim() || null
++    });
++  }
++</script>
++
++<section class="rounded-[24px] border border-white/10 bg-white/[0.055] p-5 sm:p-6">
++  <div class="max-w-xl">
++    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">Session review</p>
++    <h2 class="tk-display mt-2 text-2xl font-bold">Capture the signal while it’s fresh.</h2>
++    <p class="mt-2 text-sm leading-6 text-white/48">Optional. These scores help Taskiller personalize future focus recommendations.</p>
++  </div>
++
++  <div class="mt-6 grid gap-4 sm:grid-cols-2">
++    {#each rows as row}
++      <div class="rounded-[16px] bg-white/[0.045] p-4">
++        <div class="flex items-center justify-between gap-4">
++          <span class="text-sm font-semibold text-white/75">{row.label}</span>
++          <span class="text-[11px] text-white/30">1–5</span>
++        </div>
++        <div class="mt-3 grid grid-cols-5 gap-1.5">
++          {#each [1, 2, 3, 4, 5] as score}
++            <button
++              type="button"
++              onclick={() => setScore(row.key, score)}
++              class="tk-mono h-9 rounded-[10px] border text-xs font-bold transition {current(row.key) === score ? 'border-tk-strike bg-tk-strike text-[#1a1512]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.09]'}"
++              aria-pressed={current(row.key) === score}
++            >{score}</button>
++          {/each}
++        </div>
++      </div>
++    {/each}
++  </div>
++
++  <label class="mt-5 block text-xs font-bold text-white/55">
++    Note
++    <Textarea class="mt-2 min-h-28 border-white/10 bg-white/[0.06] text-white placeholder:text-white/28" bind:value={note} placeholder="What helped? What got in the way?" maxlength="4000" />
++  </label>
++
++  <div class="mt-5 flex items-center gap-3">
++    <Button variant="dark" disabled={busy} onclick={submit}>{review ? 'Update review' : 'Save review'}</Button>
++    {#if review}<span class="text-xs text-white/35">Saved · v{review.version}</span>{/if}
++  </div>
++</section>
+diff --git a/mnt/data/taskiller-web-round4/src/lib/components/execution/SessionTimeline.svelte b/mnt/data/taskiller-web-round4/src/lib/components/execution/SessionTimeline.svelte
+new file mode 100644
+index 0000000..acd6952
+--- /dev/null
++++ b/mnt/data/taskiller-web-round4/src/lib/components/execution/SessionTimeline.svelte
+@@ -0,0 +1,45 @@
++<script lang="ts">
++  import type { SessionEvent } from '$lib/api/execution';
++
++  let { events }: { events: SessionEvent[] } = $props();
++
++  const labels: Record<SessionEvent['type'], string> = {
++    session_started: 'Session started',
++    paused: 'Paused',
++    resumed: 'Resumed',
++    segment_started: 'Segment started',
++    segment_completed: 'Segment completed',
++    segment_skipped: 'Segment skipped',
++    break_started: 'Break started',
++    break_ended: 'Break ended',
++    work_item_completed: 'Work item completed',
++    session_completed: 'Session completed',
++    session_abandoned: 'Session abandoned'
++  };
++
++  function eventTime(value: string) {
++    return new Intl.DateTimeFormat(undefined, {
++      hour: '2-digit',
++      minute: '2-digit',
++      second: '2-digit'
++    }).format(new Date(value));
++  }
++</script>
++
++<div class="space-y-0">
++  {#each events as event, index}
++    <div class="grid grid-cols-[22px_minmax(0,1fr)_auto] gap-3">
++      <div class="flex flex-col items-center">
++        <span class="mt-1.5 size-2.5 rounded-full {index === events.length - 1 ? 'bg-tk-strike' : 'bg-white/25'}"></span>
++        {#if index < events.length - 1}<span class="mt-1 h-full w-px bg-white/10"></span>{/if}
++      </div>
++      <div class="pb-5">
++        <p class="text-sm font-semibold text-white/85">{labels[event.type]}</p>
++        {#if event.segmentIndex !== null}
++          <p class="mt-0.5 text-xs text-white/38">Segment {event.segmentIndex + 1}</p>
++        {/if}
++      </div>
++      <time class="tk-mono pt-0.5 text-[11px] text-white/32" datetime={event.occurredAt}>{eventTime(event.occurredAt)}</time>
++    </div>
++  {/each}
++</div>
+diff --git a/mnt/data/taskiller-web-round3-full/src/lib/components/layout/AppShell.svelte b/mnt/data/taskiller-web-round4/src/lib/components/layout/AppShell.svelte
+index 3ab7f5b..8e51fcd 100644
+--- a/mnt/data/taskiller-web-round3-full/src/lib/components/layout/AppShell.svelte
++++ b/mnt/data/taskiller-web-round4/src/lib/components/layout/AppShell.svelte
+@@ -15,6 +15,8 @@
+ 
+   let { children }: { children?: import('svelte').Snippet } = $props();
+ 
++  const focusMode = $derived(page.url.pathname.startsWith('/session/'));
++
+   const nav = [
+     { href: '/today', label: 'Today', icon: HouseIcon },
+     { href: '/inbox', label: 'Inbox', icon: TrayIcon },
+@@ -36,6 +38,9 @@
+   }
+ </script>
+ 
++{#if focusMode}
++  {@render children?.()}
++{:else}
+ <div class="min-h-screen lg:grid lg:grid-cols-[246px_minmax(0,1fr)]">
+   <aside class="sticky top-0 hidden h-screen border-r border-[var(--border)] bg-white/72 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
+     <div class="flex h-12 items-center px-2">
+@@ -107,3 +112,5 @@
+     {/each}
+   </nav>
+ </div>
++
++{/if}
+diff --git a/mnt/data/taskiller-web-round3-full/src/routes/(app)/session/[id]/+page.svelte b/mnt/data/taskiller-web-round4/src/routes/(app)/session/[id]/+page.svelte
+index 4b20336..bf565cd 100644
+--- a/mnt/data/taskiller-web-round3-full/src/routes/(app)/session/[id]/+page.svelte
++++ b/mnt/data/taskiller-web-round4/src/routes/(app)/session/[id]/+page.svelte
+@@ -1,58 +1,361 @@
+ <script lang="ts">
++  import { onMount } from 'svelte';
+   import { page } from '$app/state';
+-  import { createQuery } from '@tanstack/svelte-query';
++  import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+   import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
++  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
++  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
++  import FlagCheckeredIcon from 'phosphor-svelte/lib/FlagCheckeredIcon';
++  import PauseIcon from 'phosphor-svelte/lib/PauseIcon';
++  import PlayIcon from 'phosphor-svelte/lib/PlayIcon';
++  import SkipForwardIcon from 'phosphor-svelte/lib/SkipForwardIcon';
++  import SpinnerGapIcon from 'phosphor-svelte/lib/SpinnerGapIcon';
++  import WarningCircleIcon from 'phosphor-svelte/lib/WarningCircleIcon';
++  import WifiSlashIcon from 'phosphor-svelte/lib/WifiSlashIcon';
+   import ActiveSessionCard from '$lib/components/execution/ActiveSessionCard.svelte';
++  import SessionReviewForm from '$lib/components/execution/SessionReviewForm.svelte';
++  import SessionTimeline from '$lib/components/execution/SessionTimeline.svelte';
+   import Badge from '$lib/components/ui/Badge.svelte';
+-  import { getExecutionSession } from '$lib/api/execution';
++  import Button from '$lib/components/ui/Button.svelte';
++  import {
++    appendSessionEvent,
++    getExecutionSession,
++    getSessionReview,
++    listSessionEvents,
++    SessionConflictError,
++    upsertSessionReview,
++    type SessionEventInput,
++    type SessionReviewInput
++  } from '$lib/api/execution';
+   import { getWorkItem } from '$lib/api/work';
+   import { queryKeys } from '$lib/api/query-keys';
++  import { problemMessage } from '$lib/api/problem';
++  import { formatDuration } from '$lib/utils';
+ 
+   const id = page.params.id;
++  const queryClient = useQueryClient();
++
++  let etag = $state<string | null>(null);
++  let busy = $state<string | null>(null);
++  let errorMessage = $state('');
++  let notice = $state('');
++  let reviewNotice = $state('');
++  let online = $state(true);
++
+   const session = createQuery(() => ({
+     queryKey: queryKeys.execution.detail(id),
+-    queryFn: () => getExecutionSession(id)
++    queryFn: () => getExecutionSession(id),
++    refetchOnWindowFocus: true,
++    refetchInterval: (query) => {
++      const state = query.state.data?.session.state;
++      return state === 'running' || state === 'paused' ? 15_000 : false;
++    }
+   }));
++
++  $effect(() => {
++    if (session.data?.etag) etag = session.data.etag;
++  });
++
+   const work = createQuery(() => ({
+     queryKey: queryKeys.work.detail(session.data?.session.workItemId ?? ''),
+     queryFn: () => getWorkItem(session.data!.session.workItemId),
+     enabled: Boolean(session.data?.session.workItemId)
+   }));
++
++  const events = createQuery(() => ({
++    queryKey: queryKeys.execution.events(id),
++    queryFn: () => listSessionEvents(id),
++    enabled: Boolean(session.data?.session)
++  }));
++
++  const current = $derived(
++    session.data?.session.planSnapshot.segments[session.data.session.currentSegmentIndex] ?? null
++  );
++  const terminal = $derived(
++    session.data?.session.state === 'completed' || session.data?.session.state === 'abandoned'
++  );
++  const planFinished = $derived(
++    Boolean(session.data?.session && session.data.session.currentSegmentIndex >= session.data.session.planSnapshot.segments.length)
++  );
++  const currentStarted = $derived(Boolean(session.data?.session.currentSegmentStartedAt));
++  const currentBreak = $derived(current?.kind === 'break' || current?.kind === 'long_break');
++  const currentLinkedId = $derived(current?.linkedWorkItemId ?? null);
++  const canCompleteWork = $derived(work.data?.item.kind === 'chore' || Boolean(currentLinkedId));
++
++  const linkedWork = createQuery(() => ({
++    queryKey: queryKeys.work.detail(currentLinkedId ?? ''),
++    queryFn: () => getWorkItem(currentLinkedId!),
++    enabled: Boolean(currentLinkedId && currentLinkedId !== session.data?.session.workItemId)
++  }));
++
++  const review = createQuery(() => ({
++    queryKey: queryKeys.execution.review(id),
++    queryFn: () => getSessionReview(id),
++    enabled: terminal
++  }));
++
++  onMount(() => {
++    online = navigator.onLine;
++    const onOnline = async () => {
++      online = true;
++      notice = 'Back online. Session state refreshed.';
++      await Promise.all([session.refetch(), events.refetch()]);
++    };
++    const onOffline = () => {
++      online = false;
++      notice = '';
++    };
++    window.addEventListener('online', onOnline);
++    window.addEventListener('offline', onOffline);
++    return () => {
++      window.removeEventListener('online', onOnline);
++      window.removeEventListener('offline', onOffline);
++    };
++  });
++
++  function clearMessages() {
++    errorMessage = '';
++    notice = '';
++  }
++
++  async function sendEvent(action: string, payload: SessionEventInput) {
++    if (!online) {
++      errorMessage = 'You’re offline. Reconnect before changing session state.';
++      return;
++    }
++    clearMessages();
++    busy = action;
++    try {
++      const result = await appendSessionEvent(id, payload, etag);
++      etag = result.etag;
++      queryClient.setQueryData(queryKeys.execution.detail(id), {
++        session: result.session,
++        etag: result.etag
++      });
++      queryClient.setQueryData(queryKeys.execution.active, {
++        session: ['completed', 'abandoned'].includes(result.session.state) ? null : result.session
++      });
++      await Promise.all([
++        queryClient.invalidateQueries({ queryKey: queryKeys.execution.events(id) }),
++        queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
++      ]);
++    } catch (error) {
++      if (error instanceof SessionConflictError) {
++        if (error.latest) {
++          etag = error.latest.etag;
++          queryClient.setQueryData(queryKeys.execution.detail(id), error.latest);
++        }
++        errorMessage = 'Session state changed on another client. I refreshed the latest server state; try the action again.';
++      } else {
++        errorMessage = problemMessage(error, 'Couldn’t update the session.');
++      }
++    } finally {
++      busy = null;
++    }
++  }
++
++  async function togglePause() {
++    if (!session.data) return;
++    await sendEvent(
++      session.data.session.state === 'paused' ? 'resume' : 'pause',
++      { type: session.data.session.state === 'paused' ? 'resumed' : 'paused' }
++    );
++  }
++
++  async function startCurrent() {
++    if (!session.data || !current) return;
++    await sendEvent('start', {
++      type: currentBreak ? 'break_started' : 'segment_started',
++      segmentIndex: session.data.session.currentSegmentIndex
++    });
++  }
++
++  async function completeCurrent() {
++    if (!session.data || !current) return;
++    await sendEvent('advance', {
++      type: currentBreak ? 'break_ended' : 'segment_completed',
++      segmentIndex: session.data.session.currentSegmentIndex
++    });
++  }
++
++  async function skipCurrent() {
++    if (!session.data || !current?.optional) return;
++    await sendEvent('skip', {
++      type: 'segment_skipped',
++      segmentIndex: session.data.session.currentSegmentIndex
++    });
++  }
++
++  async function markWorkComplete() {
++    if (!session.data) return;
++    const target = currentLinkedId ?? session.data.session.workItemId;
++    await sendEvent('work-complete', {
++      type: 'work_item_completed',
++      payload: target === session.data.session.workItemId ? {} : { workItemId: target }
++    });
++    notice = target === session.data.session.workItemId ? 'Work item marked complete.' : 'Linked Chore marked complete.';
++  }
++
++  async function finishSession() {
++    if (!confirm(planFinished ? 'Finish this session?' : 'Finish this session before the plan is complete?')) return;
++    await sendEvent('finish', { type: 'session_completed' });
++  }
++
++  async function abandonSession() {
++    if (!confirm('Abandon this session? The execution history will be kept.')) return;
++    await sendEvent('abandon', { type: 'session_abandoned' });
++  }
++
++  async function saveReview(input: SessionReviewInput) {
++    reviewNotice = '';
++    busy = 'review';
++    try {
++      const saved = await upsertSessionReview(id, input);
++      queryClient.setQueryData(queryKeys.execution.review(id), saved);
++      reviewNotice = 'Review saved.';
++    } catch (error) {
++      errorMessage = problemMessage(error, 'Couldn’t save the review.');
++    } finally {
++      busy = null;
++    }
++  }
+ </script>
+ 
+ <svelte:head><title>Focus session — Taskiller</title></svelte:head>
+ 
+-<div class="min-h-[calc(100vh-64px)] bg-[#111214] px-5 py-8 text-white sm:px-8 lg:px-12 lg:py-12">
+-  <div class="mx-auto max-w-[980px]">
+-    <a href="/today" class="inline-flex items-center gap-1.5 text-sm font-bold text-white/50 hover:text-white"><ArrowLeftIcon size={15} /> Today</a>
++<div class="min-h-screen bg-[#111214] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
++  <div class="mx-auto max-w-[1180px]">
++    <div class="flex items-center justify-between gap-4">
++      <a href="/today" class="inline-flex items-center gap-1.5 text-sm font-bold text-white/48 transition hover:text-white"><ArrowLeftIcon size={15} /> Leave focus</a>
++      <div class="flex items-center gap-2">
++        {#if !online}<Badge class="border-amber-300/20 bg-amber-300/10 text-amber-100"><WifiSlashIcon size={13} /> Offline</Badge>{/if}
++        {#if session.data}<Badge class="border-white/10 bg-white/[0.07] text-white">{session.data.session.state}</Badge>{/if}
++      </div>
++    </div>
+ 
+     {#if session.isPending}
+-      <div class="mt-8 h-80 animate-pulse rounded-[24px] bg-white/[0.06]"></div>
++      <div class="mt-8 h-[520px] animate-pulse rounded-[28px] bg-white/[0.055]"></div>
+     {:else if session.isError || !session.data}
+-      <div class="mt-8 rounded-[20px] border border-red-500/30 bg-red-500/10 p-6 text-red-100">Couldn’t load this session.</div>
++      <div class="mt-8 rounded-[22px] border border-red-500/30 bg-red-500/10 p-6 text-red-100">Couldn’t load this session.</div>
+     {:else}
+-      <header class="mt-8 flex flex-wrap items-end justify-between gap-4">
++      <header class="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+         <div>
+-          <div class="flex items-center gap-2"><Badge class="border-white/10 bg-white/10 text-white">{session.data.session.state}</Badge><span class="text-xs text-white/40">Session snapshot</span></div>
+-          <h1 class="tk-display mt-3 text-4xl font-extrabold sm:text-5xl">{work.data?.item.name ?? 'Focus session'}</h1>
+-          <p class="mt-2 text-sm text-white/50">Round 3 starts and reconstructs the session. Round 4 adds the full event-control surface.</p>
++          <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-white/35">{work.data?.item.kind ?? 'work'} · focus session</p>
++          <h1 class="tk-display mt-2 max-w-4xl text-4xl font-extrabold sm:text-5xl lg:text-6xl">{work.data?.item.name ?? 'Focus session'}</h1>
++          {#if current}
++            <p class="mt-3 text-sm text-white/48">{current.label || current.kind.replaceAll('_', ' ')} · {current.targetSeconds ? formatDuration(current.targetSeconds) : 'Open duration'}</p>
++          {:else if planFinished && !terminal}
++            <p class="mt-3 text-sm text-emerald-300/80">All planned segments are complete.</p>
++          {/if}
++        </div>
++        <div class="text-left lg:text-right">
++          <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-white/28">Server version</p>
++          <p class="tk-mono mt-1 text-sm text-white/55">v{session.data.session.version}</p>
+         </div>
+       </header>
+ 
+-      <div class="mt-7"><ActiveSessionCard session={session.data.session} /></div>
++      {#if errorMessage}
++        <div class="mt-5 flex items-start gap-2 rounded-[16px] border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100"><WarningCircleIcon size={18} class="mt-0.5 shrink-0" /> {errorMessage}</div>
++      {:else if notice}
++        <div class="mt-5 rounded-[16px] border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{notice}</div>
++      {/if}
++
++      {#if !terminal}
++        <div class="mt-7"><ActiveSessionCard session={session.data.session} /></div>
++
++        <section class="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
++          <div class="rounded-[24px] border border-white/10 bg-white/[0.045] p-5 sm:p-6">
++            <div class="flex flex-wrap items-start justify-between gap-4">
++              <div>
++                <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/32">Current action</p>
++                <h2 class="tk-display mt-2 text-2xl font-bold">
++                  {#if planFinished}Plan complete{:else if !currentStarted}Ready to start {currentBreak ? 'break' : 'segment'}{:else if session.data.session.state === 'paused'}Paused{:else}{currentBreak ? 'Recovery in progress' : 'Stay with the block'}{/if}
++                </h2>
++                {#if linkedWork.data?.item}<p class="mt-1 text-sm text-white/45">Linked Chore: {linkedWork.data.item.name}</p>{/if}
++              </div>
++              {#if current?.optional}<Badge class="border-white/10 bg-white/[0.06] text-white/60">Optional</Badge>{/if}
++            </div>
++
++            <div class="mt-6 flex flex-wrap gap-2.5">
++              {#if planFinished}
++                <Button variant="dark" size="lg" disabled={busy !== null || !online} onclick={finishSession}><FlagCheckeredIcon size={19} weight="fill" /> Finish session</Button>
++              {:else if session.data.session.state === 'paused'}
++                <Button variant="dark" size="lg" disabled={busy !== null || !online} onclick={togglePause}>{#if busy === 'resume'}<SpinnerGapIcon size={18} class="animate-spin" />{:else}<PlayIcon size={18} weight="fill" />{/if} Resume</Button>
++              {:else if !currentStarted}
++                <Button variant="dark" size="lg" disabled={busy !== null || !online} onclick={startCurrent}>{#if busy === 'start'}<SpinnerGapIcon size={18} class="animate-spin" />{:else}<PlayIcon size={18} weight="fill" />{/if} Start {currentBreak ? 'break' : 'segment'}</Button>
++                {#if current?.optional}<Button variant="ghost" size="lg" disabled={busy !== null || !online} onclick={skipCurrent}><SkipForwardIcon size={18} /> Skip</Button>{/if}
++              {:else}
++                <Button variant="dark" size="lg" disabled={busy !== null || !online} onclick={completeCurrent}>{#if busy === 'advance'}<SpinnerGapIcon size={18} class="animate-spin" />{:else}<ArrowRightIcon size={18} weight="bold" />{/if} {currentBreak ? 'End break' : 'Complete segment'}</Button>
++                <Button variant="ghost" size="lg" disabled={busy !== null || !online} onclick={togglePause}><PauseIcon size={18} weight="fill" /> Pause</Button>
++                {#if current?.optional}<Button variant="ghost" size="lg" disabled={busy !== null || !online} onclick={skipCurrent}><SkipForwardIcon size={18} /> Skip</Button>{/if}
++              {/if}
++            </div>
++
++            {#if current && !currentBreak && currentStarted && canCompleteWork}
++              <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
++                <div>
++                  <p class="text-sm font-semibold text-white/72">Finished the actual work?</p>
++                  <p class="mt-0.5 text-xs text-white/35">This changes the linked Chore/work item itself, not just the timer segment.</p>
++                </div>
++                <Button variant="ghost" disabled={busy !== null || !online} onclick={markWorkComplete}><CheckCircleIcon size={18} /> Mark work complete</Button>
++              </div>
++            {/if}
++          </div>
+ 
+-      <section class="mt-6 rounded-[22px] border border-white/10 bg-white/[0.045] p-5 sm:p-6">
+-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/35">Immutable plan snapshot</p>
+-        <div class="mt-4 grid gap-2">
+-          {#each session.data.session.planSnapshot.segments as segment, index}
+-            <div class="flex items-center gap-3 rounded-[14px] bg-white/[0.05] px-4 py-3">
+-              <span class="tk-mono flex size-7 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold">{index + 1}</span>
+-              <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold capitalize">{segment.label || segment.kind.replaceAll('_', ' ')}</p><p class="mt-0.5 text-xs text-white/40">{segment.durationMode} · {segment.targetSeconds ? `${Math.round(segment.targetSeconds / 60)} min` : 'open'}</p></div>
+-              {#if index === session.data.session.currentSegmentIndex}<span class="size-2 rounded-full bg-tk-strike"></span>{/if}
++          <aside class="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
++            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/30">End session</p>
++            <p class="mt-2 text-sm leading-6 text-white/45">Finishing records a completed session. Abandoning keeps the history but marks the session abandoned.</p>
++            <div class="mt-5 grid gap-2">
++              {#if !planFinished}<Button variant="ghost" class="justify-start text-white/72" disabled={busy !== null || !online} onclick={finishSession}><FlagCheckeredIcon size={17} /> Finish early</Button>{/if}
++              <Button variant="ghost" class="justify-start text-red-300 hover:bg-red-500/10" disabled={busy !== null || !online} onclick={abandonSession}>Abandon session</Button>
+             </div>
+-          {/each}
++          </aside>
++        </section>
++      {:else}
++        <section class="mt-7 rounded-[28px] border border-white/10 bg-white/[0.055] p-6 sm:p-8">
++          <div class="flex flex-wrap items-start justify-between gap-5">
++            <div>
++              <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">Session closed</p>
++              <h2 class="tk-display mt-2 text-3xl font-bold">{session.data.session.state === 'completed' ? 'Finished.' : 'Stopped for now.'}</h2>
++              <p class="mt-2 text-sm text-white/45">Your event history and immutable plan snapshot remain available below.</p>
++            </div>
++            <a href={`/work/${session.data.session.workItemId}`} class="inline-flex h-10 items-center rounded-[12px] bg-white/10 px-4 text-sm font-bold text-white/75 hover:bg-white/15">Back to work item</a>
++          </div>
++        </section>
++
++        <div class="mt-5">
++          <SessionReviewForm review={review.data ?? null} busy={busy === 'review'} onsave={saveReview} />
++          {#if reviewNotice}<p class="mt-2 text-sm text-emerald-300">{reviewNotice}</p>{/if}
+         </div>
+-      </section>
++      {/if}
++
++      <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
++        <section class="rounded-[22px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
++          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/30">Immutable plan snapshot</p>
++          <div class="mt-4 grid gap-2">
++            {#each session.data.session.planSnapshot.segments as segment, index}
++              <div class="flex items-center gap-3 rounded-[14px] border border-transparent bg-white/[0.045] px-4 py-3 {index === session.data.session.currentSegmentIndex && !terminal ? 'border-tk-strike/35 bg-tk-strike/[0.07]' : ''}">
++                <span class="tk-mono flex size-7 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold">{index + 1}</span>
++                <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold capitalize">{segment.label || segment.kind.replaceAll('_', ' ')}</p><p class="mt-0.5 text-xs text-white/38">{segment.durationMode} · {segment.targetSeconds ? formatDuration(segment.targetSeconds) : 'open'}{segment.optional ? ' · optional' : ''}</p></div>
++                {#if index < session.data.session.currentSegmentIndex}<CheckCircleIcon size={17} weight="fill" class="text-emerald-300/70" />{:else if index === session.data.session.currentSegmentIndex && !terminal}<span class="size-2 rounded-full bg-tk-strike"></span>{/if}
++              </div>
++            {/each}
++          </div>
++        </section>
++
++        <aside class="rounded-[22px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
++          <div class="flex items-center justify-between gap-3"><p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/30">Event history</p><span class="text-xs text-white/25">{events.data?.items.length ?? 0}</span></div>
++          <div class="mt-5">
++            {#if events.isPending}
++              <div class="space-y-3"><div class="h-10 animate-pulse rounded-xl bg-white/[0.05]"></div><div class="h-10 animate-pulse rounded-xl bg-white/[0.05]"></div></div>
++            {:else if events.data?.items.length}
++              <SessionTimeline events={events.data.items} />
++            {:else}
++              <p class="text-sm text-white/38">No events available.</p>
++            {/if}
++          </div>
++        </aside>
++      </div>
+     {/if}
+   </div>
+ </div>
