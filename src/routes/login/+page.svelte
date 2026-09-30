@@ -34,7 +34,7 @@
     <div class="absolute -left-20 top-24 size-72 rounded-full bg-tk-strike/12 blur-3xl"></div>
     <Logo inverse class="relative h-7 w-auto" />
     <div class="relative mt-auto max-w-lg">
-      <div class="mb-5 grid size-11 place-items-center rounded-[13px] bg-white/10 text-tk-strike"><LightningIcon size={21} weight="fill" /></div>
+      <div class="mb-5 grid size-11 place-items-center rounded-[13px] bg-white/10 text-tk-strike"><LightningIcon size={21} weight="fill" aria-hidden="true" /></div>
       <p class="tk-display text-5xl font-extrabold leading-[1.02]">Your queue can wait. The next action can’t.</p>
       <p class="mt-5 max-w-md text-sm leading-6 text-white/50">Return to the same server-backed work state from any client.</p>
     </div>
