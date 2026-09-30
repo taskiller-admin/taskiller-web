@@ -15,6 +15,8 @@
 
   let { children }: { children?: import('svelte').Snippet } = $props();
 
+  const focusMode = $derived(page.url.pathname.startsWith('/session/'));
+
   const nav = [
     { href: '/today', label: 'Today', icon: HouseIcon },
     { href: '/inbox', label: 'Inbox', icon: TrayIcon },
@@ -36,6 +38,9 @@
   }
 </script>
 
+{#if focusMode}
+  {@render children?.()}
+{:else}
 <div class="min-h-screen lg:grid lg:grid-cols-[246px_minmax(0,1fr)]">
   <aside class="sticky top-0 hidden h-screen border-r border-[var(--border)] bg-white/72 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
     <div class="flex h-12 items-center px-2">
@@ -107,3 +112,5 @@
     {/each}
   </nav>
 </div>
+
+{/if}

@@ -4,21 +4,25 @@ SvelteKit/Svelte 5 frontend for the Taskiller API.
 
 ## Current implementation
 
-Round 3 is complete:
+Round 4 is complete:
 
 - auth + refresh-cookie bootstrap;
-- responsive application shell;
+- responsive application shell with dedicated full-screen focus mode;
 - Today, Inbox, Projects and adaptive Project/Sprint/Chore workspaces;
 - work CRUD, hierarchy, re-parenting, reorder, ETags and conflict recovery;
-- Focus Plan recommendation generation;
-- recommendation rationale/provenance;
-- editable Focus Plan segment sequencing;
-- saved-plan load/update with ETags;
-- Save & Start session flow;
-- one-open-session recovery;
-- active-session handoff and server-time reconstruction.
+- Focus Plan recommendation generation, rationale and editable sequencing;
+- saved-plan load/update + Save & Start;
+- execution session reconstruction from server timestamps;
+- pause/resume;
+- explicit segment and break start/finish controls;
+- optional-segment skipping;
+- linked Chore/work-item completion;
+- session finish/abandon flows;
+- ETag conflict recovery and reconnect refresh;
+- complete session event timeline (paginated through the API);
+- post-session focus/fatigue/difficulty/satisfaction review.
 
-See `docs/ROUND_1.md`, `docs/ROUND_2.md`, and `docs/ROUND_3.md`.
+See `docs/ROUND_1.md` through `docs/ROUND_4.md`.
 
 ## Setup
 
@@ -41,7 +45,7 @@ The API URL must not end with `/`.
 
 ## Backend contract
 
-Round 3 was built against Taskiller backend main:
+Round 4 was built against Taskiller backend main:
 
 `7792c34c49e6a09e7e20380e8b6becf93c863c67`
 

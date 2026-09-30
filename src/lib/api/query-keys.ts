@@ -18,6 +18,8 @@ export const queryKeys = {
   },
   execution: {
     active: ['execution', 'active'] as const,
-    detail: (id: string) => ['execution', 'detail', id] as const
+    detail: (id: string) => ['execution', 'detail', id] as const,
+    events: (id: string) => ['execution', 'events', id] as const,
+    review: (id: string) => ['execution', 'review', id] as const
   }
 };

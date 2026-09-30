@@ -1,5 +1,5 @@
 /**
- * Round-3 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
+ * Round-4 contract subset, transcribed from Taskiller backend OpenAPI v1.0.0
  * at backend main 7792c34c49e6a09e7e20380e8b6becf93c863c67.
  * Run `npm run api:update` against the deployed backend to replace this file
  * with the complete openapi-typescript output.
@@ -200,6 +200,54 @@ export interface components {
       focusPlanId: string;
       recommendationId?: string | null;
     };
+    SessionEventType:
+      | 'session_started'
+      | 'paused'
+      | 'resumed'
+      | 'segment_started'
+      | 'segment_completed'
+      | 'segment_skipped'
+      | 'break_started'
+      | 'break_ended'
+      | 'work_item_completed'
+      | 'session_completed'
+      | 'session_abandoned';
+    CreateSessionEventRequest: {
+      type: components['schemas']['SessionEventType'];
+      segmentIndex?: number | null;
+      clientOccurredAt?: string | null;
+      payload?: Record<string, unknown>;
+    };
+    SessionEvent: {
+      id: string;
+      sessionId: string;
+      type: components['schemas']['SessionEventType'];
+      occurredAt: string;
+      clientOccurredAt: string | null;
+      segmentIndex: number | null;
+      payload: Record<string, unknown>;
+    };
+    SessionEventPage: {
+      items: components['schemas']['SessionEvent'][];
+      page: components['schemas']['PageMeta'];
+    };
+    AppendSessionEventResponse: {
+      event: components['schemas']['SessionEvent'];
+      session: components['schemas']['ExecutionSession'];
+    };
+    UpsertSessionReviewRequest: {
+      focusScore?: number | null;
+      fatigueScore?: number | null;
+      difficultyScore?: number | null;
+      satisfactionScore?: number | null;
+      note?: string | null;
+    };
+    SessionReview: components['schemas']['UpsertSessionReviewRequest'] & {
+      sessionId: string;
+      createdAt: string;
+      updatedAt: string;
+      version: number;
+    };
     Problem: {
       type: string;
       title: string;
@@ -351,6 +399,37 @@ export interface paths {
     get: {
       parameters: { path: { executionSessionId: string } };
       responses: { 200: JsonResponse<components['schemas']['ExecutionSession']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/execution-sessions/{executionSessionId}/events': {
+    get: {
+      parameters: {
+        path: { executionSessionId: string };
+        query?: { limit?: number; cursor?: string | null };
+      };
+      responses: { 200: JsonResponse<components['schemas']['SessionEventPage']>; default: ProblemResponse };
+    };
+    post: {
+      parameters: {
+        path: { executionSessionId: string };
+        header: { 'Idempotency-Key': string; 'If-Match'?: string | null };
+      };
+      requestBody: { content: { 'application/json': components['schemas']['CreateSessionEventRequest'] } };
+      responses: { 201: JsonResponse<components['schemas']['AppendSessionEventResponse']>; default: ProblemResponse };
+    };
+  };
+  '/api/v1/execution-sessions/{executionSessionId}/review': {
+    get: {
+      parameters: { path: { executionSessionId: string } };
+      responses: { 200: JsonResponse<components['schemas']['SessionReview']>; default: ProblemResponse };
+    };
+    put: {
+      parameters: {
+        path: { executionSessionId: string };
+        header: { 'Idempotency-Key': string };
+      };
+      requestBody: { content: { 'application/json': components['schemas']['UpsertSessionReviewRequest'] } };
+      responses: { 200: JsonResponse<components['schemas']['SessionReview']>; default: ProblemResponse };
     };
   };
   '/api/v1/execution-sessions/active': {

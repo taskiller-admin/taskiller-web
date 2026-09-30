@@ -47,6 +47,9 @@
   </div>
   <div class="relative mt-7 flex items-end justify-between gap-6 lg:mt-0 lg:block lg:text-right">
     <div class="tk-mono text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">{formatClock(remaining)}</div>
-    <a href={`/work/${session.workItemId}`} class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white/55 hover:text-white">Open work <ArrowUpRightIcon size={14} /></a>
+    <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
+      <a href={`/work/${session.workItemId}`} class="inline-flex items-center gap-1.5 text-xs font-bold text-white/45 hover:text-white">Open work</a>
+      <a href={`/session/${session.id}`} class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 hover:bg-white/15">Open session <ArrowUpRightIcon size={14} /></a>
+    </div>
   </div>
 </section>

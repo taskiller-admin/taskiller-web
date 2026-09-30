@@ -1,0 +1,1151 @@
+diff --git a/MANIFEST.md b/MANIFEST.md
+index 9bbb1f4..173a94c 100644
+--- a/MANIFEST.md
++++ b/MANIFEST.md
+@@ -1,18 +1,29 @@
+-# Taskiller Web Round 4 manifest
++# Taskiller Web Round 5 manifest
+ 
+-## New / expanded Round-4 surfaces
++## New files
+ 
+-- expanded `src/lib/api/execution.ts`
+-- expanded `src/lib/api/query-keys.ts`
+-- expanded bootstrap `src/lib/api/generated/schema.d.ts`
+-- expanded `openapi/taskiller.json` execution/review subset
+-- `src/lib/components/execution/SessionTimeline.svelte`
+-- `src/lib/components/execution/SessionReviewForm.svelte`
+-- upgraded `src/lib/components/execution/ActiveSessionCard.svelte`
+-- upgraded `src/lib/components/layout/AppShell.svelte` with focus mode
+-- rebuilt `src/routes/(app)/session/[id]/+page.svelte`
+-- `docs/ROUND_4.md`
++- `src/lib/api/analytics.ts`
++- `src/lib/components/analytics/MetricCard.svelte`
++- `src/lib/components/analytics/ActivityChart.svelte`
++- `src/lib/components/analytics/HourPatternChart.svelte`
++- `src/lib/components/analytics/WorkItemAnalyticsCard.svelte`
++- `src/lib/components/history/SessionHistoryRow.svelte`
++- `src/routes/(app)/history/+page.svelte`
++- `docs/ROUND_5.md`
+ 
+-## Round-4 behavior
++## Expanded files
+ 
+-Plan & Start → live session → pause/resume → explicit segment/break progression → optional skip/work completion → finish/abandon → review, with reconnect and optimistic-concurrency recovery throughout.
++- `src/lib/api/client.ts` — reusable authenticated JSON request primitive
++- `src/lib/api/execution.ts` — execution-session history listing
++- `src/lib/api/query-keys.ts` — analytics + history cache keys
++- `src/lib/components/layout/AppShell.svelte` — History navigation
++- `src/routes/(app)/analytics/+page.svelte` — complete analytics workspace
++- `src/routes/(app)/work/[id]/+page.svelte` — work-item analytics drill-down
++- `package.json` — version `0.5.0`
++- `README.md`
++
++## Round-5 behavior
++
++Execution history and analytics now form one inspectable loop:
++
++work item → focused execution → immutable session record → review → global/work-item analytics → drill-down back to work/session.
+diff --git a/README.md b/README.md
+index 2dc8422..3e260e0 100644
+--- a/README.md
++++ b/README.md
+@@ -4,7 +4,7 @@ SvelteKit/Svelte 5 frontend for the Taskiller API.
+ 
+ ## Current implementation
+ 
+-Round 4 is complete:
++Round 5 is complete:
+ 
+ - auth + refresh-cookie bootstrap;
+ - responsive application shell with dedicated full-screen focus mode;
+@@ -12,17 +12,15 @@ Round 4 is complete:
+ - work CRUD, hierarchy, re-parenting, reorder, ETags and conflict recovery;
+ - Focus Plan recommendation generation, rationale and editable sequencing;
+ - saved-plan load/update + Save & Start;
+-- execution session reconstruction from server timestamps;
+-- pause/resume;
+-- explicit segment and break start/finish controls;
+-- optional-segment skipping;
+-- linked Chore/work-item completion;
+-- session finish/abandon flows;
+-- ETag conflict recovery and reconnect refresh;
+-- complete session event timeline (paginated through the API);
+-- post-session focus/fatigue/difficulty/satisfaction review.
+-
+-See `docs/ROUND_1.md` through `docs/ROUND_4.md`.
++- full execution state machine, reconnect recovery, event timeline and review;
++- first-class History route with state/range/work-item filtering and pagination;
++- analytics summary, activity timeseries and time-of-day execution view;
++- work-type completion/focus/estimate comparisons;
++- personalization-eligibility evidence without causal productivity claims;
++- 30-day work-item analytics embedded directly in Project/Sprint/Chore detail;
++- drill-down from analytics/history to the underlying work item and execution session.
++
++See `docs/ROUND_1.md` through `docs/ROUND_5.md`.
+ 
+ ## Setup
+ 
+@@ -45,8 +43,10 @@ The API URL must not end with `/`.
+ 
+ ## Backend contract
+ 
+-Round 4 was built against Taskiller backend main:
++Round 5 was built against Taskiller backend main:
+ 
+ `7792c34c49e6a09e7e20380e8b6becf93c863c67`
+ 
+ Run `npm run api:update` against the deployed backend before release so `openapi/taskiller.json` and `src/lib/api/generated/schema.d.ts` match production exactly.
++
++The Round-5 analytics/history layer deliberately keeps its TypeScript response contracts in `src/lib/api/analytics.ts` and `src/lib/api/execution.ts`. This keeps the bundled Round-4 bootstrap schema usable offline while `api:update` remains the production source of truth.
+diff --git a/VALIDATION.md b/VALIDATION.md
+index e0f755b..2dd5a7c 100644
+--- a/VALIDATION.md
++++ b/VALIDATION.md
+@@ -1,16 +1,18 @@
+-# Round 4 validation
++# Round 5 validation
+ 
+ Completed in the build workspace:
+ 
+ - backend contract rechecked at `7792c34c49e6a09e7e20380e8b6becf93c863c67`;
+-- parsed 44 TypeScript units, including every Svelte `<script lang="ts">`: OK;
++- analytics/history endpoints and response fields re-read from committed backend OpenAPI;
++- parsed 50 TypeScript units, including every Svelte `<script lang="ts">`: OK;
+ - bundled `openapi/taskiller.json`: valid JSON;
+-- Round-4 bootstrap schema includes execution events and reviews;
+ - all `$lib` and relative local imports resolve, including `.d.ts` modules;
+ - Svelte `{#if}`, `{#each}`, `{#await}`, and `{#key}` block counts balance;
+-- full session event pagination, ETag mutation paths, and terminal review paths are represented in the client layer.
++- work-item analytics drill-down and History navigation resolve to real routes;
++- analytics uses descriptive language and does not derive causal productivity scores;
++- activity/history data comes through the centralized authenticated API layer.
+ 
+-`npm install --prefer-offline --no-audit --no-fund` was attempted in the sandbox but timed out before dependencies were installed. Therefore the final Svelte compiler and Vite production build must be run locally.
++`npm install --prefer-offline --no-audit --no-fund` was attempted in the sandbox and timed out before dependencies were installed. Therefore the final Svelte compiler and Vite production build must be run locally.
+ 
+ Before committing/deploying:
+ 
+@@ -23,15 +25,13 @@ npm run build
+ 
+ Exercise these flows against the deployed API:
+ 
+-1. Start a Chore session from Plan & Start.
+-2. Pause → Resume.
+-3. Complete current work segment → explicitly start next break/segment.
+-4. Skip an optional segment; confirm required segment cannot expose Skip.
+-5. Mark the Chore complete from a Chore session.
+-6. Sprint session → mark a linked child Chore complete.
+-7. Finish after the final segment.
+-8. Finish early and abandon paths.
+-9. Trigger a stale ETag from another client/tab → confirm latest state reloads.
+-10. Go offline → controls disable; reconnect → session/events refetch.
+-11. Close a session → save and update a review.
+-12. Reopen the session route → immutable plan snapshot and event history reconstruct correctly.
++1. Open Analytics with 7/30/90-day ranges.
++2. Verify active-work / adherence / session / Chore summary values against API responses.
++3. Inspect daily/weekly activity and hour-of-day charts with no history and with real history.
++4. Confirm work-type rows match `/analytics/work-types`.
++5. Confirm personalization cards only appear when backend eligibility is true.
++6. Open History; filter range and state; load another page.
++7. Open a session from History and return to its work item.
++8. Open a Project/Sprint/Chore and verify its 30-day analytics card.
++9. Use the work-item History link and confirm `workItemId` filtering.
++10. Run with zero review scores and confirm the UI shows missing evidence rather than inventing values.
+diff --git a/docs/ROUND_5.md b/docs/ROUND_5.md
+new file mode 100644
+index 0000000..06c0f12
+--- /dev/null
++++ b/docs/ROUND_5.md
+@@ -0,0 +1,86 @@
++# Round 5 — Analytics and History
++
++Round 5 turns Taskiller's execution history into inspectable evidence rather than a decorative dashboard.
++
++## History
++
++`/history` is now a first-class route in desktop and mobile navigation.
++
++It supports:
++
++- 7 / 30 / 90 day and all-time windows;
++- running, paused, completed and abandoned state filters;
++- optional `?workItemId=` scoping from a Project, Sprint or Chore;
++- 25-row cursor pagination with “Load older sessions”;
++- lazy work-item identity lookup with TanStack Query caching;
++- direct links to the immutable session record and the underlying work item.
++
++The session row reports the elapsed wall-clock window, plan segment count and stored strategy. It does not mislabel wall-clock time as active work.
++
++## Analytics
++
++`/analytics` now reads the backend analytics endpoints directly:
++
++- `GET /api/v1/analytics/summary`
++- `GET /api/v1/analytics/timeseries`
++- `GET /api/v1/analytics/work-types`
++- `GET /api/v1/analytics/work-items/{workItemId}`
++- `GET /api/v1/analytics/focus-patterns`
++
++The default window is 30 days with 7/30/90-day presets. Timeseries switches to weekly buckets for the 90-day view.
++
++### Global metrics
++
++- active work time;
++- plan adherence;
++- completed vs abandoned session share;
++- Chores completed;
++- median uninterrupted work block;
++- median estimate error;
++- median start delay.
++
++### Visualizations
++
++Round 5 intentionally adds no charting dependency. Activity and hour-of-day charts are lightweight Svelte/CSS primitives with accessible titles and text explanations.
++
++- Activity chart stacks active work, break and paused seconds.
++- Time-of-day chart shows observed active work by hour.
++- Median focus review availability is shown separately; Taskiller does not claim that the hour caused the score.
++
++### Work-type evidence
++
++Work types are compared by:
++
++- active work;
++- session count;
++- completion rate;
++- median focus review;
++- median estimate error.
++
++The focus-pattern panel only labels a work type as personalization-eligible when the backend says `recommendationPersonalizationEligible=true`.
++
++## Work-item drill-down
++
++Every Project, Sprint and Chore detail route now includes a 30-day “Observed execution” card showing:
++
++- active work;
++- session count;
++- plan adherence;
++- estimate error;
++- a direct link to filtered session history.
++
++The backend's work-item analytics endpoint is hierarchical, so Project/Sprint context remains server-authoritative.
++
++## Interpretation policy
++
++Round 5 is deliberately conservative with language:
++
++- no productivity score;
++- no “best hour” claim;
++- no claim that a timer strategy caused better focus;
++- no attempt to infer causal effects from descriptive history;
++- signed estimate error is shown for calibration rather than graded as good/bad.
++
++## Next round
++
++Round 6 should complete account/settings operations: preferences, active devices/sessions, data export, account deletion, verification/reset surfaces and privacy UX.
+diff --git a/package.json b/package.json
+index 95180a7..48aaeda 100644
+--- a/package.json
++++ b/package.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "taskiller-web",
+   "private": true,
+-  "version": "0.4.0",
++  "version": "0.5.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite dev",
+diff --git a/src/lib/api/analytics.ts b/src/lib/api/analytics.ts
+new file mode 100644
+index 0000000..7049078
+--- /dev/null
++++ b/src/lib/api/analytics.ts
+@@ -0,0 +1,135 @@
++import { taskillerJson } from './client';
++
++export type AnalyticsBucket = 'day' | 'week';
++
++export type AnalyticsSummary = {
++  from: string;
++  to: string;
++  activeWorkSeconds: number;
++  breakSeconds: number;
++  pausedSeconds: number;
++  sessionsCompleted: number;
++  sessionsAbandoned: number;
++  choresCompleted: number;
++  medianUninterruptedWorkSeconds?: number | null;
++  medianEstimateErrorSeconds?: number | null;
++  medianStartDelaySeconds?: number | null;
++  requiredSegmentsCompleted: number;
++  requiredSegmentsPlanned: number;
++  planAdherenceRate?: number | null;
++};
++
++export type AnalyticsTimeseriesPoint = {
++  bucketStart: string;
++  activeWorkSeconds: number;
++  breakSeconds: number;
++  pausedSeconds: number;
++  sessionsCompleted: number;
++  choresCompleted: number;
++};
++
++export type AnalyticsTimeseries = {
++  from: string;
++  to: string;
++  bucket: AnalyticsBucket;
++  timezone: string;
++  points: AnalyticsTimeseriesPoint[];
++};
++
++export type WorkTypeAnalytics = {
++  workTypeId: string | null;
++  workTypeSlug: string | null;
++  activeWorkSeconds: number;
++  sessionCount: number;
++  medianUninterruptedWorkSeconds?: number | null;
++  medianEstimateErrorSeconds?: number | null;
++  completionRate?: number | null;
++  medianFocusScore?: number | null;
++};
++
++export type WorkItemAnalytics = {
++  workItemId: string;
++  activeWorkSeconds: number;
++  breakSeconds: number;
++  pausedSeconds: number;
++  sessionCount: number;
++  estimateErrorSeconds?: number | null;
++  requiredSegmentsCompleted: number;
++  requiredSegmentsPlanned: number;
++  planAdherenceRate?: number | null;
++  firstStartedAt: string | null;
++  completedAt: string | null;
++};
++
++export type FocusPatternItem = {
++  workTypeId: string | null;
++  workTypeSlug: string;
++  sampleSize: number;
++  medianUninterruptedWorkSeconds?: number | null;
++  p25UninterruptedWorkSeconds?: number | null;
++  p75UninterruptedWorkSeconds?: number | null;
++  medianFocusScore?: number | null;
++  recommendationPersonalizationEligible: boolean;
++};
++
++export type TimeOfDayPatternItem = {
++  hourStart: number;
++  activeWorkSeconds: number;
++  sessionCount: number;
++  medianFocusScore?: number | null;
++};
++
++export type FocusPatterns = {
++  from: string;
++  to: string;
++  timezone: string;
++  items: FocusPatternItem[];
++  timeOfDay: TimeOfDayPatternItem[];
++};
++
++function analyticsQuery(from: string, to: string, extra: Record<string, string> = {}) {
++  const params = new URLSearchParams({ from, to, ...extra });
++  return params.toString();
++}
++
++export function analyticsRange(days: number, anchorIso = new Date().toISOString()) {
++  const to = new Date(anchorIso);
++  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
++  return { from: from.toISOString(), to: to.toISOString() };
++}
++
++export async function getAnalyticsSummary(from: string, to: string) {
++  return (await taskillerJson<AnalyticsSummary>(`/api/v1/analytics/summary?${analyticsQuery(from, to)}`)).data;
++}
++
++export async function getAnalyticsTimeseries(from: string, to: string, bucket: AnalyticsBucket) {
++  return (
++    await taskillerJson<AnalyticsTimeseries>(
++      `/api/v1/analytics/timeseries?${analyticsQuery(from, to, { bucket })}`
++    )
++  ).data;
++}
++
++export async function getWorkTypeAnalytics(from: string, to: string) {
++  return (
++    await taskillerJson<{ items: WorkTypeAnalytics[] }>(
++      `/api/v1/analytics/work-types?${analyticsQuery(from, to)}`
++    )
++  ).data;
++}
++
++export async function getWorkItemAnalytics(id: string, from: string, to: string) {
++  return (
++    await taskillerJson<WorkItemAnalytics>(
++      `/api/v1/analytics/work-items/${encodeURIComponent(id)}?${analyticsQuery(from, to)}`
++    )
++  ).data;
++}
++
++export async function getFocusPatterns(from: string, to: string) {
++  return (
++    await taskillerJson<FocusPatterns>(
++      `/api/v1/analytics/focus-patterns?${analyticsQuery(from, to)}`
++    )
++  ).data;
++}
+diff --git a/src/lib/api/client.ts b/src/lib/api/client.ts
+index afc1a58..e7082a0 100644
+--- a/src/lib/api/client.ts
++++ b/src/lib/api/client.ts
+@@ -10,7 +10,7 @@ type AuthResponse = {
+   user: unknown;
+ };
+ 
+-const apiBase = env.PUBLIC_TASKILLER_API_URL?.replace(/\/$/, '') ?? '';
++export const apiBase = env.PUBLIC_TASKILLER_API_URL?.replace(/\/$/, '') ?? '';
+ if (!apiBase) {
+   console.warn('PUBLIC_TASKILLER_API_URL is not configured. API calls will fail until it is set.');
+ }
+@@ -43,7 +43,7 @@ async function refreshAccessToken(): Promise<boolean> {
+   return refreshPromise;
+ }
+ 
+-async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
++export async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+   const initial = new Request(input, init);
+   const first = new Request(initial);
+   const token = getAccessToken();
+@@ -62,6 +62,29 @@ async function taskillerFetch(input: RequestInfo | URL, init?: RequestInit): Pro
+   return fetch(retry);
+ }
+ 
++
++export async function taskillerJson<T>(path: string, init?: RequestInit): Promise<{ data: T; response: Response }> {
++  const response = await taskillerFetch(`${apiBase}${path}`, {
++    ...init,
++    headers: {
++      Accept: 'application/json',
++      ...init?.headers
++    }
++  });
++
++  if (!response.ok) {
++    let problem: unknown = null;
++    try {
++      problem = await response.json();
++    } catch {
++      // Preserve a useful HTTP error even if the response body is not JSON.
++    }
++    throw problem ?? new Error(`Taskiller API request failed with HTTP ${response.status}.`);
++  }
++
++  return { data: (await response.json()) as T, response };
++}
++
+ export const api = createClient<paths>({
+   baseUrl: apiBase,
+   credentials: 'include',
+diff --git a/src/lib/api/execution.ts b/src/lib/api/execution.ts
+index baaf775..3c58cac 100644
+--- a/src/lib/api/execution.ts
++++ b/src/lib/api/execution.ts
+@@ -1,5 +1,5 @@
+ import type { components } from './generated/schema';
+-import { api } from './client';
++import { api, taskillerJson } from './client';
+ 
+ export type ExecutionSession = components['schemas']['ExecutionSession'];
+ export type StartExecutionSessionInput = components['schemas']['StartExecutionSessionRequest'];
+@@ -9,6 +9,20 @@ export type SessionEventInput = components['schemas']['CreateSessionEventRequest
+ export type SessionReview = components['schemas']['SessionReview'];
+ export type SessionReviewInput = components['schemas']['UpsertSessionReviewRequest'];
+ 
++export type ExecutionSessionPage = {
++  items: ExecutionSession[];
++  page: { hasMore: boolean; nextCursor: string | null };
++};
++
++export type ExecutionSessionFilters = {
++  limit?: number;
++  cursor?: string | null;
++  workItemId?: string | null;
++  state?: 'running' | 'paused' | 'completed' | 'abandoned' | null;
++  from?: string | null;
++  to?: string | null;
++};
++
+ export class OpenSessionConflictError extends Error {
+   activeSession: ExecutionSession | null;
+ 
+@@ -148,3 +162,17 @@ export async function upsertSessionReview(id: string, input: SessionReviewInput)
+   if (error || !data) throw error ?? new Error('Session review returned no data.');
+   return data;
+ }
++
++
++export async function listExecutionSessions(filters: ExecutionSessionFilters = {}) {
++  const params = new URLSearchParams();
++  params.set('limit', String(filters.limit ?? 25));
++  if (filters.cursor) params.set('cursor', filters.cursor);
++  if (filters.workItemId) params.set('workItemId', filters.workItemId);
++  if (filters.state) params.set('state', filters.state);
++  if (filters.from) params.set('from', filters.from);
++  if (filters.to) params.set('to', filters.to);
++  return (
++    await taskillerJson<ExecutionSessionPage>(`/api/v1/execution-sessions?${params.toString()}`)
++  ).data;
++}
+diff --git a/src/lib/api/query-keys.ts b/src/lib/api/query-keys.ts
+index 058105e..e839093 100644
+--- a/src/lib/api/query-keys.ts
++++ b/src/lib/api/query-keys.ts
+@@ -20,6 +20,15 @@ export const queryKeys = {
+     active: ['execution', 'active'] as const,
+     detail: (id: string) => ['execution', 'detail', id] as const,
+     events: (id: string) => ['execution', 'events', id] as const,
+-    review: (id: string) => ['execution', 'review', id] as const
++    review: (id: string) => ['execution', 'review', id] as const,
++    history: (filters: Record<string, unknown> = {}) => ['execution', 'history', filters] as const
++  },
++  analytics: {
++    all: ['analytics'] as const,
++    summary: (from: string, to: string) => ['analytics', 'summary', from, to] as const,
++    timeseries: (from: string, to: string, bucket: string) => ['analytics', 'timeseries', from, to, bucket] as const,
++    workTypes: (from: string, to: string) => ['analytics', 'work-types', from, to] as const,
++    focusPatterns: (from: string, to: string) => ['analytics', 'focus-patterns', from, to] as const,
++    workItem: (id: string, from: string, to: string) => ['analytics', 'work-item', id, from, to] as const
+   }
+ };
+diff --git a/src/lib/components/analytics/ActivityChart.svelte b/src/lib/components/analytics/ActivityChart.svelte
+new file mode 100644
+index 0000000..3862364
+--- /dev/null
++++ b/src/lib/components/analytics/ActivityChart.svelte
+@@ -0,0 +1,33 @@
++<script lang="ts">
++  import type { AnalyticsTimeseriesPoint } from '$lib/api/analytics';
++  import { formatDuration, formatShortDate } from '$lib/utils';
++
++  let { points }: { points: AnalyticsTimeseriesPoint[] } = $props();
++  const maxTotal = $derived(
++    Math.max(1, ...points.map((point) => point.activeWorkSeconds + point.breakSeconds + point.pausedSeconds))
++  );
++</script>
++
++<div class="overflow-x-auto pb-2">
++  <div class="flex min-w-[620px] items-end gap-2" style="height: 230px">
++    {#each points as point}
++      {@const activeHeight = Math.max(2, (point.activeWorkSeconds / maxTotal) * 170)}
++      {@const breakHeight = (point.breakSeconds / maxTotal) * 170}
++      {@const pausedHeight = (point.pausedSeconds / maxTotal) * 170}
++      <div class="group flex min-w-0 flex-1 flex-col items-center justify-end gap-2" title={`${formatShortDate(point.bucketStart)} · ${formatDuration(point.activeWorkSeconds)} active work`}>
++        <div class="flex w-full max-w-8 flex-col justify-end overflow-hidden rounded-t-[8px] bg-black/[0.035]" style="height: 180px">
++          {#if pausedHeight > 0}<div class="w-full bg-[#b7b8b3]" style={`height:${pausedHeight}px`}></div>{/if}
++          {#if breakHeight > 0}<div class="w-full bg-tk-blue/45" style={`height:${breakHeight}px`}></div>{/if}
++          <div class="w-full bg-tk-strike transition group-hover:brightness-95" style={`height:${activeHeight}px`}></div>
++        </div>
++        <span class="max-w-[64px] truncate text-[10px] font-semibold text-tk-graphite">{formatShortDate(point.bucketStart)}</span>
++      </div>
++    {/each}
++  </div>
++</div>
++
++<div class="mt-3 flex flex-wrap gap-4 text-[11px] font-semibold text-tk-graphite">
++  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-tk-strike"></span> Active work</span>
++  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-tk-blue/55"></span> Break</span>
++  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-[#b7b8b3]"></span> Paused</span>
++</div>
+diff --git a/src/lib/components/analytics/HourPatternChart.svelte b/src/lib/components/analytics/HourPatternChart.svelte
+new file mode 100644
+index 0000000..535de70
+--- /dev/null
++++ b/src/lib/components/analytics/HourPatternChart.svelte
+@@ -0,0 +1,25 @@
++<script lang="ts">
++  import type { TimeOfDayPatternItem } from '$lib/api/analytics';
++  import { formatDuration } from '$lib/utils';
++
++  let { items }: { items: TimeOfDayPatternItem[] } = $props();
++  const maxWork = $derived(Math.max(1, ...items.map((item) => item.activeWorkSeconds)));
++</script>
++
++<div class="overflow-x-auto">
++  <div class="flex min-w-[680px] items-end gap-1.5" style="height: 180px">
++    {#each items as item}
++      {@const height = Math.max(item.activeWorkSeconds > 0 ? 3 : 0, (item.activeWorkSeconds / maxWork) * 130)}
++      <div class="group flex min-w-0 flex-1 flex-col items-center justify-end gap-2" title={`${item.hourStart.toString().padStart(2, '0')}:00 · ${formatDuration(item.activeWorkSeconds)} active work · ${item.sessionCount} sessions`}>
++        <div class="relative flex h-[136px] w-full items-end justify-center rounded-[8px] bg-black/[0.025]">
++          <div class="w-full max-w-5 rounded-t-[6px] bg-tk-ink/80 transition group-hover:bg-tk-strike" style={`height:${height}px`}></div>
++          {#if item.medianFocusScore}
++            <span class="absolute -top-1 size-1.5 rounded-full bg-tk-blue" style={`opacity:${0.25 + (item.medianFocusScore / 5) * 0.75}`}></span>
++          {/if}
++        </div>
++        {#if item.hourStart % 3 === 0}<span class="text-[9px] font-semibold text-tk-graphite">{item.hourStart.toString().padStart(2, '0')}</span>{:else}<span class="h-[11px]"></span>{/if}
++      </div>
++    {/each}
++  </div>
++</div>
++<p class="mt-3 text-xs leading-5 text-tk-graphite">Bar height is observed active work. Blue dots indicate a median focus score was recorded for that hour; they are descriptive review data, not a causal productivity score.</p>
+diff --git a/src/lib/components/analytics/MetricCard.svelte b/src/lib/components/analytics/MetricCard.svelte
+new file mode 100644
+index 0000000..15b8d04
+--- /dev/null
++++ b/src/lib/components/analytics/MetricCard.svelte
+@@ -0,0 +1,29 @@
++<script lang="ts">
++  let {
++    label,
++    value,
++    detail,
++    tone = 'neutral'
++  }: {
++    label: string;
++    value: string;
++    detail?: string;
++    tone?: 'neutral' | 'accent' | 'blue' | 'green';
++  } = $props();
++
++  const toneClass = {
++    neutral: 'bg-[#ecece7]',
++    accent: 'bg-tk-strike',
++    blue: 'bg-tk-blue',
++    green: 'bg-tk-green'
++  } as const;
++</script>
++
++<div class="rounded-[18px] border border-[var(--border)] bg-white/76 p-5">
++  <div class="flex items-start justify-between gap-4">
++    <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">{label}</p>
++    <span class={`size-2.5 rounded-full ${toneClass[tone]}`}></span>
++  </div>
++  <p class="tk-display mt-5 text-3xl font-extrabold leading-none sm:text-[2.15rem]">{value}</p>
++  {#if detail}<p class="mt-3 text-xs leading-5 text-tk-graphite">{detail}</p>{/if}
++</div>
+diff --git a/src/lib/components/analytics/WorkItemAnalyticsCard.svelte b/src/lib/components/analytics/WorkItemAnalyticsCard.svelte
+new file mode 100644
+index 0000000..2b49d7a
+--- /dev/null
++++ b/src/lib/components/analytics/WorkItemAnalyticsCard.svelte
+@@ -0,0 +1,42 @@
++<script lang="ts">
++  import { createQuery } from '@tanstack/svelte-query';
++  import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
++  import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
++  import { analyticsRange, getWorkItemAnalytics } from '$lib/api/analytics';
++  import { queryKeys } from '$lib/api/query-keys';
++  import { formatDuration } from '$lib/utils';
++
++  let { workItemId }: { workItemId: string } = $props();
++  const range = analyticsRange(30);
++  const analytics = createQuery(() => ({
++    queryKey: queryKeys.analytics.workItem(workItemId, range.from, range.to),
++    queryFn: () => getWorkItemAnalytics(workItemId, range.from, range.to)
++  }));
++
++  const adherence = $derived(
++    analytics.data?.planAdherenceRate == null ? '—' : `${Math.round(analytics.data.planAdherenceRate * 100)}%`
++  );
++</script>
++
++<section class="rounded-[20px] border border-[var(--border)] bg-white/70 p-5">
++  <div class="flex items-center justify-between gap-3">
++    <div>
++      <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite"><ChartLineUpIcon size={14} /> Last 30 days</div>
++      <h2 class="mt-1 font-bold">Observed execution</h2>
++    </div>
++    <a href={`/history?workItemId=${workItemId}`} class="flex items-center gap-1 text-xs font-bold text-tk-graphite hover:text-tk-ink"><ClockCounterClockwiseIcon size={14} /> History</a>
++  </div>
++
++  {#if analytics.isPending}
++    <div class="mt-5 grid grid-cols-2 gap-3">{#each Array(4) as _}<div class="h-14 animate-pulse rounded-[12px] bg-black/[0.045]"></div>{/each}</div>
++  {:else if analytics.isError || !analytics.data}
++    <p class="mt-4 text-sm leading-6 text-tk-graphite">No analytics are available for this item right now.</p>
++  {:else}
++    <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
++      <div class="rounded-[13px] bg-[#efefeb] p-3"><dt class="text-xs text-tk-graphite">Active work</dt><dd class="tk-mono mt-1 font-bold">{formatDuration(analytics.data.activeWorkSeconds)}</dd></div>
++      <div class="rounded-[13px] bg-[#efefeb] p-3"><dt class="text-xs text-tk-graphite">Sessions</dt><dd class="tk-mono mt-1 font-bold">{analytics.data.sessionCount}</dd></div>
++      <div class="rounded-[13px] bg-[#efefeb] p-3"><dt class="text-xs text-tk-graphite">Plan adherence</dt><dd class="tk-mono mt-1 font-bold">{adherence}</dd></div>
++      <div class="rounded-[13px] bg-[#efefeb] p-3"><dt class="text-xs text-tk-graphite">Estimate error</dt><dd class="tk-mono mt-1 font-bold">{analytics.data.estimateErrorSeconds == null ? '—' : formatDuration(Math.abs(analytics.data.estimateErrorSeconds))}</dd></div>
++    </dl>
++  {/if}
++</section>
+diff --git a/src/lib/components/history/SessionHistoryRow.svelte b/src/lib/components/history/SessionHistoryRow.svelte
+new file mode 100644
+index 0000000..065fbf4
+--- /dev/null
++++ b/src/lib/components/history/SessionHistoryRow.svelte
+@@ -0,0 +1,40 @@
++<script lang="ts">
++  import { createQuery } from '@tanstack/svelte-query';
++  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
++  import { getWorkItem } from '$lib/api/work';
++  import { queryKeys } from '$lib/api/query-keys';
++  import type { ExecutionSession } from '$lib/api/execution';
++  import { formatDuration, formatShortDate } from '$lib/utils';
++
++  let { session }: { session: ExecutionSession } = $props();
++  const work = createQuery(() => ({
++    queryKey: queryKeys.work.detail(session.workItemId),
++    queryFn: () => getWorkItem(session.workItemId),
++    staleTime: 60_000
++  }));
++
++  const elapsedSeconds = $derived(
++    Math.max(0, Math.round(((session.endedAt ? Date.parse(session.endedAt) : Date.now()) - Date.parse(session.sessionStartedAt)) / 1000))
++  );
++  const stateTone = $derived(
++    session.state === 'completed' ? 'bg-emerald-50 text-emerald-700' : session.state === 'abandoned' ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-700'
++  );
++</script>
++
++<div class="grid gap-4 border-b border-[var(--border)] py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
++  <div class="min-w-0">
++    <div class="flex flex-wrap items-center gap-2">
++      <span class={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${stateTone}`}>{session.state}</span>
++      <span class="text-xs text-tk-graphite">{formatShortDate(session.sessionStartedAt)}</span>
++    </div>
++    <a href={`/work/${session.workItemId}`} class="mt-2 block truncate text-[15px] font-bold hover:text-tk-blue">
++      {work.data?.item.name || 'Loading work item…'}
++    </a>
++    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-tk-graphite">
++      <span>{session.planSnapshot.segments.length} planned segments</span>
++      <span>{formatDuration(elapsedSeconds)} elapsed window</span>
++      {#if session.planSnapshot.strategy}<span>{session.planSnapshot.strategy}</span>{/if}
++    </div>
++  </div>
++  <a href={`/session/${session.id}`} class="inline-flex h-10 items-center justify-center gap-1 rounded-[12px] border border-[var(--border)] bg-white px-3 text-sm font-bold hover:bg-[#f4f4f0]">Open session <ArrowRightIcon size={15} /></a>
++</div>
+diff --git a/src/lib/components/layout/AppShell.svelte b/src/lib/components/layout/AppShell.svelte
+index 8e51fcd..1fd15e1 100644
+--- a/src/lib/components/layout/AppShell.svelte
++++ b/src/lib/components/layout/AppShell.svelte
+@@ -9,6 +9,7 @@
+   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
+   import FolderSimpleIcon from 'phosphor-svelte/lib/FolderSimpleIcon';
+   import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
++  import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
+   import GearSixIcon from 'phosphor-svelte/lib/GearSixIcon';
+   import SignOutIcon from 'phosphor-svelte/lib/SignOutIcon';
+   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
+@@ -21,6 +22,7 @@
+     { href: '/today', label: 'Today', icon: HouseIcon },
+     { href: '/inbox', label: 'Inbox', icon: TrayIcon },
+     { href: '/projects', label: 'Projects', icon: FolderSimpleIcon },
++    { href: '/history', label: 'History', icon: ClockCounterClockwiseIcon },
+     { href: '/analytics', label: 'Analytics', icon: ChartLineUpIcon }
+   ];
+ 
+@@ -97,7 +99,7 @@
+     <main class="min-w-0 pb-24 lg:pb-0">{@render children?.()}</main>
+   </div>
+ 
+-  <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
++  <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[18px] border border-black/[0.08] bg-white/92 p-1.5 shadow-[0_16px_50px_rgb(23_23_23/0.15)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
+     {#each nav as item}
+       <a
+         href={item.href}
+diff --git a/src/routes/(app)/analytics/+page.svelte b/src/routes/(app)/analytics/+page.svelte
+index b923289..d9adb6b 100644
+--- a/src/routes/(app)/analytics/+page.svelte
++++ b/src/routes/(app)/analytics/+page.svelte
+@@ -1,15 +1,211 @@
+ <script lang="ts">
++  import { createQuery } from '@tanstack/svelte-query';
+   import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
++  import ArrowClockwiseIcon from 'phosphor-svelte/lib/ArrowClockwiseIcon';
++  import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
++  import InfoIcon from 'phosphor-svelte/lib/InfoIcon';
++  import Button from '$lib/components/ui/Button.svelte';
++  import ActivityChart from '$lib/components/analytics/ActivityChart.svelte';
++  import HourPatternChart from '$lib/components/analytics/HourPatternChart.svelte';
++  import MetricCard from '$lib/components/analytics/MetricCard.svelte';
++  import SessionHistoryRow from '$lib/components/history/SessionHistoryRow.svelte';
++  import {
++    analyticsRange,
++    getAnalyticsSummary,
++    getAnalyticsTimeseries,
++    getFocusPatterns,
++    getWorkTypeAnalytics,
++    type AnalyticsBucket
++  } from '$lib/api/analytics';
++  import { listExecutionSessions } from '$lib/api/execution';
++  import { queryKeys } from '$lib/api/query-keys';
++  import { formatDuration } from '$lib/utils';
++
++  type RangeDays = 7 | 30 | 90;
++  let rangeDays = $state<RangeDays>(30);
++  let anchorIso = $state(new Date().toISOString());
++  const fromIso = $derived(analyticsRange(rangeDays, anchorIso).from);
++  const toIso = $derived(anchorIso);
++  const bucket = $derived<AnalyticsBucket>(rangeDays > 45 ? 'week' : 'day');
++
++  const summary = createQuery(() => ({
++    queryKey: queryKeys.analytics.summary(fromIso, toIso),
++    queryFn: () => getAnalyticsSummary(fromIso, toIso)
++  }));
++  const timeseries = createQuery(() => ({
++    queryKey: queryKeys.analytics.timeseries(fromIso, toIso, bucket),
++    queryFn: () => getAnalyticsTimeseries(fromIso, toIso, bucket)
++  }));
++  const workTypes = createQuery(() => ({
++    queryKey: queryKeys.analytics.workTypes(fromIso, toIso),
++    queryFn: () => getWorkTypeAnalytics(fromIso, toIso)
++  }));
++  const focusPatterns = createQuery(() => ({
++    queryKey: queryKeys.analytics.focusPatterns(fromIso, toIso),
++    queryFn: () => getFocusPatterns(fromIso, toIso)
++  }));
++  const recentSessions = createQuery(() => ({
++    queryKey: queryKeys.execution.history({ from: fromIso, to: toIso, limit: 6 }),
++    queryFn: () => listExecutionSessions({ from: fromIso, to: toIso, limit: 6 })
++  }));
++
++  const loading = $derived(summary.isPending || timeseries.isPending || workTypes.isPending || focusPatterns.isPending);
++  const failed = $derived(summary.isError || timeseries.isError || workTypes.isError || focusPatterns.isError);
++  const adherence = $derived(
++    summary.data?.planAdherenceRate == null ? '—' : `${Math.round(summary.data.planAdherenceRate * 100)}%`
++  );
++  const completionTotal = $derived((summary.data?.sessionsCompleted ?? 0) + (summary.data?.sessionsAbandoned ?? 0));
++  const completionRate = $derived(
++    completionTotal === 0 ? '—' : `${Math.round(((summary.data?.sessionsCompleted ?? 0) / completionTotal) * 100)}%`
++  );
++  const sortedTypes = $derived(
++    [...(workTypes.data?.items ?? [])].sort((a, b) => b.activeWorkSeconds - a.activeWorkSeconds)
++  );
++  const eligiblePatterns = $derived(
++    (focusPatterns.data?.items ?? []).filter((item) => item.recommendationPersonalizationEligible)
++  );
++
++  function setRange(days: RangeDays) {
++    rangeDays = days;
++    anchorIso = new Date().toISOString();
++  }
++
++  function refresh() {
++    anchorIso = new Date().toISOString();
++  }
++
++  function signedDuration(value: number | null | undefined) {
++    if (value == null) return '—';
++    if (value === 0) return '0 min';
++    return `${value > 0 ? '+' : '−'}${formatDuration(Math.abs(value))}`;
++  }
++
++  function percent(value: number | null | undefined) {
++    return value == null ? '—' : `${Math.round(value * 100)}%`;
++  }
++
++  function focus(value: number | null | undefined) {
++    return value == null ? '—' : `${value.toFixed(1)} / 5`;
++  }
+ </script>
+ 
+ <svelte:head><title>Analytics — Taskiller</title></svelte:head>
+-<div class="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+-  <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><ChartLineUpIcon size={15} /> Descriptive, not decorative</div>
+-  <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Analytics</h1>
+-  <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">This route stays deliberately quiet until the execution flow is complete. Round 5 will turn backend analytics into questions and useful observations, not dashboard wallpaper.</p>
+-  <div class="mt-10 grid gap-4 sm:grid-cols-3">
+-    <div class="rounded-[20px] border border-[var(--border)] bg-white/65 p-5"><p class="text-xs font-bold text-tk-graphite">Estimate calibration</p><p class="mt-5 text-sm leading-6 text-tk-graphite">Median estimate error by work type and period.</p></div>
+-    <div class="rounded-[20px] border border-[var(--border)] bg-white/65 p-5"><p class="text-xs font-bold text-tk-graphite">Uninterrupted work</p><p class="mt-5 text-sm leading-6 text-tk-graphite">Observed block lengths without claiming causation.</p></div>
+-    <div class="rounded-[20px] border border-[var(--border)] bg-white/65 p-5"><p class="text-xs font-bold text-tk-graphite">Plan adherence</p><p class="mt-5 text-sm leading-6 text-tk-graphite">What was planned versus what was actually completed.</p></div>
++
++<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <header class="flex flex-wrap items-end justify-between gap-6 border-b border-[var(--border)] pb-7">
++    <div>
++      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><ChartLineUpIcon size={15} class="text-tk-strike" /> Observed execution</div>
++      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">Analytics</h1>
++      <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">A descriptive view of how work actually unfolded. Taskiller reports patterns and calibration; it does not turn them into a productivity score.</p>
++    </div>
++    <div class="flex items-center gap-2">
++      {#each [[7, '7d'], [30, '30d'], [90, '90d']] as option}
++        <button class={`h-10 rounded-full px-3.5 text-xs font-bold transition ${rangeDays === option[0] ? 'bg-tk-ink text-white' : 'border border-[var(--border)] bg-white/75 text-tk-graphite hover:text-tk-ink'}`} onclick={() => setRange(option[0] as RangeDays)}>{option[1]}</button>
++      {/each}
++      <Button variant="secondary" size="icon" aria-label="Refresh analytics" onclick={refresh}><ArrowClockwiseIcon size={16} /></Button>
++    </div>
++  </header>
++
++  <div class="mt-5 flex items-start gap-2 rounded-[14px] bg-tk-blue/8 px-4 py-3 text-xs leading-5 text-[#3654c9]"><InfoIcon size={16} class="mt-0.5 shrink-0" /> Focus scores come from your own reviews. Time-of-day and work-type patterns are descriptive; they do not prove that a particular hour, timer, or work type caused better performance.</div>
++
++  {#if failed}
++    <div class="mt-6 rounded-[16px] border border-red-200 bg-red-50 p-4 text-sm text-red-800">Some analytics could not be loaded. Check the API connection, then refresh.</div>
++  {/if}
++
++  <section class="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
++    <MetricCard label="Active work" value={loading ? '…' : formatDuration(summary.data?.activeWorkSeconds)} detail={`${summary.data?.sessionsCompleted ?? 0} completed sessions`} tone="accent" />
++    <MetricCard label="Plan adherence" value={loading ? '…' : adherence} detail={`${summary.data?.requiredSegmentsCompleted ?? 0} of ${summary.data?.requiredSegmentsPlanned ?? 0} required segments`} tone="blue" />
++    <MetricCard label="Session completion" value={loading ? '…' : completionRate} detail={`${summary.data?.sessionsAbandoned ?? 0} abandoned in range`} tone="green" />
++    <MetricCard label="Chores completed" value={loading ? '…' : String(summary.data?.choresCompleted ?? 0)} detail={`Across the selected ${rangeDays}-day window`} />
++  </section>
++
++  <div class="mt-7 grid gap-7 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
++    <section class="rounded-[22px] border border-[var(--border)] bg-white/76 p-5 sm:p-6">
++      <div class="flex flex-wrap items-end justify-between gap-4">
++        <div>
++          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Activity</p>
++          <h2 class="mt-1 text-xl font-bold">Work, breaks, and pauses</h2>
++        </div>
++        <span class="text-xs font-semibold text-tk-graphite">{bucket === 'day' ? 'Daily' : 'Weekly'} buckets · {timeseries.data?.timezone ?? '—'}</span>
++      </div>
++      <div class="mt-6">
++        {#if timeseries.isPending}<div class="h-[250px] animate-pulse rounded-[16px] bg-black/[0.04]"></div>{:else if timeseries.data?.points.length}<ActivityChart points={timeseries.data.points} />{:else}<div class="grid h-[230px] place-items-center text-sm text-tk-graphite">No execution activity in this period.</div>{/if}
++      </div>
++    </section>
++
++    <section class="rounded-[22px] bg-tk-ink p-6 text-white">
++      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Calibration</p>
++      <h2 class="tk-display mt-2 text-2xl font-bold">What the plan felt like in reality.</h2>
++      <dl class="mt-7 space-y-5">
++        <div class="flex items-end justify-between gap-4 border-b border-white/10 pb-4"><dt class="text-sm text-white/55">Median uninterrupted work</dt><dd class="tk-mono text-lg font-bold">{formatDuration(summary.data?.medianUninterruptedWorkSeconds)}</dd></div>
++        <div class="flex items-end justify-between gap-4 border-b border-white/10 pb-4"><dt class="text-sm text-white/55">Median estimate error</dt><dd class="tk-mono text-lg font-bold">{signedDuration(summary.data?.medianEstimateErrorSeconds)}</dd></div>
++        <div class="flex items-end justify-between gap-4"><dt class="text-sm text-white/55">Median start delay</dt><dd class="tk-mono text-lg font-bold">{formatDuration(summary.data?.medianStartDelaySeconds)}</dd></div>
++      </dl>
++      <p class="mt-6 text-xs leading-5 text-white/40">Estimate error is intentionally shown with its sign. Use it for calibration over repeated work, not as a grade on any single session.</p>
++    </section>
+   </div>
++
++  <section class="mt-7 rounded-[22px] border border-[var(--border)] bg-white/76 p-5 sm:p-6">
++    <div class="flex flex-wrap items-end justify-between gap-4">
++      <div>
++        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Time of day</p>
++        <h2 class="mt-1 text-xl font-bold">When execution happened</h2>
++      </div>
++      <span class="text-xs font-semibold text-tk-graphite">Timezone · {focusPatterns.data?.timezone ?? '—'}</span>
++    </div>
++    <div class="mt-7">{#if focusPatterns.isPending}<div class="h-[200px] animate-pulse rounded-[16px] bg-black/[0.04]"></div>{:else if focusPatterns.data}<HourPatternChart items={focusPatterns.data.timeOfDay} />{/if}</div>
++  </section>
++
++  <div class="mt-7 grid gap-7 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
++    <section class="overflow-hidden rounded-[22px] border border-[var(--border)] bg-white/76">
++      <div class="border-b border-[var(--border)] p-5 sm:p-6">
++        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Work types</p>
++        <h2 class="mt-1 text-xl font-bold">Execution by context</h2>
++      </div>
++      {#if workTypes.isPending}
++        <div class="space-y-2 p-5">{#each Array(5) as _}<div class="h-14 animate-pulse rounded-[12px] bg-black/[0.04]"></div>{/each}</div>
++      {:else if sortedTypes.length === 0}
++        <div class="p-10 text-center text-sm text-tk-graphite">No work-type execution data in this period.</div>
++      {:else}
++        <div class="overflow-x-auto">
++          <table class="w-full min-w-[650px] text-left text-sm">
++            <thead class="bg-black/[0.025] text-[10px] font-bold uppercase tracking-[0.08em] text-tk-graphite"><tr><th class="px-5 py-3">Work type</th><th class="px-4 py-3">Active</th><th class="px-4 py-3">Sessions</th><th class="px-4 py-3">Completion</th><th class="px-4 py-3">Focus</th><th class="px-4 py-3">Estimate error</th></tr></thead>
++            <tbody>
++              {#each sortedTypes as row}
++                <tr class="border-t border-[var(--border)]"><td class="px-5 py-4 font-bold">{row.workTypeSlug || 'Uncategorized'}</td><td class="tk-mono px-4 py-4">{formatDuration(row.activeWorkSeconds)}</td><td class="tk-mono px-4 py-4">{row.sessionCount}</td><td class="tk-mono px-4 py-4">{percent(row.completionRate)}</td><td class="tk-mono px-4 py-4">{focus(row.medianFocusScore)}</td><td class="tk-mono px-4 py-4">{signedDuration(row.medianEstimateErrorSeconds)}</td></tr>
++              {/each}
++            </tbody>
++          </table>
++        </div>
++      {/if}
++    </section>
++
++    <section class="rounded-[22px] border border-[var(--border)] bg-white/76 p-5 sm:p-6">
++      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Personalization evidence</p>
++      <h2 class="mt-1 text-xl font-bold">Patterns with enough samples</h2>
++      <p class="mt-2 text-sm leading-6 text-tk-graphite">These are the work-type patterns the backend considers eligible to inform future recommendation personalization.</p>
++      <div class="mt-5 space-y-3">
++        {#if focusPatterns.isPending}
++          {#each Array(3) as _}<div class="h-24 animate-pulse rounded-[15px] bg-black/[0.04]"></div>{/each}
++        {:else if eligiblePatterns.length === 0}
++          <div class="rounded-[15px] bg-[#efefeb] p-5 text-sm leading-6 text-tk-graphite">Not enough repeated history yet. Taskiller will keep using bootstrap and preference-informed plans until the sample threshold is reached.</div>
++        {:else}
++          {#each eligiblePatterns as pattern}
++            <div class="rounded-[15px] bg-[#efefeb] p-4">
++              <div class="flex items-center justify-between gap-4"><p class="font-bold">{pattern.workTypeSlug}</p><span class="text-xs font-bold text-tk-green">{pattern.sampleSize} samples</span></div>
++              <div class="mt-3 grid grid-cols-2 gap-3 text-xs text-tk-graphite"><div>Median block<br><span class="tk-mono font-bold text-tk-ink">{formatDuration(pattern.medianUninterruptedWorkSeconds)}</span></div><div>Median focus<br><span class="tk-mono font-bold text-tk-ink">{focus(pattern.medianFocusScore)}</span></div></div>
++            </div>
++          {/each}
++        {/if}
++      </div>
++    </section>
++  </div>
++
++  <section class="mt-7 rounded-[22px] border border-[var(--border)] bg-white/76 px-5 sm:px-6">
++    <div class="flex items-center justify-between gap-4 border-b border-[var(--border)] py-5">
++      <div><div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite"><ClockCounterClockwiseIcon size={14} /> Drill down</div><h2 class="mt-1 text-xl font-bold">Recent sessions</h2></div>
++      <a href="/history" class="text-sm font-bold text-tk-graphite hover:text-tk-ink">Full history →</a>
++    </div>
++    {#if recentSessions.isPending}<div class="space-y-2 py-5">{#each Array(4) as _}<div class="h-20 animate-pulse rounded-[14px] bg-black/[0.04]"></div>{/each}</div>{:else if recentSessions.data?.items.length}{#each recentSessions.data.items as session (session.id)}<SessionHistoryRow {session} />{/each}{:else}<div class="py-12 text-center text-sm text-tk-graphite">No sessions to show in this period.</div>{/if}
++  </section>
+ </div>
+diff --git a/src/routes/(app)/history/+page.svelte b/src/routes/(app)/history/+page.svelte
+new file mode 100644
+index 0000000..5ab6390
+--- /dev/null
++++ b/src/routes/(app)/history/+page.svelte
+@@ -0,0 +1,150 @@
++<script lang="ts">
++  import { onMount } from 'svelte';
++  import { page } from '$app/state';
++  import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
++  import FunnelIcon from 'phosphor-svelte/lib/FunnelIcon';
++  import ArrowClockwiseIcon from 'phosphor-svelte/lib/ArrowClockwiseIcon';
++  import XIcon from 'phosphor-svelte/lib/XIcon';
++  import Button from '$lib/components/ui/Button.svelte';
++  import Select from '$lib/components/ui/Select.svelte';
++  import SessionHistoryRow from '$lib/components/history/SessionHistoryRow.svelte';
++  import { listExecutionSessions, type ExecutionSession } from '$lib/api/execution';
++  import { getWorkItem } from '$lib/api/work';
++  import { problemMessage } from '$lib/api/problem';
++
++  type StateFilter = 'all' | 'running' | 'paused' | 'completed' | 'abandoned';
++  type RangeDays = 7 | 30 | 90 | 0;
++
++  const initialWorkItemId = page.url.searchParams.get('workItemId') ?? '';
++  let workItemId = $state(initialWorkItemId);
++  let workItemName = $state('');
++  let stateFilter = $state<StateFilter>('all');
++  let rangeDays = $state<RangeDays>(30);
++  let sessions = $state<ExecutionSession[]>([]);
++  let nextCursor = $state<string | null>(null);
++  let hasMore = $state(false);
++  let loading = $state(true);
++  let loadingMore = $state(false);
++  let error = $state('');
++
++  function rangeBounds() {
++    if (!rangeDays) return { from: null, to: null };
++    const to = new Date();
++    const from = new Date(to.getTime() - rangeDays * 24 * 60 * 60 * 1000);
++    return { from: from.toISOString(), to: to.toISOString() };
++  }
++
++  async function load(reset = true) {
++    if (reset) loading = true;
++    else loadingMore = true;
++    error = '';
++    try {
++      const bounds = rangeBounds();
++      const data = await listExecutionSessions({
++        limit: 25,
++        cursor: reset ? null : nextCursor,
++        workItemId: workItemId || null,
++        state: stateFilter === 'all' ? null : stateFilter,
++        from: bounds.from,
++        to: bounds.to
++      });
++      sessions = reset ? data.items : [...sessions, ...data.items];
++      nextCursor = data.page.nextCursor;
++      hasMore = data.page.hasMore;
++    } catch (cause) {
++      error = problemMessage(cause, 'Could not load execution history.');
++    } finally {
++      loading = false;
++      loadingMore = false;
++    }
++  }
++
++  async function resolveWorkName() {
++    if (!workItemId) {
++      workItemName = '';
++      return;
++    }
++    try {
++      workItemName = (await getWorkItem(workItemId)).item.name;
++    } catch {
++      workItemName = 'Selected work item';
++    }
++  }
++
++  function changeRange(value: RangeDays) {
++    rangeDays = value;
++    void load(true);
++  }
++
++  function changeState(event: Event) {
++    stateFilter = (event.currentTarget as HTMLSelectElement).value as StateFilter;
++    void load(true);
++  }
++
++  function clearWorkFilter() {
++    workItemId = '';
++    workItemName = '';
++    history.replaceState(null, '', '/history');
++    void load(true);
++  }
++
++  onMount(async () => {
++    await resolveWorkName();
++    await load(true);
++  });
++</script>
++
++<svelte:head><title>History — Taskiller</title></svelte:head>
++
++<div class="mx-auto max-w-[1120px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
++  <header class="flex flex-wrap items-end justify-between gap-6 border-b border-[var(--border)] pb-7">
++    <div>
++      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><ClockCounterClockwiseIcon size={15} class="text-tk-blue" /> Execution record</div>
++      <h1 class="tk-display text-5xl font-extrabold sm:text-6xl">History</h1>
++      <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">The audit trail of actual sessions. Open any record to inspect its immutable plan snapshot, events, and review.</p>
++    </div>
++    <Button variant="secondary" onclick={() => load(true)} disabled={loading}><ArrowClockwiseIcon size={16} /> Refresh</Button>
++  </header>
++
++  <div class="mt-6 flex flex-wrap items-center gap-2">
++    <div class="mr-1 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.11em] text-tk-graphite"><FunnelIcon size={14} /> Range</div>
++    {#each [[7, '7 days'], [30, '30 days'], [90, '90 days'], [0, 'All']] as option}
++      <button class={`rounded-full px-3 py-1.5 text-xs font-bold transition ${rangeDays === option[0] ? 'bg-tk-ink text-white' : 'border border-[var(--border)] bg-white/70 text-tk-graphite hover:text-tk-ink'}`} onclick={() => changeRange(option[0] as RangeDays)}>{option[1]}</button>
++    {/each}
++    <Select class="ml-1 h-9 w-auto min-w-36 rounded-full py-0 text-xs font-bold" value={stateFilter} onchange={changeState}>
++      <option value="all">All states</option>
++      <option value="completed">Completed</option>
++      <option value="abandoned">Abandoned</option>
++      <option value="running">Running</option>
++      <option value="paused">Paused</option>
++    </Select>
++  </div>
++
++  {#if workItemId}
++    <div class="mt-4 inline-flex items-center gap-2 rounded-full bg-tk-blue/10 px-3 py-2 text-xs font-bold text-[#3654c9]">
++      Work item: {workItemName || 'Loading…'}
++      <button class="grid size-5 place-items-center rounded-full hover:bg-black/5" aria-label="Clear work item filter" onclick={clearWorkFilter}><XIcon size={12} weight="bold" /></button>
++    </div>
++  {/if}
++
++  {#if error}<div class="mt-5 rounded-[14px] border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</div>{/if}
++
++  <section class="mt-7 rounded-[22px] border border-[var(--border)] bg-white/76 px-5 sm:px-6">
++    {#if loading}
++      <div class="space-y-2 py-6">{#each Array(6) as _}<div class="h-20 animate-pulse rounded-[14px] bg-black/[0.04]"></div>{/each}</div>
++    {:else if sessions.length === 0}
++      <div class="py-16 text-center">
++        <p class="text-lg font-bold">No sessions in this slice.</p>
++        <p class="mt-2 text-sm text-tk-graphite">Try a wider range or another state filter.</p>
++      </div>
++    {:else}
++      {#each sessions as session (session.id)}
++        <SessionHistoryRow {session} />
++      {/each}
++    {/if}
++  </section>
++
++  {#if hasMore}
++    <div class="mt-5 flex justify-center"><Button variant="secondary" disabled={loadingMore} onclick={() => load(false)}>{loadingMore ? 'Loading…' : 'Load older sessions'}</Button></div>
++  {/if}
++</div>
+diff --git a/src/routes/(app)/work/[id]/+page.svelte b/src/routes/(app)/work/[id]/+page.svelte
+index 8124b78..6cdeafe 100644
+--- a/src/routes/(app)/work/[id]/+page.svelte
++++ b/src/routes/(app)/work/[id]/+page.svelte
+@@ -14,6 +14,7 @@
+   import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
+   import KindMark from '$lib/components/work/KindMark.svelte';
+   import StatusBadge from '$lib/components/work/StatusBadge.svelte';
++  import WorkItemAnalyticsCard from '$lib/components/analytics/WorkItemAnalyticsCard.svelte';
+   import {
+     deleteWorkItem,
+     flattenWorkTree,
+@@ -247,6 +248,7 @@
+             <div><dt class="text-xs text-tk-graphite">Deadline</dt><dd class="mt-1 font-semibold">{formatDate(item.deadlineAt)}</dd></div>
+           </dl>
+         </section>
++        <WorkItemAnalyticsCard workItemId={item.id} />
+       </aside>
+     </div>
+   {/if}
