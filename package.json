@@ -21,7 +21,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
-    "@tanstack/svelte-query": "6.2.1",
+    "@tanstack/svelte-query": "6.3.0",
     "clsx": "^2.1.1",
     "openapi-fetch": "0.17.0",
     "phosphor-svelte": "3.1.0",
