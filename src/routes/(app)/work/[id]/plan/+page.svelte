@@ -76,6 +76,9 @@
   }));
 
   const item = $derived(detail.data?.item ?? null);
+  const recommendationContextReady = $derived(
+    item?.kind !== 'chore' || Boolean(item.workTypeId || item.effectiveCharacteristics)
+  );
   const linkedChores = $derived<WorkItem[]>(
     tree.data
       ? flattenWorkTree(tree.data)
@@ -372,6 +375,17 @@
       <div class="mt-5 rounded-[16px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>
     {/if}
 
+    {#if item.kind === 'chore' && !recommendationContextReady}
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <span>Generated plans need a Work Type or complete characteristic overrides for this Chore.</span>
+        <a class="font-bold underline underline-offset-4" href={`/work/${id}#work-details`}>Set Work Type</a>
+      </div>
+    {:else if item.kind === 'sprint'}
+      <div class="mt-5 rounded-[16px] border border-[var(--border)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-tk-graphite">
+        Sprint recommendations use eligible child Chores. Give child Chores a Work Type (or complete overrides) and a positive effort estimate so they can participate in the generated plan.
+      </div>
+    {/if}
+
     <div class="mt-7 grid gap-7 xl:grid-cols-[330px_minmax(0,1fr)_300px]">
       <aside class="space-y-5">
         <section class="rounded-[20px] border border-[var(--border)] bg-white/76 p-5">
@@ -385,7 +399,7 @@
           <label class="mt-3 block text-xs font-bold text-tk-graphite">Available minutes
             <Input type="number" min="5" max="720" placeholder="Optional" bind:value={availableMinutes} />
           </label>
-          <Button class="mt-4 w-full" disabled={busy !== null} onclick={generateRecommendation}>
+          <Button class="mt-4 w-full" disabled={busy !== null || !recommendationContextReady} onclick={generateRecommendation}>
             {#if busy === 'recommend'}<SpinnerGapIcon size={17} class="animate-spin" />{:else}<MagicWandIcon size={17} />{/if}
             Generate plan
           </Button>

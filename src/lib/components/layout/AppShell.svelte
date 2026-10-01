@@ -1,11 +1,15 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { createQuery } from '@tanstack/svelte-query';
   import Logo from '$lib/components/brand/Logo.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import ThemeToggle from '$lib/components/theme/ThemeToggle.svelte';
   import WorkSearch from '$lib/components/layout/WorkSearch.svelte';
+  import FloatingSessionTimer from '$lib/components/execution/FloatingSessionTimer.svelte';
   import { auth, logout } from '$lib/auth/session';
+  import { getActiveSession } from '$lib/api/execution';
+  import { queryKeys } from '$lib/api/query-keys';
   import { online } from '$lib/pwa/connectivity';
   import { cn } from '$lib/utils';
   import HouseIcon from 'phosphor-svelte/lib/HouseIcon';
@@ -21,6 +25,15 @@
   let { children }: { children?: import('svelte').Snippet } = $props();
 
   const focusMode = $derived(page.url.pathname.startsWith('/session/'));
+
+  const activeSession = createQuery(() => ({
+    queryKey: queryKeys.execution.active,
+    queryFn: getActiveSession,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000
+  }));
 
   const nav = [
     { href: '/today', label: 'Today', icon: HouseIcon },
@@ -98,6 +111,10 @@
     {/if}
 
     <main id="main-content" tabindex="-1" class="min-w-0 pb-24 outline-none xl:pt-[84px] xl:pb-0">{@render children?.()}</main>
+
+    {#if activeSession.data?.session}
+      <FloatingSessionTimer session={activeSession.data.session} />
+    {/if}
 
     <nav class="tk-rail fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[18px] p-1.5 xl:hidden" aria-label="Mobile navigation">
       {#each nav as item}

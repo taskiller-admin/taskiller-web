@@ -6,6 +6,7 @@
   import Input from '$lib/components/ui/Input.svelte';
   import Textarea from '$lib/components/ui/Textarea.svelte';
   import Select from '$lib/components/ui/Select.svelte';
+  import WorkTypeSelect from '$lib/components/work/WorkTypeSelect.svelte';
   import {
     listWorkItems,
     updateWorkItem,
@@ -36,6 +37,7 @@
       description: item.description ?? '',
       status: item.status,
       parentId: item.parentId ?? '',
+      workTypeId: item.workTypeId ?? '',
       estimateMinutes:
         item.estimatedEffortSeconds === null
           ? ''
@@ -53,6 +55,7 @@
   let description = $state(initial.description);
   let status = $state<WorkItemStatus>(initial.status);
   let parentId = $state(initial.parentId);
+  let workTypeId = $state(initial.workTypeId);
   let estimateMinutes = $state(initial.estimateMinutes);
   let priority = $state(initial.priority);
   let plannedStart = $state(initial.plannedStart);
@@ -79,6 +82,7 @@
     description = item.description ?? '';
     status = item.status;
     parentId = item.parentId ?? '';
+    workTypeId = item.workTypeId ?? '';
     estimateMinutes = item.estimatedEffortSeconds === null ? '' : String(Math.round(item.estimatedEffortSeconds / 60));
     priority = item.priority === null ? '' : String(item.priority);
     plannedStart = toLocalDateTime(item.plannedStartAt);
@@ -116,6 +120,7 @@
       name: trimmed,
       description: description.trim() || null,
       status,
+      workTypeId: workTypeId || null,
       ...(item.kind === 'project' ? {} : { parentId: parentId || null }),
       estimatedEffortSeconds: Number.isFinite(estimate) ? estimate : null,
       priority: priority ? Number(priority) : null,
@@ -125,9 +130,17 @@
       targetEndDate: targetEndDate || null
     });
   }
+
+  const workTypeHelp = $derived(
+    item.kind === 'chore'
+      ? 'Required for generated Focus Plan recommendations unless you provide complete characteristic overrides.'
+      : item.kind === 'sprint'
+        ? 'Describes this Sprint. Generated Sprint plans use eligible child Chores with their own Work Types and effort estimates.'
+        : 'Projects are containers. Their executable Sprint/Chore children should have Work Types for generated recommendations.'
+  );
 </script>
 
-<form class="rounded-[20px] border border-[var(--border)] bg-white/88 p-5" onsubmit={submit}>
+<form id="work-details" class="scroll-mt-28 rounded-[20px] border border-[var(--border)] bg-white/88 p-5" onsubmit={submit}>
   <div class="flex items-center justify-between gap-3">
     <div>
       <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Edit</p>
@@ -153,10 +166,14 @@
       <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Name</span>
       <Input bind:value={name} maxlength="300" required />
     </label>
+
+    <WorkTypeSelect bind:value={workTypeId} help={workTypeHelp} />
+
     <label class="block">
       <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
       <Textarea bind:value={description} maxlength="20000" />
     </label>
+
     <div class="grid grid-cols-2 gap-3">
       <label>
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Status</span>
@@ -175,12 +192,13 @@
           <option value="">None</option>
           <option value="1">1 · Low</option>
           <option value="2">2</option>
-          <option value="3">3</option>
+          <option value="3">3 · Medium</option>
           <option value="4">4</option>
           <option value="5">5 · High</option>
         </Select>
       </label>
     </div>
+
     {#if item.kind !== 'project'}
       <label class="block">
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Parent</span>
@@ -203,18 +221,22 @@
         </Select>
       </label>
     {/if}
+
     <label class="block">
       <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Estimate (minutes)</span>
       <Input type="number" min="0" step="5" bind:value={estimateMinutes} />
     </label>
+
     <label class="block">
       <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Planned start</span>
       <Input type="datetime-local" bind:value={plannedStart} />
     </label>
+
     <label class="block">
       <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Deadline</span>
       <Input type="datetime-local" bind:value={deadline} />
     </label>
+
     {#if item.kind === 'project'}
       <div class="grid grid-cols-2 gap-3">
         <label>

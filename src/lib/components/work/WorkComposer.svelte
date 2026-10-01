@@ -6,6 +6,7 @@
   import Input from '$lib/components/ui/Input.svelte';
   import Textarea from '$lib/components/ui/Textarea.svelte';
   import Select from '$lib/components/ui/Select.svelte';
+  import WorkTypeSelect from '$lib/components/work/WorkTypeSelect.svelte';
   import { createWorkItem, type WorkItem, type WorkItemKind } from '$lib/api/work';
   import { queryKeys } from '$lib/api/query-keys';
   import { problemMessage } from '$lib/api/problem';
@@ -34,6 +35,7 @@
 
   let name = $state('');
   let kind = $state<WorkItemKind>(initialKind());
+  let workTypeId = $state('');
   let description = $state('');
   let estimateMinutes = $state('');
   let priority = $state('');
@@ -47,6 +49,7 @@
     mutationFn: createWorkItem,
     onSuccess: async (item) => {
       name = '';
+      workTypeId = '';
       description = '';
       estimateMinutes = '';
       priority = '';
@@ -72,6 +75,7 @@
       kind,
       name: trimmed,
       parentId,
+      workTypeId: workTypeId || null,
       status: 'draft',
       description: description.trim() || null,
       estimatedEffortSeconds: Number.isFinite(estimate) ? estimate : null,
@@ -86,7 +90,7 @@
 <form class="tk-capture-deck rounded-[18px] p-2.5" onsubmit={submit}>
   <div class="flex gap-2">
     {#if allowedKinds.length > 1}
-      <Select class="w-32 shrink-0 border-transparent bg-[var(--surface-subtle)]" bind:value={kind} aria-label="Work type">
+      <Select class="w-32 shrink-0 border-transparent bg-[var(--surface-subtle)]" bind:value={kind} aria-label="Work item kind">
         {#each allowedKinds as option}
           <option value={option}>{option === 'sprint' ? 'Sprint' : option === 'project' ? 'Project' : 'Chore'}</option>
         {/each}
@@ -106,6 +110,18 @@
       <PlusIcon size={17} weight="bold" />
       <span class="hidden sm:inline">{create.isPending ? 'Saving…' : label}</span>
     </Button>
+  </div>
+
+  <div class="mt-2 rounded-[13px] bg-[var(--surface-subtle)]/70 p-2.5">
+    <WorkTypeSelect
+      bind:value={workTypeId}
+      compact={compact}
+      help={kind === 'chore'
+        ? 'Choose a Work Type to enable generated Focus Plan recommendations.'
+        : kind === 'sprint'
+          ? 'This describes the Sprint. Sprint recommendations also use each child Chore’s Work Type and estimate.'
+          : 'Projects are containers; executable child work should also have its own Work Type.'}
+    />
   </div>
 
   <button

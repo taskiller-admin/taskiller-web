@@ -4,8 +4,8 @@ import AxeBuilder from '@axe-core/playwright';
 test('landing page exposes the primary entry points', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/Taskiller/);
-  await expect(page.getByRole('heading', { name: 'Make the next move obvious.' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Create your workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your work should move.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Build momentum/ })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Log in' }).first()).toBeVisible();
 });
 

@@ -12,6 +12,7 @@ export const queryKeys = {
     chores: ['work', 'chores'] as const,
     inbox: ['work', 'inbox'] as const,
     projects: ['work', 'projects'] as const,
+    workTypes: ['work', 'work-types'] as const,
     detail: (id: string) => ['work', 'detail', id] as const,
     children: (id: string) => ['work', 'children', id] as const,
     tree: (id: string) => ['work', 'tree', id] as const,

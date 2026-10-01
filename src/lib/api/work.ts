@@ -5,6 +5,7 @@ export type WorkItem = components['schemas']['WorkItemResponse'];
 export type WorkTree = components['schemas']['WorkItemTreeNode'];
 export type WorkItemKind = components['schemas']['WorkItemKind'];
 export type WorkItemStatus = components['schemas']['WorkItemStatus'];
+export type WorkType = components['schemas']['WorkTypeResponse'];
 export type CreateWorkItemInput = components['schemas']['CreateWorkItemRequest'];
 export type UpdateWorkItemInput = components['schemas']['UpdateWorkItemRequest'];
 export type ReorderWorkItemInput = components['schemas']['ReorderWorkItemRequest'];
@@ -55,6 +56,12 @@ export async function listInboxChores() {
     ...page,
     items: page.items.filter((item) => item.parentId === null && item.deletedAt === null)
   };
+}
+
+export async function listWorkTypes() {
+  const { data, error } = await api.GET('/api/v1/work-types');
+  if (error || !data) throw error ?? new Error('Work Types returned no data.');
+  return data;
 }
 
 export async function getWorkItem(id: string) {
