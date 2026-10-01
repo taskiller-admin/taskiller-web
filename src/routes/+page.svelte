@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
   import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
   import TreeStructureIcon from 'phosphor-svelte/lib/TreeStructureIcon';
@@ -10,6 +11,7 @@
 
   let driftX = $state(0);
   let driftY = $state(0);
+  let stage = $state<HTMLElement | null>(null);
 
   function moveStage(event: PointerEvent) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -23,6 +25,18 @@
     driftX = 0;
     driftY = 0;
   }
+
+  onMount(() => {
+    const node = stage;
+    if (!node) return;
+    const leave = () => resetStage();
+    node.addEventListener('pointermove', moveStage);
+    node.addEventListener('pointerleave', leave);
+    return () => {
+      node.removeEventListener('pointermove', moveStage);
+      node.removeEventListener('pointerleave', leave);
+    };
+  });
 </script>
 
 <svelte:head>
@@ -71,11 +85,7 @@
         </div>
       </div>
 
-      <div
-        class="relative min-h-[560px] lg:min-h-[660px]"
-        onpointermove={moveStage}
-        onpointerleave={resetStage}
-      >
+      <div bind:this={stage} class="relative min-h-[560px] lg:min-h-[660px]">
         <div class="absolute inset-0 rounded-[44px] tk-grid opacity-70 [mask-image:radial-gradient(circle_at_center,black,transparent_72%)]"></div>
 
         <div

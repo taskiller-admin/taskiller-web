@@ -9,18 +9,26 @@ export type AuthState = { status: AuthStatus; user: User | null };
 const state = writable<AuthState>({ status: 'unknown', user: null });
 export const auth = { subscribe: state.subscribe };
 
-export async function bootstrapAuth() {
+export async function bootstrapAuth(
+  onProgress?: (progress: number, stage: string) => void
+) {
+  onProgress?.(12, 'Contacting Taskiller');
   const ok = await authApi.refresh();
   if (!ok) {
+    onProgress?.(100, 'Session unavailable');
     state.set({ status: 'anonymous', user: null });
     return false;
   }
 
+  onProgress?.(58, 'Session restored');
   try {
+    onProgress?.(72, 'Syncing workspace');
     const user = await authApi.getMe();
+    onProgress?.(100, 'Ready');
     state.set({ status: 'authenticated', user });
     return true;
   } catch {
+    onProgress?.(100, 'Session unavailable');
     state.set({ status: 'anonymous', user: null });
     return false;
   }

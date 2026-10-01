@@ -412,13 +412,13 @@
       </aside>
 
       <main class="min-w-0">
-        <section class="rounded-[22px] border border-[var(--border)] bg-[#f4f4f0] p-4 sm:p-6">
+        <section class="rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-[220px] flex-1">
               <label for="focus-plan-name" class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Plan name</label>
-              <Input id="focus-plan-name" class="mt-1.5 bg-white" bind:value={planName} placeholder="Focus plan" />
+              <Input id="focus-plan-name" class="mt-1.5" bind:value={planName} placeholder="Focus plan" />
             </div>
-            <div class="rounded-[14px] bg-white px-4 py-3 text-right">
+            <div class="rounded-[14px] bg-[var(--surface-subtle)] px-4 py-3 text-right">
               <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-tk-graphite">Target time</p>
               <p class="tk-mono mt-1 text-lg font-bold">{formatDuration(totalTargetSeconds)}</p>
             </div>
@@ -439,7 +439,7 @@
               {/each}
             </div>
           {:else}
-            <div class="mt-5 rounded-[18px] border border-dashed border-[var(--border-strong)] bg-white/50 px-6 py-12 text-center">
+            <div class="mt-5 rounded-[18px] border border-dashed border-[var(--border-strong)] bg-[var(--surface-subtle)]/55 px-6 py-12 text-center">
               <p class="text-lg font-bold">No plan on the table yet.</p>
               <p class="mt-2 text-sm text-tk-graphite">Generate a recommendation or start from scratch.</p>
             </div>

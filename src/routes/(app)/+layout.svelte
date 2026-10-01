@@ -3,8 +3,13 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import AppShell from '$lib/components/layout/AppShell.svelte';
+  import AuthLoading from '$lib/components/layout/AuthLoading.svelte';
   import { auth, bootstrapAuth } from '$lib/auth/session';
+
   let { children }: { children?: import('svelte').Snippet } = $props();
+
+  let bootProgress = $state(8);
+  let bootStage = $state('Restoring session');
 
   onMount(async () => {
     if (!navigator.onLine) {
@@ -12,7 +17,12 @@
       await goto(`/offline?returnTo=${encodeURIComponent(returnTo)}`);
       return;
     }
-    const ok = await bootstrapAuth();
+
+    const ok = await bootstrapAuth((progress, stage) => {
+      bootProgress = progress;
+      bootStage = stage;
+    });
+
     if (!ok) await goto('/login');
   });
 </script>
@@ -22,7 +32,7 @@
 </svelte:head>
 
 {#if $auth.status === 'unknown'}
-  <div class="flex min-h-screen items-center justify-center bg-tk-paper"><div class="h-2 w-28 overflow-hidden rounded-full bg-tk-mist"><div class="h-full w-1/2 animate-pulse rounded-full bg-tk-strike"></div></div></div>
+  <AuthLoading progress={bootProgress} stage={bootStage} />
 {:else if $auth.status === 'authenticated'}
   <AppShell>{@render children?.()}</AppShell>
 {/if}

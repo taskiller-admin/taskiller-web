@@ -161,20 +161,20 @@
       {#if exportMessage}<p class="mt-3 text-sm text-tk-green">{exportMessage}</p>{/if}
     </div>
 
-    <div class="rounded-[18px] border border-red-200 bg-red-50/75 p-5">
+    <div class="tk-danger-zone rounded-[18px] p-5">
       <div class="flex items-start gap-3">
-        <WarningCircleIcon size={20} class="mt-0.5 shrink-0 text-red-700" weight="fill" />
+        <WarningCircleIcon size={20} class="mt-0.5 shrink-0" weight="fill" />
         <div>
-          <p class="font-bold text-red-950">Delete account</p>
-          <p class="mt-1 text-sm leading-6 text-red-900/75">Scheduling deletion immediately deactivates the account and revokes all device sessions. The backend permanently deletes account data after its configured grace period.</p>
+          <p class="font-bold">Delete account</p>
+          <p class="tk-danger-muted mt-1 text-sm leading-6">Scheduling deletion immediately deactivates the account and revokes all device sessions. The backend permanently deletes account data after its configured grace period.</p>
         </div>
       </div>
 
       {#if deleting}
-        <div class="mt-5 rounded-[14px] border border-red-200 bg-white/65 p-4">
-          <p class="text-sm font-bold text-red-950">Type DELETE MY ACCOUNT to continue.</p>
-          <Input class="mt-3 border-red-200" bind:value={deletePhrase} autocomplete="off" />
-          <p class="mt-2 text-xs leading-5 text-red-900/65">Taskiller currently exposes no cancellation endpoint for a scheduled deletion, so only confirm when you intend to leave.</p>
+        <div class="mt-5 rounded-[14px] border border-[var(--danger-border)] bg-[var(--surface-raised)] p-4 text-[var(--danger-text)]">
+          <p class="text-sm font-bold">Type DELETE MY ACCOUNT to continue.</p>
+          <Input class="mt-3 border-[var(--danger-border)]" bind:value={deletePhrase} autocomplete="off" />
+          <p class="tk-danger-muted mt-2 text-xs leading-5">Taskiller currently exposes no cancellation endpoint for a scheduled deletion, so only confirm when you intend to leave.</p>
           <div class="mt-4 flex gap-2">
             <Button variant="ghost" size="sm" onclick={() => { deleting = false; deletePhrase = ''; }}>Cancel</Button>
             <Button variant="danger" size="sm" disabled={deletePhrase !== 'DELETE MY ACCOUNT' || deletion.isPending} onclick={confirmDeletion}>

@@ -3,6 +3,11 @@ import vercelAdapter from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const productionVercelBuild = Boolean(process.env.VERCEL || process.env.CI);
+const vercelToolbar = Boolean(process.env.VERCEL);
+const vercelLive = vercelToolbar ? ['https://vercel.live'] : [];
+const vercelImages = vercelToolbar ? ['https://vercel.live', 'https://vercel.com'] : [];
+const vercelFonts = vercelToolbar ? ['https://vercel.live', 'https://assets.vercel.com'] : [];
+const vercelConnections = vercelToolbar ? ['https://vercel.live', 'wss://ws-us3.pusher.com'] : [];
 
 function apiOrigin() {
   const value =
@@ -28,16 +33,16 @@ const config = {
       directives: {
         'default-src': ['self'],
         'base-uri': ['self'],
-        'connect-src': ['self', apiOrigin()],
-        'font-src': ['self'],
+        'connect-src': ['self', apiOrigin(), ...vercelConnections],
+        'font-src': ['self', ...vercelFonts],
         'form-action': ['self'],
         'frame-ancestors': ['none'],
-        'frame-src': ['none'],
-        'img-src': ['self', 'data:', 'blob:'],
+        'frame-src': vercelToolbar ? vercelLive : ['none'],
+        'img-src': ['self', 'data:', 'blob:', ...vercelImages],
         'manifest-src': ['self'],
         'object-src': ['none'],
-        'script-src': ['self'],
-        'style-src': ['self', 'unsafe-inline'],
+        'script-src': ['self', ...vercelLive],
+        'style-src': ['self', 'unsafe-inline', ...vercelLive],
         'worker-src': ['self', 'blob:']
       }
     }

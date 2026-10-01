@@ -15,7 +15,7 @@ const required = [
 for (const path of required) await access(path, constants.R_OK);
 
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-if (pkg.version !== '0.8.0') throw new Error(`Expected package version 0.8.0, got ${pkg.version}.`);
+if (pkg.version !== '0.10.0') throw new Error(`Expected package version 0.10.0, got ${pkg.version}.`);
 
 const manifest = JSON.parse(await readFile('static/site.webmanifest', 'utf8'));
 if (manifest.start_url !== '/today?source=pwa') throw new Error('Unexpected PWA start_url.');
