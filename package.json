@@ -18,7 +18,9 @@
     "api:check": "node scripts/check-openapi.mjs",
     "release:check": "node scripts/release-check.mjs",
     "smoke:prod": "node scripts/smoke-production.mjs",
-    "audit:prod": "npm audit --omit=dev --audit-level=high"
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "test:e2e:django": "playwright test --config playwright.django.config.ts",
+    "release:django": "npm run check && npm run build && npm run test:e2e:django"
   },
   "dependencies": {
     "@tanstack/svelte-query": "6.2.1",
