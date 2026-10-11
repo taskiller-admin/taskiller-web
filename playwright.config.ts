@@ -5,6 +5,7 @@ process.env.PUBLIC_TASKILLER_API_URL ??= `${baseURL}/__api`;
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: '**/django-cutover.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

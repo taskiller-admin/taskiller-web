@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-const api = process.env.TASKILLER_DJANGO_API_URL!.replace(/\/$/, '');
+const api = (process.env.TASKILLER_DJANGO_API_URL ?? '').replace(/\/$/, '');
+
+if (!api) {
+  throw new Error('TASKILLER_DJANGO_API_URL is required for Django integration E2E');
+}
 
 test('frontend works against a real Django Taskiller API', async ({ page, request }) => {
   const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
