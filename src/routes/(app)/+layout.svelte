@@ -18,6 +18,10 @@
       return;
     }
 
+    // Login/register already established an authenticated in-memory session.
+    // Only use the refresh cookie to restore a session after a fresh load.
+    if ($auth.status === 'authenticated') return;
+
     const ok = await bootstrapAuth((progress, stage) => {
       bootProgress = progress;
       bootStage = stage;

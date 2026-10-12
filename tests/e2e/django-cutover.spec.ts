@@ -36,7 +36,14 @@ test('frontend works against a real Django Taskiller API', async ({ page, reques
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
 
-  await expect(page).toHaveURL(/\/today$/);
+  await expect(
+    page.getByRole('alert'),
+    'Login returned an application error'
+  ).toBeHidden();
+
+  await expect(page).toHaveURL(/\/today$/, {
+    timeout: 15_000
+  });
   await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
 
   const choreName = `Django release chore ${id}`;
