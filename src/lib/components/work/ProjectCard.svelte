@@ -8,6 +8,7 @@
   import { spotlight } from '$lib/actions/spotlight';
   import KindMark from './KindMark.svelte';
   import StatusBadge from './StatusBadge.svelte';
+  import ExportWorkButton from './ExportWorkButton.svelte';
   import { formatShortDate } from '$lib/utils';
 
   let { project }: { project: WorkItem } = $props();
@@ -24,7 +25,10 @@
 
   <div class="flex items-start justify-between gap-4">
     <KindMark kind="project" />
-    <StatusBadge status={project.status} />
+    <div class="flex items-center gap-2">
+      <ExportWorkButton workId={project.id} label="Export project" compact />
+      <StatusBadge status={project.status} />
+    </div>
   </div>
 
   <a href={`/work/${project.id}`} class="mt-9 block min-w-0">

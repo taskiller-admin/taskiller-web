@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+  import { pendingPortableImport } from '$lib/portable/pending-import';
   import { listWorkItems } from '$lib/api/work';
   import { queryKeys } from '$lib/api/query-keys';
   import { createImportedWork, exportScope } from '$lib/portable/operations';
@@ -17,6 +18,16 @@
   let error = $state('');
   let progress = $state('');
   let confirmed = $state(false);
+
+  $effect(() => {
+    const pending = $pendingPortableImport;
+    if (!pending) return;
+    selected = pending.document;
+    error = pending.error;
+    message = '';
+    confirmed = false;
+    pendingPortableImport.set(null);
+  });
 
   async function download() {
     busy = true;

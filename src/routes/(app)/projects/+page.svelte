@@ -3,7 +3,6 @@
   import FolderSimpleIcon from 'phosphor-svelte/lib/FolderSimpleIcon';
   import WorkComposer from '$lib/components/work/WorkComposer.svelte';
   import ProjectCard from '$lib/components/work/ProjectCard.svelte';
-  import ExportWorkButton from '$lib/components/work/ExportWorkButton.svelte';
   import { listProjects } from '$lib/api/work';
   import { queryKeys } from '$lib/api/query-keys';
 
@@ -56,7 +55,6 @@
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
         {#each visible as project, index}
           <div class={index % 4 === 0 || index % 4 === 3 ? 'xl:col-span-7' : 'xl:col-span-5'}>
-            <div class="mb-2 flex justify-end"><ExportWorkButton workId={project.id} label="Export project" /></div>
             <ProjectCard {project} />
           </div>
         {/each}

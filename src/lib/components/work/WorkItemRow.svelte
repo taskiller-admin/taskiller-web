@@ -6,12 +6,14 @@
   import Button from '$lib/components/ui/Button.svelte';
   import KindMark from './KindMark.svelte';
   import StatusBadge from './StatusBadge.svelte';
+  import ExportWorkButton from './ExportWorkButton.svelte';
   import { formatDuration, formatShortDate, kindLabel } from '$lib/utils';
 
   let {
     item,
     depth = 0,
     showKind = true,
+    showExport = false,
     canMoveUp = false,
     canMoveDown = false,
     onmoveup,
@@ -20,6 +22,7 @@
     item: WorkItem;
     depth?: number;
     showKind?: boolean;
+    showExport?: boolean;
     canMoveUp?: boolean;
     canMoveDown?: boolean;
     onmoveup?: () => void;
@@ -48,6 +51,7 @@
   </a>
 
   <div class="flex items-center gap-1 pr-1">
+    {#if showExport}<ExportWorkButton workId={item.id} label={`Export ${item.name}`} compact />{/if}
     {#if onmoveup || onmovedown}
       <Button size="icon" variant="ghost" disabled={!canMoveUp} aria-label={`Move ${item.name} up`} onclick={onmoveup}>
         <CaretUpIcon size={16} weight="bold" />

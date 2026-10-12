@@ -12,6 +12,9 @@
   import { queryKeys } from '$lib/api/query-keys';
   import { online } from '$lib/pwa/connectivity';
   import { cn } from '$lib/utils';
+  import { importFile } from '$lib/portable/format';
+  import { pendingPortableImport } from '$lib/portable/pending-import';
+  import UploadSimpleIcon from 'phosphor-svelte/lib/UploadSimpleIcon';
   import HouseIcon from 'phosphor-svelte/lib/HouseIcon';
   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
   import FolderSimpleIcon from 'phosphor-svelte/lib/FolderSimpleIcon';
@@ -25,6 +28,28 @@
   let { children }: { children?: import('svelte').Snippet } = $props();
 
   const focusMode = $derived(page.url.pathname.startsWith('/session/'));
+  let importInput: HTMLInputElement;
+  let importing = $state(false);
+
+  async function pickImport(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    importing = true;
+    try {
+      const document = await importFile(file);
+      pendingPortableImport.set({ document, error: '' });
+    } catch (cause) {
+      pendingPortableImport.set({
+        document: null,
+        error: cause instanceof Error ? cause.message : 'Could not open import file.'
+      });
+    } finally {
+      importing = false;
+    }
+    await goto('/settings#portable');
+  }
 
   const activeSession = createQuery(() => ({
     queryKey: queryKeys.execution.active,
@@ -61,6 +86,7 @@
   {@render children?.()}
 {:else}
   <a class="tk-skip-link" href="#main-content">Skip to content</a>
+  <input bind:this={importInput} type="file" accept=".json,.zip,application/json,application/zip" class="sr-only" tabindex="-1" aria-label="Select Taskiller import file" onchange={pickImport} />
 
   <div class="min-h-screen">
     <div class="pointer-events-none fixed inset-x-0 top-0 z-50 hidden px-5 xl:block">
@@ -86,7 +112,7 @@
 
         <a href="/guide" class="grid size-10 shrink-0 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink" aria-label="App guide"><InfoIcon size={17} /></a>
         <ThemeToggle compact />
-        <a href="/settings#portable" class="rounded-[11px] border border-[var(--border)] px-3 py-2 text-xs font-bold" aria-label="Import work">Import</a>
+        <button type="button" disabled={importing} onclick={() => importInput?.click()} class="inline-flex h-10 items-center gap-1.5 rounded-[11px] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-bold text-tk-graphite transition-colors hover:border-[var(--border-strong)] hover:text-tk-ink disabled:opacity-50" aria-label="Import work"><UploadSimpleIcon size={16} /> Import</button>
         <a href="/settings" class="grid size-10 shrink-0 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink" aria-label="Settings"><GearSixIcon size={17} /></a>
         <a href="/settings#profile" class="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[var(--surface-strong)] text-xs font-black" aria-label="Profile">{initials}</a>
         <Button variant="ghost" size="icon" class="size-10" aria-label="Sign out" onclick={signOut}><SignOutIcon size={16} /></Button>
@@ -99,7 +125,7 @@
         <div class="flex items-center gap-2">
           <a href="/guide" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite" aria-label="App guide"><InfoIcon size={17} /></a>
           <ThemeToggle compact />
-          <a href="/settings#portable" class="rounded-[10px] border border-[var(--border)] px-2 py-2 text-xs font-bold" aria-label="Import work">Import</a>
+          <button type="button" disabled={importing} onclick={() => importInput?.click()} class="inline-flex h-10 items-center gap-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-2 text-xs font-bold text-tk-graphite disabled:opacity-50" aria-label="Import work"><UploadSimpleIcon size={16} /> Import</button>
           <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[11px] bg-tk-strike text-[#24110b]" aria-label="Capture work"><PlusIcon size={18} weight="bold" /></a>
         </div>
       </div>
