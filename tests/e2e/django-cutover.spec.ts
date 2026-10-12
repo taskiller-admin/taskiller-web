@@ -52,5 +52,11 @@ test('frontend works against a real Django Taskiller API', async ({ page, reques
   await expect(page.getByText(choreName)).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText(choreName)).toBeVisible();
+  // A hard reload must first restore the session from the secure refresh cookie.
+  // Free-tier API cold starts can take longer than Playwright's 5s assertion default.
+  await expect(page).toHaveURL(/\/today$/, { timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({
+    timeout: 30_000
+  });
+  await expect(page.getByText(choreName)).toBeVisible({ timeout: 45_000 });
 });
