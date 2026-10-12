@@ -75,6 +75,38 @@ export async function createWorkType(input: components['schemas']['CreateWorkTyp
   return data;
 }
 
+export async function getWorkType(id: string): Promise<{ item: WorkType; etag: string | null }> {
+  const { data, error, response } = await api.GET('/api/v1/work-types/{workTypeId}', {
+    params: { path: { workTypeId: id } }
+  });
+  if (error || !data) throw error ?? new Error('Work Type returned no data.');
+  return { item: data, etag: response.headers.get('etag') };
+}
+
+export async function updateWorkType(
+  id: string,
+  input: components['schemas']['UpdateWorkTypeRequest'],
+  etag: string | null
+): Promise<{ item: WorkType; etag: string | null }> {
+  if (!etag) throw new Error('Missing Work Type ETag. Reload this type before editing.');
+  const { data, error, response } = await api.PATCH('/api/v1/work-types/{workTypeId}', {
+    params: { path: { workTypeId: id }, header: { 'If-Match': etag } },
+    body: input
+  });
+  if (response.status === 412) throw new WorkConflictError('Work Type changed elsewhere. Reload and retry.');
+  if (error || !data) throw error ?? new Error('Could not update Work Type.');
+  return { item: data, etag: response.headers.get('etag') };
+}
+
+export async function deleteWorkType(id: string, etag: string | null): Promise<void> {
+  if (!etag) throw new Error('Missing Work Type ETag. Reload this type before deleting.');
+  const { error, response } = await api.DELETE('/api/v1/work-types/{workTypeId}', {
+    params: { path: { workTypeId: id }, header: { 'If-Match': etag } }
+  });
+  if (response.status === 412) throw new WorkConflictError('Work Type changed elsewhere. Reload and retry.');
+  if (error) throw error;
+}
+
 export async function getWorkItem(id: string) {
   const { data, error, response } = await api.GET('/api/v1/work-items/{workItemId}', {
     params: { path: { workItemId: id } }
