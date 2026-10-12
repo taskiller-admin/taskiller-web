@@ -106,7 +106,7 @@
       required
     />
 
-    <Button type="submit" variant="dark" disabled={create.isPending || !name.trim()}>
+    <Button type="submit" variant="dark" aria-label={label} disabled={create.isPending || !name.trim()}>
       <PlusIcon size={17} weight="bold" />
       <span class="hidden sm:inline">{create.isPending ? 'Saving…' : label}</span>
     </Button>

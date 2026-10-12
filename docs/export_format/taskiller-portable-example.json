@@ -1,0 +1,86 @@
+{
+  "format": "taskiller.portable.work.v1",
+  "createdAt": "2026-10-12T19:00:00Z",
+  "rootSourceId": "project-001",
+  "workTypes": [
+    {
+      "slug": "research_synthesis_example",
+      "displayName": "Research & Synthesis",
+      "description": "Investigate sources, evaluate evidence, and write structured conclusions.",
+      "characteristics": {
+        "cognitiveDemand": "high",
+        "interruptionSensitivity": "high",
+        "continuityNeed": "high",
+        "repetitiveness": "low",
+        "physicality": "sedentary",
+        "learningMode": "acquisition"
+      }
+    }
+  ],
+  "items": [
+    {
+      "sourceId": "project-001",
+      "parentSourceId": null,
+      "kind": "project",
+      "name": "Prepare final project proposal",
+      "description": "Define a feasible problem, research prior work, and produce a reviewable proposal.",
+      "workTypeSlug": null,
+      "position": 1024,
+      "priority": 4,
+      "estimatedEffortSeconds": null,
+      "plannedStartAt": null,
+      "deadlineAt": null,
+      "targetStartDate": null,
+      "targetEndDate": null,
+      "characteristicOverrides": null
+    },
+    {
+      "sourceId": "sprint-001",
+      "parentSourceId": "project-001",
+      "kind": "sprint",
+      "name": "Research and scope",
+      "description": "Settle the project scope and collect technical references.",
+      "workTypeSlug": "research_synthesis_example",
+      "position": 1024,
+      "priority": 4,
+      "estimatedEffortSeconds": 10800,
+      "plannedStartAt": null,
+      "deadlineAt": null,
+      "targetStartDate": null,
+      "targetEndDate": null,
+      "characteristicOverrides": null
+    },
+    {
+      "sourceId": "chore-001",
+      "parentSourceId": "sprint-001",
+      "kind": "chore",
+      "name": "Review five relevant papers",
+      "description": "Summarize each paper's data, methods, limitations, and possible application to the proposed project.",
+      "workTypeSlug": "research_synthesis_example",
+      "position": 1024,
+      "priority": 4,
+      "estimatedEffortSeconds": 5400,
+      "plannedStartAt": null,
+      "deadlineAt": null,
+      "targetStartDate": null,
+      "targetEndDate": null,
+      "characteristicOverrides": null
+    },
+    {
+      "sourceId": "chore-002",
+      "parentSourceId": "sprint-001",
+      "kind": "chore",
+      "name": "Write one-page scope and feasibility summary",
+      "description": "Document the objective, inputs, success criteria, realistic resources, and expected deliverables.",
+      "workTypeSlug": "research_synthesis_example",
+      "position": 2048,
+      "priority": 4,
+      "estimatedEffortSeconds": 3600,
+      "plannedStartAt": null,
+      "deadlineAt": null,
+      "targetStartDate": null,
+      "targetEndDate": null,
+      "characteristicOverrides": null
+    }
+  ]
+}
