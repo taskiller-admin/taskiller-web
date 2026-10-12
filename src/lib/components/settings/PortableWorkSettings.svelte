@@ -6,7 +6,8 @@
   import { listWorkItems } from '$lib/api/work';
   import { queryKeys } from '$lib/api/query-keys';
   import { exportScope, importAtomically, importError, stripItemOptional } from '$lib/portable/operations';
-  import { downloadBlob, exportDocument, importFile, type PortableDocument } from '$lib/portable/format';
+  import { downloadBlob, exportDocument, importFile, markdownDocument, FORMAT, type PortableDocument } from '$lib/portable/format';
+  import JSZip from 'jszip';
 
   const client = useQueryClient();
   const roots = createQuery(() => ({ queryKey: ['portable-export-roots'], queryFn: () => listWorkItems({ limit: 100 }) }));
@@ -14,6 +15,10 @@
   let selected = $state<PortableDocument | null>(null);
   let busy = $state(false);
   let exporting = $state(false);
+  let exportOpen = $state(false);
+  let exportFormat = $state<'auto' | 'json' | 'zip'>('auto');
+  let includeSummary = $state(true);
+  let fileInput: HTMLInputElement;
   let message = $state('');
   let error = $state('');
   let modal = $state(false);
@@ -37,13 +42,21 @@
 
   beforeNavigate((navigation) => { if (busy) navigation.cancel(); });
   onMount(() => {
+    const openImport = () => { if (!busy) fileInput?.click(); };
+    const openExport = () => { if (!busy) { error = ''; exportOpen = true; } };
+    window.addEventListener('taskiller:portable-import', openImport);
+    window.addEventListener('taskiller:portable-export', openExport);
     const protect = (event: BeforeUnloadEvent) => {
       if (!busy) return;
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', protect);
-    return () => window.removeEventListener('beforeunload', protect);
+    return () => {
+      window.removeEventListener('beforeunload', protect);
+      window.removeEventListener('taskiller:portable-import', openImport);
+      window.removeEventListener('taskiller:portable-export', openExport);
+    };
   });
 
   async function download() {
@@ -52,9 +65,21 @@
     try {
       const document = await exportScope(scope === 'workspace' ? null : scope);
       if (!document.items.length) throw new Error('There are no work items to export.');
-      const file = await exportDocument(document);
+      let file: { blob: Blob; name: string };
+      if (exportFormat === 'json') {
+        file = { blob: new Blob([JSON.stringify(document, null, 2)], { type: 'application/json' }), name: 'taskiller-work.json' };
+      } else if (exportFormat === 'zip') {
+        const zip = new JSZip();
+        zip.file('data.json', JSON.stringify(document, null, 2));
+        if (includeSummary) zip.file('README.md', markdownDocument(document));
+        zip.file('manifest.json', JSON.stringify({ format: FORMAT, canonical: 'data.json', human: includeSummary ? 'README.md' : null }, null, 2));
+        file = { blob: await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }), name: 'taskiller-work.zip' };
+      } else {
+        file = await exportDocument(document);
+      }
       downloadBlob(file.blob, file.name);
       message = `Exported ${document.items.length} work items.`;
+      exportOpen = false;
     } catch (cause) {
       error = importError(cause);
     } finally {
@@ -77,6 +102,7 @@
       modal = true;
     } catch (cause) {
       error = importError(cause);
+      exportOpen = false;
     }
   }
 
@@ -111,31 +137,63 @@
   }
 </script>
 
-<section id="portable" class="tk-panel rounded-[20px] p-6 sm:p-8">
-  <h2 class="tk-display text-2xl font-bold">Export &amp; import work</h2>
-  <p class="mt-2 text-sm leading-6 text-tk-graphite">JSON is authoritative. Archives contain an additional readable Markdown summary.</p>
-  <div class="mt-6 grid gap-8 md:grid-cols-2">
-    <div class="space-y-4">
-      <h3 class="font-bold">Export</h3>
-      <label class="block text-sm font-semibold" for="portable-scope">Content</label>
-      <select id="portable-scope" bind:value={scope} class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-3 text-sm">
-        <option value="workspace">Entire workspace</option>
-        {#each roots.data?.items ?? [] as root}
-          {#if root.parentId === null}<option value={root.id}>{root.kind}: {root.name}</option>{/if}
-        {/each}
-      </select>
-      <button type="button" disabled={exporting || busy} onclick={download} class="rounded-xl bg-tk-ink px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{exporting ? 'Exporting…' : 'Download export'}</button>
-    </div>
-    <div class="space-y-4">
-      <h3 class="font-bold">Import</h3>
-      <label for="portable-file" class="block text-sm font-semibold">Taskiller JSON or ZIP</label>
-      <input id="portable-file" type="file" accept=".json,.zip,application/json,application/zip" disabled={busy} onchange={onFile} class="block w-full text-sm" />
-      <p class="text-xs text-tk-graphite">Previews are checked before any data is written. The backend creates all items or none.</p>
-    </div>
+<input bind:this={fileInput} type="file" accept=".json,.zip,application/json,application/zip" disabled={busy} onchange={onFile} class="sr-only" aria-label="Choose Taskiller import file" />
+
+{#if exportOpen}
+  <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4" role="presentation">
+    <section role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" class="w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-tk-graphite">Taskiller portable work</p>
+          <h2 id="export-dialog-title" class="tk-display mt-2 text-2xl font-bold">Export your work</h2>
+          <p class="mt-2 text-sm text-tk-graphite">Choose exactly what to back up or share. Your existing work is never changed.</p>
+        </div>
+        <button type="button" disabled={exporting} class="rounded-lg px-3 py-2 text-sm text-tk-graphite disabled:opacity-50" onclick={() => (exportOpen = false)}>Close</button>
+      </div>
+      <div class="mt-6 space-y-5">
+        <div>
+          <label class="block text-sm font-bold" for="portable-scope">Work to include</label>
+          <p class="mb-2 text-xs text-tk-graphite">An individual project or sprint includes its descendants. Full workspace includes all work.</p>
+          <select id="portable-scope" bind:value={scope} disabled={exporting} class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-3 text-sm">
+            <option value="workspace">Entire workspace</option>
+            {#each roots.data?.items ?? [] as root}
+              {#if root.parentId === null}<option value={root.id}>{root.kind}: {root.name}</option>{/if}
+            {/each}
+          </select>
+          {#if roots.isPending}<p class="mt-1 text-xs text-tk-graphite">Loading available work…</p>{/if}
+          {#if roots.isError}<p role="alert" class="mt-1 text-xs text-red-500">Could not load work scopes. You can retry by reopening the export dialog.</p>{/if}
+        </div>
+        <fieldset class="space-y-2">
+          <legend class="text-sm font-bold">File format</legend>
+          <label class="flex items-start gap-3 rounded-xl border border-[var(--border)] p-3 text-sm"><input type="radio" bind:group={exportFormat} value="auto" disabled={exporting} class="mt-1" /><span><strong>Recommended · Automatic</strong><span class="mt-1 block text-xs text-tk-graphite">JSON for one item, ZIP for multiple items. Portable and reimportable.</span></span></label>
+          <label class="flex items-start gap-3 rounded-xl border border-[var(--border)] p-3 text-sm"><input type="radio" bind:group={exportFormat} value="json" disabled={exporting} class="mt-1" /><span><strong>JSON</strong><span class="mt-1 block text-xs text-tk-graphite">Structured, editable data for integrations and backups.</span></span></label>
+          <label class="flex items-start gap-3 rounded-xl border border-[var(--border)] p-3 text-sm"><input type="radio" bind:group={exportFormat} value="zip" disabled={exporting} class="mt-1" /><span><strong>ZIP archive</strong><span class="mt-1 block text-xs text-tk-graphite">Canonical data.json, manifest and optional readable Markdown.</span></span></label>
+        </fieldset>
+        {#if exportFormat === 'zip'}<label class="flex items-start gap-3 text-sm"><input type="checkbox" bind:checked={includeSummary} disabled={exporting} class="mt-1" />Include human-readable README.md summary</label>{/if}
+        <div class="rounded-xl bg-[var(--surface-strong)] p-4 text-xs leading-6 text-tk-graphite">
+          <strong class="text-tk-ink">Included:</strong> work hierarchy, task descriptions, priorities, estimates, schedules and referenced Work Types.<br />
+          <strong class="text-tk-ink">Not included:</strong> account credentials, active sessions or analytics history.<br />
+          Imports create draft copies with new IDs; they do not overwrite current work. The archive is subject to the portable format's item limits.
+        </div>
+      </div>
+      {#if error}<p class="mt-4 text-sm text-red-500" role="alert">{error}</p>{/if}
+      {#if message}<p class="mt-4 text-sm text-tk-graphite" role="status">{message}</p>{/if}
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" disabled={exporting} class="rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold" onclick={() => (exportOpen = false)}>Cancel</button>
+        <button type="button" disabled={exporting || busy} onclick={download} class="rounded-xl bg-tk-strike px-5 py-3 text-sm font-bold text-[#24110b] disabled:opacity-50">{exporting ? 'Preparing download…' : 'Download export'}</button>
+      </div>
+    </section>
   </div>
-  {#if error && !modal}<p class="mt-4 text-sm text-red-500" role="alert">{error}</p>{/if}
-  {#if message}<p class="mt-4 text-sm" role="status">{message}</p>{/if}
-</section>
+{/if}
+
+{#if error && !exportOpen && !modal}
+  <div class="fixed bottom-24 right-4 z-[110] max-w-sm rounded-xl border border-red-500/30 bg-[var(--surface)] p-4 shadow-2xl" role="alert">
+    <p class="text-sm font-bold text-red-500">Import could not be opened</p>
+    <p class="mt-1 text-xs text-tk-graphite">{error}</p>
+    <button type="button" class="mt-2 text-xs font-bold underline" onclick={() => fileInput?.click()}>Choose another file</button>
+    <button type="button" class="ml-4 text-xs underline" onclick={() => (error = '')}>Dismiss</button>
+  </div>
+{/if}
 
 {#if modal && selected}
   <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4" role="presentation">

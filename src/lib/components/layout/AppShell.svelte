@@ -6,6 +6,9 @@
   import Button from '$lib/components/ui/Button.svelte';
   import ThemeToggle from '$lib/components/theme/ThemeToggle.svelte';
   import WorkSearch from '$lib/components/layout/WorkSearch.svelte';
+  import PortableWorkSettings from '$lib/components/settings/PortableWorkSettings.svelte';
+  import DownloadSimpleIcon from 'phosphor-svelte/lib/DownloadSimpleIcon';
+  import UploadSimpleIcon from 'phosphor-svelte/lib/UploadSimpleIcon';
   import FloatingSessionTimer from '$lib/components/execution/FloatingSessionTimer.svelte';
   import { auth, logout } from '$lib/auth/session';
   import { getActiveSession } from '$lib/api/execution';
@@ -57,6 +60,10 @@
 </script>
 
 {#if focusMode}
+  <div class="fixed right-4 top-4 z-50 flex gap-2" aria-label="Portable work tools">
+    <button type="button" class="grid size-10 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface)]" aria-label="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
+    <button type="button" class="grid size-10 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface)]" aria-label="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
+  </div>
   {@render children?.()}
 {:else}
   <a class="tk-skip-link" href="#main-content">Skip to content</a>
@@ -79,6 +86,11 @@
         <div class="min-w-0 flex-1"></div>
         <WorkSearch class="w-[220px] 2xl:w-[280px]" />
 
+        <div class="flex shrink-0 items-center gap-1" aria-label="Portable work tools">
+          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:text-tk-ink" aria-label="Import work" title="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
+          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:text-tk-ink" aria-label="Export work" title="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
+        </div>
+
         <a href="/inbox?capture=1" class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[11px] bg-tk-strike px-3 text-xs font-black text-[#24110b] transition-[transform,filter] duration-200 hover:-translate-y-px hover:brightness-105 active:translate-y-0 active:scale-[0.98]">
           <PlusIcon size={16} weight="bold" /> Capture
         </a>
@@ -96,6 +108,8 @@
         <a href="/today" aria-label="Taskiller Today"><Logo class="h-5.5 w-auto" /></a>
         <div class="flex items-center gap-2">
           <a href="/guide" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite" aria-label="App guide"><InfoIcon size={17} /></a>
+          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)]" aria-label="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
+          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)]" aria-label="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
           <ThemeToggle compact />
           <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[11px] bg-tk-strike text-[#24110b]" aria-label="Capture work"><PlusIcon size={18} weight="bold" /></a>
         </div>
@@ -127,3 +141,5 @@
     </nav>
   </div>
 {/if}
+
+<PortableWorkSettings />
