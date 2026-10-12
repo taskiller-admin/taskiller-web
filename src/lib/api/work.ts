@@ -26,10 +26,12 @@ export async function listWorkItems(filters: {
   status?: WorkItemStatus;
   parentId?: string | null;
   limit?: number;
+  cursor?: string | null;
   includeDeleted?: boolean;
 } = {}) {
   const query = {
     limit: filters.limit ?? 100,
+    ...(filters.cursor ? { cursor: filters.cursor } : {}),
     includeDeleted: filters.includeDeleted ?? false,
     ...(filters.kind ? { kind: filters.kind } : {}),
     ...(filters.status ? { status: filters.status } : {}),
@@ -61,6 +63,15 @@ export async function listInboxChores() {
 export async function listWorkTypes() {
   const { data, error } = await api.GET('/api/v1/work-types');
   if (error || !data) throw error ?? new Error('Work Types returned no data.');
+  return data;
+}
+
+export async function createWorkType(input: components['schemas']['CreateWorkTypeRequest']) {
+  const { data, error } = await api.POST('/api/v1/work-types', {
+    params: { header: { 'Idempotency-Key': mutationKey() } },
+    body: input
+  });
+  if (error || !data) throw error ?? new Error('Create Work Type returned no data.');
   return data;
 }
 

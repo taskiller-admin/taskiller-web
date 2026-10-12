@@ -25,6 +25,7 @@
   "dependencies": {
     "@tanstack/svelte-query": "6.2.1",
     "clsx": "^2.1.1",
+    "jszip": "^3.10.2",
     "openapi-fetch": "0.17.0",
     "phosphor-svelte": "3.1.0",
     "tailwind-merge": "^3.3.1",
