@@ -12,6 +12,7 @@
   import WorkComposer from '$lib/components/work/WorkComposer.svelte';
   import WorkEditor from '$lib/components/work/WorkEditor.svelte';
   import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
+  import ExportWorkButton from '$lib/components/work/ExportWorkButton.svelte';
   import KindMark from '$lib/components/work/KindMark.svelte';
   import StatusBadge from '$lib/components/work/StatusBadge.svelte';
   import WorkItemAnalyticsCard from '$lib/components/analytics/WorkItemAnalyticsCard.svelte';
@@ -112,6 +113,7 @@
 <svelte:head><title>{item?.name || 'Work item'} — Taskiller</title></svelte:head>
 
 <div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+  <div class="mb-3 flex justify-end gap-2"><a href="/settings#portable" class="rounded-lg px-3 py-2 text-xs font-bold underline">Import</a>{#if item}<ExportWorkButton workId={item.id} label="Export this work" />{/if}</div>
   {#if detail.isPending}
     <div class="space-y-5">
       <div class="h-8 w-32 animate-pulse rounded bg-black/[0.05]"></div>

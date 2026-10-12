@@ -86,6 +86,7 @@
 
         <a href="/guide" class="grid size-10 shrink-0 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink" aria-label="App guide"><InfoIcon size={17} /></a>
         <ThemeToggle compact />
+        <a href="/settings#portable" class="rounded-[11px] border border-[var(--border)] px-3 py-2 text-xs font-bold" aria-label="Import work">Import</a>
         <a href="/settings" class="grid size-10 shrink-0 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink" aria-label="Settings"><GearSixIcon size={17} /></a>
         <a href="/settings#profile" class="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[var(--surface-strong)] text-xs font-black" aria-label="Profile">{initials}</a>
         <Button variant="ghost" size="icon" class="size-10" aria-label="Sign out" onclick={signOut}><SignOutIcon size={16} /></Button>
@@ -98,6 +99,7 @@
         <div class="flex items-center gap-2">
           <a href="/guide" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite" aria-label="App guide"><InfoIcon size={17} /></a>
           <ThemeToggle compact />
+          <a href="/settings#portable" class="rounded-[10px] border border-[var(--border)] px-2 py-2 text-xs font-bold" aria-label="Import work">Import</a>
           <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[11px] bg-tk-strike text-[#24110b]" aria-label="Capture work"><PlusIcon size={18} weight="bold" /></a>
         </div>
       </div>

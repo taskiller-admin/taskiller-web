@@ -4,6 +4,7 @@
   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
   import WorkComposer from '$lib/components/work/WorkComposer.svelte';
   import WorkItemRow from '$lib/components/work/WorkItemRow.svelte';
+  import ExportWorkButton from '$lib/components/work/ExportWorkButton.svelte';
   import { listInboxChores } from '$lib/api/work';
   import { queryKeys } from '$lib/api/query-keys';
   import { cn } from '$lib/utils';
@@ -82,7 +83,7 @@
     {:else}
       <div class="tk-panel overflow-hidden rounded-[20px] px-3 sm:px-4">
         {#each filtered as item}
-          <WorkItemRow {item} />
+          <div class="flex items-center gap-2"><div class="min-w-0 flex-1"><WorkItemRow {item} /></div><ExportWorkButton workId={item.id} label="Export chore" /></div>
         {/each}
       </div>
     {/if}
