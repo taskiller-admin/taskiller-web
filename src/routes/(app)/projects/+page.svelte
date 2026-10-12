@@ -20,7 +20,7 @@
   ];
   let selectedKind = $state<WorkItemKind>('project');
   let sprintParentId = $state('');
-  const current = $derived(kinds.find((value) => value.kind === selectedKind) ?? kinds[0]);
+  const current = $derived(kinds.find((value) => value.kind === selectedKind) ?? kinds[0]!);
 
   async function allItems(kind: WorkItemKind): Promise<WorkItem[]> {
     const rows: WorkItem[] = [];
@@ -70,7 +70,7 @@
     <span class="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-tk-graphite">{visible.length} visible</span>
   </header>
 
-  <nav class="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Browse work by kind">
+  <div class="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Browse work by kind">
     {#each kinds as item (item.kind)}
       <button type="button" role="tab" aria-selected={selectedKind === item.kind}
         class={selectedKind === item.kind
@@ -78,7 +78,7 @@
           : 'inline-flex items-center gap-2 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] px-5 py-3 text-sm font-bold text-tk-graphite hover:text-tk-ink'}
         onclick={() => (selectedKind = item.kind)}><item.icon size={17} />{item.label}</button>
     {/each}
-  </nav>
+  </div>
 
   <div class="mt-7 max-w-4xl">
     {#if selectedKind === 'project'}
@@ -106,7 +106,7 @@
     {/if}
   </div>
 
-  <section class="mt-10" role="tabpanel" aria-label={`${current.label} list`}>
+  <div class="mt-10" role="tabpanel" aria-label={`${current.label} list`}>
     {#if work.isPending}
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
         {#each Array(6) as _, index}<div class={index % 2 === 0 ? 'h-64 animate-pulse rounded-[22px] bg-black/[0.045] xl:col-span-7' : 'h-64 animate-pulse rounded-[22px] bg-black/[0.045] xl:col-span-5'}></div>{/each}
@@ -144,5 +144,5 @@
         {/each}
       </div>
     {/if}
-  </section>
+  </div>
 </div>

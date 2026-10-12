@@ -177,7 +177,7 @@
 
 {#if open}
   <div use:portal class="fixed inset-0 z-[120] grid place-items-center bg-black/75 p-3 sm:p-6" role="presentation">
-    <section role="dialog" aria-modal="true" aria-labelledby="work-type-dialog-title"
+    <div role="dialog" aria-modal="true" aria-labelledby="work-type-dialog-title"
       class="tk-panel flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl min-h-0 flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-7">
       <header class="flex shrink-0 items-start justify-between gap-4 pb-3">
         <div>
@@ -189,7 +189,7 @@
           class="grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--border)] text-tk-graphite hover:text-tk-ink disabled:opacity-50"><XIcon size={18} /></button>
       </header>
 
-      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" tabindex="0" aria-label="Work Type manager content">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" role="region" aria-label="Work Type manager content">
       <div class="mt-3 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
         <aside class="space-y-5">
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
@@ -284,6 +284,6 @@
         </div>
       </div>
       </div>
-    </section>
+    </div>
   </div>
 {/if}

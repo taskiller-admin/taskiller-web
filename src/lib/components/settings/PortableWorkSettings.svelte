@@ -141,7 +141,7 @@
 
 {#if exportOpen}
   <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4" role="presentation">
-    <section role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" class="w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
+    <div role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" class="w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-tk-graphite">Taskiller portable work</p>
@@ -182,7 +182,7 @@
         <button type="button" disabled={exporting} class="rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold" onclick={() => (exportOpen = false)}>Cancel</button>
         <button type="button" disabled={exporting || busy} onclick={download} class="rounded-xl bg-tk-strike px-5 py-3 text-sm font-bold text-[#24110b] disabled:opacity-50">{exporting ? 'Preparing download…' : 'Download export'}</button>
       </div>
-    </section>
+    </div>
   </div>
 {/if}
 
@@ -197,7 +197,7 @@
 
 {#if modal && selected}
   <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4" role="presentation">
-    <section role="dialog" aria-modal="true" aria-labelledby="import-dialog-title" class="w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
+    <div role="dialog" aria-modal="true" aria-labelledby="import-dialog-title" class="w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-tk-graphite">Taskiller portable work</p>
@@ -224,6 +224,6 @@
         {#if error && failedSourceId}<button type="button" disabled={busy || !confirmed} class="rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold" onclick={() => startImport(true)}>Retry without optional fields on failed item</button>{/if}
       </div>
       {#if busy}<p class="mt-4 text-xs text-tk-graphite" role="status">Keep this tab open until Django confirms the transaction. Navigation is blocked while saving.</p>{/if}
-    </section>
+    </div>
   </div>
 {/if}

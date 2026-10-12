@@ -11,8 +11,8 @@
   let { class: className }: { class?: string } = $props();
   let open = $state(false);
   let query = $state('');
-  let root: HTMLDivElement;
-  let input: HTMLInputElement;
+  let root = $state<HTMLDivElement | null>(null);
+  let input = $state<HTMLInputElement | null>(null);
 
   const work = createQuery(() => ({
     queryKey: ['work-search'],
