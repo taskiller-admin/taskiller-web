@@ -113,7 +113,6 @@
 <svelte:head><title>{item?.name || 'Work item'} — Taskiller</title></svelte:head>
 
 <div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-  <div class="mb-3 flex justify-end gap-2"><a href="/settings#portable" class="rounded-lg px-3 py-2 text-xs font-bold underline">Import</a>{#if item}<ExportWorkButton workId={item.id} label="Export this work" />{/if}</div>
   {#if detail.isPending}
     <div class="space-y-5">
       <div class="h-8 w-32 animate-pulse rounded bg-black/[0.05]"></div>
@@ -140,9 +139,12 @@
           {#if item.description}<p class="mt-4 max-w-3xl whitespace-pre-wrap text-base leading-7 text-tk-graphite">{item.description}</p>{/if}
         </div>
       </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <ExportWorkButton workId={item.id} label="Export" />
       <Button variant="ghost" class="text-red-700 hover:bg-red-50" disabled={deleting} onclick={removeItem}>
         <TrashIcon size={17} /> {deleting ? 'Deleting…' : 'Delete'}
       </Button>
+      </div>
     </header>
 
     {#if actionError}<div class="mt-5 rounded-[14px] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">{actionError}</div>{/if}

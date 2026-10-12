@@ -34,54 +34,88 @@ export async function exportScope(rootId: string | null): Promise<PortableDocume
 }
 
 export type ImportProgress = { done: number; total: number; message: string };
+export type ImportSession = {
+  doc: PortableDocument;
+  imported: Map<string, string>;
+  typeIds: Map<string, string>;
+  done: number;
+  failed: PortableItem | null;
+  dropOptional: Set<string>;
+};
 
-export async function createImportedWork(
-  doc: PortableDocument,
+export function newImportSession(doc: PortableDocument): ImportSession {
+  return { doc, imported: new Map(), typeIds: new Map(), done: 0, failed: null, dropOptional: new Set() };
+}
+
+function errorDetails(cause: unknown): string {
+  if (cause instanceof Error) return cause.message;
+  if (cause && typeof cause === 'object') {
+    const value = cause as Record<string, unknown>;
+    const title = typeof value.title === 'string' ? value.title : 'API rejected the item';
+    const detail = typeof value.detail === 'string' ? value.detail : '';
+    const code = typeof value.code === 'string' ? ` [${value.code}]` : '';
+    const meta = value.meta ? ` ${JSON.stringify(value.meta)}` : '';
+    return `${title}${code}: ${detail}${meta}`.trim();
+  }
+  return String(cause);
+}
+
+export async function resumeImportedWork(
+  session: ImportSession,
   progress: (value: ImportProgress) => void
 ): Promise<number> {
+  const { doc, imported, typeIds } = session;
   const existingTypes = (await listWorkTypes()).items;
-  const typeIds = new Map(existingTypes.map((type) => [type.slug, type.id]));
+  for (const type of existingTypes) typeIds.set(type.slug, type.id);
   const usedSlugs = new Set(doc.items.map((item) => item.workTypeSlug).filter((x): x is string => Boolean(x)));
   for (const slug of usedSlugs) {
     if (typeIds.has(slug)) continue;
     const type = doc.workTypes.find((t) => t.slug === slug);
     if (!type) throw new Error(`Work Type ${slug} is missing from the archive.`);
-    const created = await createWorkType({
-      slug: type.slug, displayName: type.displayName,
-      description: type.description, characteristics: type.characteristics
-    });
-    typeIds.set(slug, created.id);
+    try {
+      const created = await createWorkType({ slug: type.slug, displayName: type.displayName,
+        description: type.description, characteristics: type.characteristics });
+      typeIds.set(slug, created.id);
+    } catch (cause) { throw new Error(`Could not create Work Type “${slug}”: ${errorDetails(cause)}`); }
   }
-
-  const imported = new Map<string, string>();
-  const remaining = new Map<string, PortableItem>(doc.items.map((item) => [item.sourceId, item]));
-  let done = 0;
+  const remaining = new Map(doc.items.filter((item) => !imported.has(item.sourceId)).map((item) => [item.sourceId, item]));
+  session.failed = null;
   while (remaining.size > 0) {
     let advanced = false;
     for (const [sourceId, item] of remaining) {
       if (item.parentSourceId && !imported.has(item.parentSourceId)) continue;
-      const created = await createWorkItem({
-        kind: item.kind,
-        name: item.name,
-        description: item.description ?? undefined,
-        parentId: item.parentSourceId ? imported.get(item.parentSourceId) : undefined,
-        workTypeId: item.workTypeSlug ? typeIds.get(item.workTypeSlug) : undefined,
-        priority: item.priority ?? undefined,
-        estimatedEffortSeconds: item.estimatedEffortSeconds ?? undefined,
-        plannedStartAt: item.plannedStartAt ?? undefined,
-        deadlineAt: item.deadlineAt ?? undefined,
-        targetStartDate: item.targetStartDate ?? undefined,
-        targetEndDate: item.targetEndDate ?? undefined,
-        characteristicOverrides: item.characteristicOverrides ?? undefined,
-        status: 'draft'
-      });
-      imported.set(sourceId, created.id);
-      remaining.delete(sourceId);
-      done += 1;
-      advanced = true;
-      progress({ done, total: doc.items.length, message: `Imported ${item.name}` });
+      session.failed = item;
+      const safe = session.dropOptional.has(sourceId);
+      try {
+        const created = await createWorkItem({
+          kind: item.kind, name: item.name,
+          description: safe ? undefined : item.description ?? undefined,
+          parentId: item.parentSourceId ? imported.get(item.parentSourceId) : undefined,
+          workTypeId: item.workTypeSlug ? typeIds.get(item.workTypeSlug) : undefined,
+          priority: safe ? undefined : item.priority ?? undefined,
+          estimatedEffortSeconds: safe ? undefined : item.estimatedEffortSeconds ?? undefined,
+          plannedStartAt: safe ? undefined : item.plannedStartAt ?? undefined,
+          deadlineAt: safe ? undefined : item.deadlineAt ?? undefined,
+          targetStartDate: safe ? undefined : item.targetStartDate ?? undefined,
+          targetEndDate: safe ? undefined : item.targetEndDate ?? undefined,
+          characteristicOverrides: safe ? undefined : item.characteristicOverrides ?? undefined,
+          status: 'draft'
+        });
+        imported.set(sourceId, created.id);
+        remaining.delete(sourceId);
+        session.done += 1;
+        session.failed = null;
+        advanced = true;
+        progress({ done: session.done, total: doc.items.length, message: `Imported ${item.name}` });
+      } catch (cause) {
+        throw new Error(`Item ${session.done + 1}/${doc.items.length} “${item.name}” failed: ${errorDetails(cause)}`);
+      }
     }
     if (!advanced) throw new Error('Unable to resolve the imported work hierarchy.');
   }
-  return done;
+  return session.done;
+}
+
+export async function createImportedWork(doc: PortableDocument, progress: (value: ImportProgress) => void): Promise<number> {
+  return resumeImportedWork(newImportSession(doc), progress);
 }
