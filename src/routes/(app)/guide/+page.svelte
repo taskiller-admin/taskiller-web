@@ -8,6 +8,8 @@
   import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
   import DevicesIcon from 'phosphor-svelte/lib/DevicesIcon';
   import DownloadSimpleIcon from 'phosphor-svelte/lib/DownloadSimpleIcon';
+  import MagnifyingGlassIcon from 'phosphor-svelte/lib/MagnifyingGlassIcon';
+  import UploadSimpleIcon from 'phosphor-svelte/lib/UploadSimpleIcon';
   import WifiSlashIcon from 'phosphor-svelte/lib/WifiSlashIcon';
   import EnvelopeSimpleIcon from 'phosphor-svelte/lib/EnvelopeSimpleIcon';
   import SlidersHorizontalIcon from 'phosphor-svelte/lib/SlidersHorizontalIcon';
@@ -16,6 +18,9 @@
   let demoSegment = $state(1);
 
   const sections = [
+    ['navigation', 'Navigation & search'],
+    ['work-types', 'Custom Work Types'],
+    ['portable-work', 'Portable files'],
     ['capture', 'Capture & Inbox'],
     ['hierarchy', 'Hierarchy'],
     ['planning', 'Plan & Start'],
@@ -49,6 +54,39 @@
   </header>
 
   <div class="mt-14 space-y-16">
+    <section id="navigation" class="scroll-mt-28 grid gap-5 lg:grid-cols-2">
+      <div class="tk-panel rounded-[20px] p-6">
+        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><MagnifyingGlassIcon size={17} /> Global search</div>
+        <h2 class="mt-2 text-2xl font-bold">Search without crowding your navigation.</h2>
+        <p class="mt-3 text-sm leading-6 text-tk-graphite">Choose the magnifying-glass icon in the top bar to reveal search below it. Find Projects, Sprints, and Chores by name or description. Ctrl+K (⌘K on Mac) opens search; Escape closes it.</p>
+      </div>
+      <div class="tk-panel rounded-[20px] p-6">
+        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TreeStructureIcon size={17} /> Browse your hierarchy</div>
+        <h2 class="mt-2 text-2xl font-bold">Switch between Projects, Sprints, and Chores.</h2>
+        <p class="mt-3 text-sm leading-6 text-tk-graphite">On the Projects tab, choose the Projects, Sprints, or Chores view. A Sprint needs a parent Project; Chores can live in Inbox or inside Projects and Sprints.</p>
+        <a href="/projects" class="mt-3 inline-block text-sm font-bold text-tk-strike">Browse work →</a>
+      </div>
+    </section>
+
+    <section id="work-types" class="scroll-mt-28 tk-panel rounded-[20px] p-6">
+      <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><SlidersHorizontalIcon size={17} /> Work Types</div>
+      <h2 class="mt-2 text-2xl font-bold">Create a Work Type with meaningful characteristics.</h2>
+      <p class="mt-3 text-sm leading-6 text-tk-graphite">When creating or editing a work item, open <strong>Create / manage types</strong> next to the Work Type field. Give your custom type a display name, unique slug, and description; choose cognitive demand, interruption sensitivity, continuity need, repetitiveness, physicality, and learning mode. You can start from a built-in type. Built-in types are read-only, while your custom types can be edited.</p>
+    </section>
+
+    <section id="portable-work" class="scroll-mt-28 grid gap-5 lg:grid-cols-2">
+      <div class="tk-panel rounded-[20px] p-6">
+        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><UploadSimpleIcon size={17} /> Portable import</div>
+        <h2 class="mt-2 text-2xl font-bold">Import Projects, Sprints, and Chores.</h2>
+        <p class="mt-3 text-sm leading-6 text-tk-graphite">Use the upload icon in the top bar. Select a Taskiller portable JSON file or ZIP whose authoritative file is <code>data.json</code>. Preview, confirm, then wait for the atomic import to finish. Imported work is created as Draft copies with new IDs.</p>
+      </div>
+      <div class="tk-panel rounded-[20px] p-6">
+        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DownloadSimpleIcon size={17} /> Portable export</div>
+        <h2 class="mt-2 text-2xl font-bold">Choose what to share or back up.</h2>
+        <p class="mt-3 text-sm leading-6 text-tk-graphite">Use the download icon in the top bar to export the workspace or a specific root. Choose automatic, JSON, or ZIP format. ZIP archives can include a readable Markdown companion; JSON is the authoritative import data. Portable exports are separate from the full account-data export in Settings.</p>
+      </div>
+    </section>
+
     <section id="capture" class="scroll-mt-28 grid gap-7 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
       <div>
         <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} /> Capture & Inbox</div>

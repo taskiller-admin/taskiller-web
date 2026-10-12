@@ -84,9 +84,8 @@
         </nav>
 
         <div class="min-w-0 flex-1"></div>
-        <WorkSearch class="w-[220px] 2xl:w-[280px]" />
-
-        <div class="flex shrink-0 items-center gap-1" aria-label="Portable work tools">
+        <div class="flex shrink-0 items-center gap-1" aria-label="Search and portable work tools">
+          <WorkSearch />
           <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:text-tk-ink" aria-label="Import work" title="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
           <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:text-tk-ink" aria-label="Export work" title="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
         </div>
@@ -104,9 +103,10 @@
     </div>
 
     <header class="tk-rail sticky top-0 z-40 rounded-none border-x-0 border-t-0 px-4 py-3 xl:hidden">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <a href="/today" aria-label="Taskiller Today"><Logo class="h-5.5 w-auto" /></a>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
+          <WorkSearch />
           <a href="/guide" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite" aria-label="App guide"><InfoIcon size={17} /></a>
           <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)]" aria-label="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
           <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)]" aria-label="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
@@ -114,11 +114,10 @@
           <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[11px] bg-tk-strike text-[#24110b]" aria-label="Capture work"><PlusIcon size={18} weight="bold" /></a>
         </div>
       </div>
-      <WorkSearch class="mt-2.5 w-full" />
     </header>
 
     {#if !$online}
-      <div class="sticky top-[7.2rem] z-30 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 xl:top-[84px]" role="status" aria-live="polite">
+      <div class="sticky top-[4.7rem] z-30 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 xl:top-[84px]" role="status" aria-live="polite">
         Offline — loaded data stays visible, but server actions are paused until you reconnect.
       </div>
     {/if}

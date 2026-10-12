@@ -6,6 +6,7 @@
   import { problemMessage } from '$lib/api/problem';
   import XIcon from 'phosphor-svelte/lib/XIcon';
   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
+  import { portal } from '$lib/actions/portal';
 
   type CreateInput = components['schemas']['CreateWorkTypeRequest'];
   type Intensity = 'low' | 'medium' | 'high';
@@ -114,11 +115,14 @@
     };
   }
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
+  async function submit() {
     if (busy) return;
     error = '';
     const input = payload();
+    if (!input.displayName || input.displayName.length > 120) {
+      error = 'Display name must be between 1 and 120 characters.';
+      return;
+    }
     if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(input.slug)) {
       error = 'Slug must be 1–64 lowercase letters, numbers, underscores or hyphens, and begin with a letter or number.';
       return;
@@ -172,10 +176,10 @@
 <svelte:window onkeydown={(event) => { if (open && event.key === 'Escape') close(); }} />
 
 {#if open}
-  <div class="fixed inset-0 z-[120] grid place-items-center overflow-y-auto bg-black/75 p-3 sm:p-6" role="presentation">
+  <div use:portal class="fixed inset-0 z-[120] grid place-items-center bg-black/75 p-3 sm:p-6" role="presentation">
     <section role="dialog" aria-modal="true" aria-labelledby="work-type-dialog-title"
-      class="tk-panel max-h-[min(92vh,950px)] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-2xl sm:p-8">
-      <header class="flex items-start justify-between gap-4">
+      class="tk-panel flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl min-h-0 flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-7">
+      <header class="flex shrink-0 items-start justify-between gap-4 pb-3">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-widest text-tk-graphite">Taskiller · Work taxonomy</p>
           <h2 id="work-type-dialog-title" class="tk-display mt-2 text-3xl font-bold">Your Work Types</h2>
@@ -185,7 +189,8 @@
           class="grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--border)] text-tk-graphite hover:text-tk-ink disabled:opacity-50"><XIcon size={18} /></button>
       </header>
 
-      <div class="mt-7 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" tabindex="0" aria-label="Work Type manager content">
+      <div class="mt-3 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
         <aside class="space-y-5">
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
             <div class="mb-3 flex items-center justify-between gap-2">
@@ -220,7 +225,7 @@
           </div>
         </aside>
 
-        <form onsubmit={submit} class="min-w-0 rounded-2xl border border-[var(--border)] p-4 sm:p-6">
+        <div class="min-w-0 rounded-2xl border border-[var(--border)] p-4 sm:p-6">
           <div class="flex items-center justify-between gap-3">
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-tk-graphite">{editingId ? 'Custom type' : 'New type'}</p>
@@ -263,7 +268,7 @@
           </div>
           {#if error}<p class="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600" role="alert">{error}</p>{/if}
           <div class="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
-            <button type="submit" disabled={busy} class="rounded-xl bg-tk-strike px-5 py-2.5 text-sm font-black text-[#24110b] disabled:opacity-50">{busy ? 'Saving…' : editingId ? 'Save Work Type' : 'Create Work Type'}</button>
+            <button type="button" onclick={() => void submit()} disabled={busy} class="rounded-xl bg-tk-strike px-5 py-2.5 text-sm font-black text-[#24110b] disabled:opacity-50">{busy ? 'Saving…' : editingId ? 'Save Work Type' : 'Create Work Type'}</button>
             {#if editingId}
               <button type="button" disabled={busy} onclick={() => (confirmingDelete = !confirmingDelete)} class="rounded-xl border border-red-500/30 px-3 py-2.5 text-xs font-bold text-red-600">{confirmingDelete ? 'Cancel delete' : 'Delete'}</button>
             {/if}
@@ -276,7 +281,8 @@
               <button type="button" disabled={busy} onclick={remove} class="mt-3 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Confirm deletion</button>
             </div>
           {/if}
-        </form>
+        </div>
+      </div>
       </div>
     </section>
   </div>
