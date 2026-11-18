@@ -25,7 +25,7 @@ The frontend uses Svelte 5, SvelteKit 2, TypeScript, Tailwind CSS 4, TanStack Sv
 
 ## Development and Validation
 
-Use Node.js 22 or newer and npm. Copy `.env.example` to `.env` and set `PUBLIC_TASKILLER_API_URL` to the intended API origin without a trailing slash. Never commit secrets or local environment files.
+Use Node.js 24 and npm, matching `.nvmrc`, CI, and the Vercel runtime. Copy `.env.example` to `.env` and set `PUBLIC_TASKILLER_API_URL` to the intended API origin without a trailing slash. Never commit secrets or local environment files.
 
 - `npm install`: install dependencies; use `npm ci` when a committed lockfile is available.
 - `npm run dev`: start Vite development server.

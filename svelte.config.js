@@ -26,7 +26,9 @@ function apiOrigin() {
 const config = {
   preprocess: vitePreprocess(),
   kit: {
-    adapter: productionVercelBuild ? vercelAdapter() : nodeAdapter({ out: 'build' }),
+    adapter: productionVercelBuild
+      ? vercelAdapter({ runtime: 'nodejs24.x' })
+      : nodeAdapter({ out: 'build' }),
     version: { pollInterval: 60_000 },
     csp: {
       mode: 'auto',

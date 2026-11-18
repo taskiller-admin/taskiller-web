@@ -31,6 +31,11 @@ If you later use same-site custom domains such as `app.example.com` and `api.exa
 
 Import the `taskiller-web` repository and keep the framework preset as SvelteKit.
 
+Use Node.js 24.x in Vercel Project Settings. The package engine is pinned to `24.x`,
+CI reads `.nvmrc`, and the Vercel adapter explicitly targets `nodejs24.x`.
+Keep these aligned when upgrading Node; an open-ended engine range can select a
+new major version before the adapter supports it.
+
 Build command:
 
 ```text
