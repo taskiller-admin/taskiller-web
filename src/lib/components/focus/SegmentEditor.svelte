@@ -56,7 +56,7 @@
   }
 </script>
 
-<fieldset {disabled} aria-label={`Segment ${index + 1}`} class="min-w-0 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_8px_24px_rgb(20_20_20/0.035)]">
+<fieldset {disabled} class:break-segment={nonWork} aria-label={`Segment ${index + 1}`} class="segment-card tk-panel min-w-0 rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_8px_24px_rgb(20_20_20/0.035)]">
   <div class="flex items-start gap-3">
     <div class="tk-mono mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-tk-ink text-[11px] font-bold text-white">
       {index + 1}
@@ -130,3 +130,10 @@
     </div>
   </div>
 </fieldset>
+
+<style>
+  .segment-card { border-left: 4px solid var(--blue); transition: border-color 250ms, box-shadow 250ms; }
+  .segment-card.break-segment { border-left-color: var(--success); background: color-mix(in srgb, var(--success) 4%, var(--surface)); }
+  .segment-card:focus-within { box-shadow: 0 0 0 3px var(--accent-soft); border-left-color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) { .segment-card { transition: none; animation: none; } }
+</style>

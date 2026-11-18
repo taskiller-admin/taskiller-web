@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
+
+  function panelDuration() {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220;
+  }
+
   // Taskiller navigation refinements v1
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -72,10 +78,9 @@
 <svelte:head><title>{current.label} — Taskiller</title></svelte:head>
 
 <div class="tk-page">
-  <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+  <header class="tk-page-intro grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
     <div>
-      <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-tk-graphite">
-        <current.icon size={16} weight="fill" class="text-tk-strike" aria-hidden="true" /> Work hierarchy
+      <div class="tk-eyebrow mb-2 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><span class="tk-feature-icon" aria-hidden="true"><current.icon size={16} weight="fill" class="text-tk-strike" aria-hidden="true" /></span> Work hierarchy
       </div>
       <h1 class="tk-display text-6xl font-extrabold sm:text-7xl">{current.label}</h1>
       <p class="mt-2 max-w-2xl text-base leading-7 text-tk-graphite">{current.description}</p>
@@ -128,14 +133,15 @@
     {:else if work.isError && !work.data}
       <div class="tk-panel rounded-2xl p-6 text-sm text-[var(--danger-text)]" role="alert">Could not load {current.label.toLowerCase()}. <button type="button" class="ml-2 font-bold underline" onclick={() => work.refetch()}>Retry</button></div>
     {:else if visible.length === 0}
-      <div class="tk-panel-soft rounded-[14px] border-dashed p-12 text-center">
+      <div transition:fade={{ duration: panelDuration() }} class="tk-panel tk-empty-state rounded-[24px] p-12 text-center">
+        <span class="tk-feature-icon mx-auto mb-5" aria-hidden="true"><current.icon size={25} /></span>
         <p class="text-xl font-bold">No {current.label} yet.</p>
         <p class="mt-2 text-sm text-tk-graphite">{selectedKind === 'sprint' ? 'Create a Sprint inside one of your Projects.' : selectedKind === 'project' ? 'Name an outcome above, then add Sprints or Chores.' : 'Capture your first Chore above or in Inbox.'}</p>
       </div>
     {:else}
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
         {#each visible as item, index (item.id)}
-          <div class={index % 4 === 0 || index % 4 === 3 ? 'xl:col-span-7' : 'xl:col-span-5'}>
+          <div in:fade={{ duration: panelDuration(), delay: panelDuration() ? index % 6 * 45 : 0 }} class={index % 4 === 0 || index % 4 === 3 ? 'xl:col-span-7' : 'xl:col-span-5'}>
             {#if selectedKind === 'project'}
               <ProjectCard project={item} />
             {:else}

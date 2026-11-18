@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import { exportScope } from '$lib/portable/operations';
   import DownloadSimpleIcon from 'phosphor-svelte/lib/DownloadSimpleIcon';
   import { downloadBlob, exportDocument } from '$lib/portable/format';
@@ -25,12 +26,12 @@
 </script>
 
 <div class="inline-flex flex-col items-start gap-1">
-  <button type="button" onclick={save} disabled={exporting}
+  <button type="button" onclick={save} disabled={exporting} aria-busy={exporting}
     class={compact
       ? 'grid size-11 shrink-0 place-items-center rounded-[9px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:border-[var(--border-strong)] hover:text-[var(--foreground)] disabled:opacity-50'
       : 'inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-tk-graphite hover:text-[var(--foreground)] disabled:opacity-50'}
     aria-label={label} title={label}>
-    <DownloadSimpleIcon size={16} weight={exporting ? 'fill' : 'regular'} aria-hidden="true" />
+    {#if exporting}<Spinner size={16} />{:else}<DownloadSimpleIcon size={16} aria-hidden="true" />{/if}
     {#if !compact}<span>{exporting ? 'Exporting…' : label}</span>{/if}
   </button>
   {#if error}<span role="alert" class="text-xs text-[var(--danger-text)]">{error}</span>{/if}

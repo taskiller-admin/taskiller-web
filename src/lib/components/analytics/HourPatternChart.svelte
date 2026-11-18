@@ -7,14 +7,14 @@
 </script>
 
 <div aria-hidden="true" class="overflow-x-auto">
-  <div class="flex min-w-[680px] items-end gap-1.5" style="height: 180px">
+  <div class="flex items-end gap-1.5" style={`height:180px;min-width:${Math.max(260, items.length * 28)}px`}>
     {#each items as item}
       {@const height = Math.max(item.activeWorkSeconds > 0 ? 3 : 0, (item.activeWorkSeconds / maxWork) * 130)}
       <div class="group flex min-w-0 flex-1 flex-col items-center justify-end gap-2" title={`${item.hourStart.toString().padStart(2, '0')}:00 · ${formatDuration(item.activeWorkSeconds)} active work · ${item.sessionCount} sessions`}>
         <div class="relative flex h-[136px] w-full items-end justify-center rounded-[9px] bg-[var(--surface-subtle)]/75">
-          <div class="tk-bar-reveal w-full max-w-5 rounded-t-[6px] bg-[var(--muted)] transition-[background-color,filter] group-hover:bg-tk-strike" style={`--i:${item.hourStart};height:${height}px`}></div>
+          <div class="tk-bar-reveal w-full max-w-5 rounded-t-[6px] bg-[var(--blue)] transition-[background-color,filter] group-hover:bg-tk-strike" style={`--i:${item.hourStart};height:${height}px`}></div>
           {#if item.medianFocusScore}
-            <span class="absolute -top-1 size-1.5 rounded-full bg-tk-blue shadow-[0_0_12px_rgb(95_125_255/0.55)]" style={`opacity:${0.25 + (item.medianFocusScore / 5) * 0.75}`}></span>
+            <span class="absolute -top-1 size-1.5 rounded-full bg-tk-blue shadow-[0_0_12px_rgb(95_125_255/0.25)]" style={`opacity:${0.25 + (item.medianFocusScore / 5) * 0.75}`}></span>
           {/if}
         </div>
         {#if item.hourStart % 3 === 0}<span class="text-[9px] font-semibold text-tk-graphite">{item.hourStart.toString().padStart(2, '0')}</span>{:else}<span class="h-[11px]"></span>{/if}

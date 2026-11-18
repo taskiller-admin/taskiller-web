@@ -112,4 +112,6 @@ test('first Import opens a native picker and then the accessible preview', async
   await expect.poll(() => preview.evaluate(el => el.contains(document.activeElement))).toBe(true);
   await page.keyboard.press('Escape');
   await expect(preview).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Account menu' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
 });

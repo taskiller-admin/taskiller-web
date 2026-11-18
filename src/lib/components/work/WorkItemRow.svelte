@@ -30,7 +30,7 @@
 </script>
 
 <div
-  class="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--border)] py-3.5 transition-[background-color,transform] duration-180 last:border-b-0 hover:bg-[var(--surface-subtle)]/70"
+  class="work-row group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--border)] py-3.5 transition-[background-color,transform] duration-180 last:border-b-0 hover:bg-[var(--surface-subtle)]/70"
   style={`padding-left:${Math.min(depth, 4) * 22}px`}
 >
   <a href={`/work/${item.id}`} class="flex min-w-0 items-center gap-3 rounded-[12px] py-1.5 pl-2">
@@ -62,3 +62,9 @@
 
   </div>
 </div>
+
+<style>
+  .work-row { border-radius: 12px; }
+  .work-row:focus-within { background: var(--accent-soft); }
+  @media (prefers-reduced-motion: reduce) { .work-row, .work-row :global(*) { transition: none; transform: none; } }
+</style>

@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
+
+  function panelDuration() {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220;
+  }
+
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
@@ -102,10 +108,10 @@
 
 <svelte:head><title>Analytics — Taskiller</title></svelte:head>
 
-<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-  <header class="flex flex-wrap items-end justify-between gap-6 border-b border-[var(--border)] pb-7">
+<div class="tk-page max-w-[1240px]">
+  <header class="tk-page-intro flex flex-wrap items-end justify-between gap-6 border-b border-[var(--border)] pb-7">
     <div>
-      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><ChartLineUpIcon size={15} class="text-tk-strike" aria-hidden="true" /> Observed execution</div>
+      <div class="tk-eyebrow mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><span class="tk-feature-icon" aria-hidden="true"><ChartLineUpIcon size={15} class="text-tk-strike" aria-hidden="true" /></span> Observed execution</div>
       <h1 class="tk-display text-4xl font-extrabold">Analytics</h1>
       <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">A descriptive view of how work actually unfolded. Taskiller reports patterns and calibration; it does not turn them into a productivity score.</p>
     </div>
@@ -119,7 +125,8 @@
 
   <p role="status" class="sr-only">{updating ? 'Loading analytics…' : failed ? 'Some analytics could not be loaded.' : 'Analytics updated.'}</p>
   {#if empty}
-    <section class="tk-panel mt-7 p-6">
+    <section transition:fade={{ duration: panelDuration() }} class="tk-panel tk-empty-state mt-7 p-6">
+      <span class="tk-feature-icon mx-auto mb-5" aria-hidden="true"><ChartLineUpIcon size={25} /></span>
       <h2 class="text-xl font-bold">See how your work unfolds</h2>
       <p class="mt-2 text-[var(--muted)]">No Execution Sessions in this period yet. Choose a Chore and start a session to see activity, timing, and review patterns here.</p>
       <a href="/projects?kind=chore" class="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[var(--accent)] px-4 font-bold text-[#27150e]">Choose work</a>
@@ -143,10 +150,10 @@
 
   {/if}
   <div class="mt-7 grid gap-7 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
-    <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+    <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Activity</p>
+          <p class="tk-section-label">Activity</p>
           <h2 class="mt-1 text-xl font-bold">Work, breaks, and pauses</h2>
         </div>
         <span class="text-xs font-semibold text-tk-graphite">{bucket === 'day' ? 'Daily' : 'Weekly'} buckets · {timeseries.data?.timezone ?? '—'}</span>
@@ -157,7 +164,7 @@
     </section>
 
     {#if summary.data && !summary.isError}
-    <section class="rounded-[14px] bg-tk-ink p-6 text-white">
+    <section class="rounded-[24px] bg-tk-ink p-6 text-white">
       <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/80">Calibration</p>
       <h2 class="tk-display mt-2 text-2xl font-bold">What the plan felt like in reality.</h2>
       <dl class="mt-7 space-y-5">
@@ -170,10 +177,10 @@
     {/if}
   </div>
 
-  <section class="mt-7 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+  <section class="tk-panel mt-7 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Time of day</p>
+        <p class="tk-section-label">Time of day</p>
         <h2 class="mt-1 text-xl font-bold">When execution happened</h2>
       </div>
       <span class="text-xs font-semibold text-tk-graphite">Timezone · {focusPatterns.data?.timezone ?? '—'}</span>
@@ -182,9 +189,9 @@
   </section>
 
   <div class="mt-7 grid gap-7 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-    <section class="overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--surface)]">
+    <section class="tk-panel overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--surface)]">
       <div class="border-b border-[var(--border)] p-5 sm:p-6">
-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Work types</p>
+        <p class="tk-section-label">Work types</p>
         <h2 class="mt-1 text-xl font-bold">Execution by context</h2>
       </div>
       {#if workTypes.isPending}
@@ -207,8 +214,8 @@
       {/if}
     </section>
 
-    <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
-      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Personalization evidence</p>
+    <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+      <p class="tk-section-label">Personalization evidence</p>
       <h2 class="mt-1 text-xl font-bold">Patterns with enough samples</h2>
       <p class="mt-2 text-sm leading-6 text-tk-graphite">These are the work-type patterns can use to personalize future recommendations.</p>
       <div class="mt-5 space-y-3">
@@ -229,7 +236,7 @@
     </section>
   </div>
 
-  <section class="mt-7 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-5 sm:px-6">
+  <section class="tk-panel mt-7 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-5 sm:px-6">
     <div class="flex items-center justify-between gap-4 border-b border-[var(--border)] py-5">
       <div><div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite"><ClockCounterClockwiseIcon size={14} aria-hidden="true" /> Drill down</div><h2 class="mt-1 text-xl font-bold">Recent sessions</h2></div>
       <a href="/history" class="text-sm font-bold text-tk-graphite hover:text-[var(--foreground)]">Full history →</a>

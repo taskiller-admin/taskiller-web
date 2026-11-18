@@ -8,6 +8,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import Badge from '$lib/components/ui/Badge.svelte';
+  import AvatarSettings from '$lib/components/settings/AvatarSettings.svelte';
   import {
     AccountConflictError,
     getProfile,
@@ -109,6 +110,7 @@
     <p role="alert" class="mt-6 text-sm">Could not load your profile.</p>
     <Button variant="secondary" onclick={() => profile.refetch()}>Retry profile</Button>
   {:else if profile.data}
+    <AvatarSettings seed={profile.data.user.id} />
     <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.7fr)]">
       <form class="space-y-4" oninput={() => (message = '')} onsubmit={(event) => { event.preventDefault(); save.mutate(); }}>
         <label class="block">
@@ -120,7 +122,7 @@
           <Input value={profile.data.user.email} disabled />
         </label>
         <div class="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save profile'}</Button>
+          <Button type="submit" loading={save.isPending} disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save profile'}</Button>
           {#if message}<span role="status" class="text-sm text-tk-green">{message}</span>{/if}
         </div>
       </form>
@@ -131,7 +133,7 @@
           <p class="mt-2 text-sm leading-6 text-[var(--muted)]">Your address has been verified and can receive account-recovery messages.</p>
         {:else}
           <p class="mt-2 text-sm leading-6 text-[var(--muted)]">Verify your email so password recovery and important account notices have a confirmed destination.</p>
-          <Button class="mt-4" variant="secondary" size="sm" disabled={verification.isPending} onclick={() => verification.mutate()}>
+          <Button class="mt-4" variant="secondary" size="sm" loading={verification.isPending} disabled={verification.isPending} onclick={() => verification.mutate()}>
             <EnvelopeSimpleIcon size={15} aria-hidden="true" /> {verification.isPending ? 'Requesting…' : 'Send verification email'}
           </Button>
         {/if}

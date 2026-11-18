@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
+
+  function panelDuration() {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220;
+  }
+
   import { protectUnsaved } from '$lib/actions/unsaved';
   import { createMutation, useQueryClient } from '@tanstack/svelte-query';
   import CaretDownIcon from 'phosphor-svelte/lib/CaretDownIcon';
@@ -97,9 +103,9 @@
   }
 </script>
 
-<form class="tk-capture-deck rounded-[14px] p-2.5" onsubmit={submit}>
+<form class="tk-panel tk-capture-deck rounded-[22px] p-4" onsubmit={submit}>
   <fieldset disabled={create.isPending} class="min-w-0">
-  <label for={`${uid}-name`} class="mb-1.5 block px-2 text-sm font-semibold">{kind === 'project' ? 'Project name' : kind === 'sprint' ? 'Sprint name' : 'Chore name'}</label>
+  <label for={`${uid}-name`} class="tk-section-label mb-3 block px-2">{kind === 'project' ? 'Project name' : kind === 'sprint' ? 'Sprint name' : 'Chore name'}</label>
   <div class="flex gap-2">
     {#if allowedKinds.length > 1}
       <Select class="w-32 shrink-0 border-transparent bg-[var(--surface-subtle)]" bind:value={kind} aria-label="Work item kind">
@@ -120,7 +126,7 @@
       required
     />
 
-    <Button type="submit" variant="dark" aria-label={label} disabled={create.isPending || !name.trim()}>
+    <Button loading={create.isPending} type="submit" variant="dark" aria-label={label} disabled={create.isPending || !name.trim()}>
       <PlusIcon size={17} weight="bold" aria-hidden="true" />
       <span class="hidden sm:inline">{create.isPending ? 'Saving…' : label}</span>
     </Button>
@@ -150,7 +156,7 @@
   </button>
 
   {#if advanced}
-    <div id={`${uid}-details`} class="mt-3 grid gap-3 border-t border-[var(--border)] px-1 pt-4 sm:grid-cols-2">
+    <div transition:fade={{ duration: panelDuration() }} id={`${uid}-details`} class="mt-3 grid gap-3 border-t border-[var(--border)] px-1 pt-4 sm:grid-cols-2">
       <label class="sm:col-span-2">
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
         <Textarea bind:value={description} placeholder="Context, outcome, or notes…" maxlength="20000" />

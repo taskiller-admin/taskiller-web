@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
   import EnvelopeOpenIcon from 'phosphor-svelte/lib/EnvelopeOpenIcon';
-  import Logo from '$lib/components/brand/Logo.svelte';
+  import AuthFrame from '$lib/components/brand/AuthFrame.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import { confirmEmailVerification } from '$lib/api/account';
@@ -34,10 +34,8 @@
 </script>
 
 <svelte:head><title>Verify email — Taskiller</title></svelte:head>
-<div class="grid min-h-screen place-items-center px-5 py-12">
-  <div class="w-full max-w-md">
-    <a href="/" aria-label="Taskiller home"><Logo class="h-7 w-auto" /></a>
-    <div class="mt-10 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-7">
+<AuthFrame headline="One small step. All set to focus.">
+    <div class="auth-card">
       {#if verified}
         <div class="grid size-11 place-items-center rounded-[14px] bg-tk-green/10 text-[var(--foreground)]"><CheckCircleIcon size={22} weight="fill" aria-hidden="true" /></div>
         <h1 class="tk-display mt-5 text-3xl font-extrabold">Email verified</h1>
@@ -53,9 +51,8 @@
         {:else}
           <p class="mt-3 text-sm leading-6 text-[var(--muted)]">{busy ? 'Confirming your verification link…' : 'Ready to verify this address.'}</p>
         {/if}
-        <Button class="mt-5 w-full" disabled={busy || !token.trim()} onclick={confirm}>{busy ? 'Verifying…' : 'Verify email'}</Button>
+        <Button class="mt-5 w-full" loading={busy} disabled={busy || !token.trim()} onclick={confirm}>{busy ? 'Verifying…' : 'Verify email'}</Button>
         {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
       {/if}
     </div>
-  </div>
-</div>
+</AuthFrame>

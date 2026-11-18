@@ -18,7 +18,7 @@
   );
 </script>
 
-<section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
+<section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
   <div class="flex items-center justify-between gap-3">
     <div>
       <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite"><ChartLineUpIcon size={14} aria-hidden="true" /> Last 30 days</div>

@@ -231,7 +231,7 @@
 <svelte:head><title>Focus session — Taskiller</title></svelte:head>
 
 <a class="tk-skip-link" href="#focus-main">Skip to session controls</a>
-<div id="focus-main" tabindex="-1" class="min-h-screen bg-[#111214] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
+<div id="focus-main" tabindex="-1" class="focus-canvas min-h-screen bg-[#132440] px-5 py-6 text-white sm:px-8 lg:px-12 lg:py-9">
   <div class="mx-auto max-w-[1180px]">
     <div class="flex items-center justify-between gap-4">
       <a href="/today" class="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-white/75 transition hover:text-white"><ArrowLeftIcon size={15} aria-hidden="true" /> Leave focus</a>
@@ -246,9 +246,9 @@
     {:else if session.isError || !session.data}
       <div role="alert" class="mt-8 rounded-[14px] border border-red-500/30 bg-red-500/10 p-6 text-red-100">Couldn’t load this session. <button class="underline" onclick={() => session.refetch()}>Try again</button></div>
     {:else}
-      <header class="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <header class="focus-masthead mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <p class="text-[11px] font-bold uppercase tracking-[0.15em] text-white/75">{work.data?.item.kind ?? 'work'} · focus session</p>
+          <p class="tk-eyebrow text-[11px] font-bold uppercase tracking-[0.15em] text-white/75">{work.data?.item.kind ?? 'work'} · focus session</p>
           <h1 class="tk-display mt-2 max-w-4xl text-2xl font-extrabold sm:text-3xl">{work.data?.item.name ?? 'Focus session'}</h1>
           {#if current}
             <p class="mt-3 text-sm text-white/75">{current.label || current.kind.replaceAll('_', ' ')} · {current.targetSeconds ? formatDuration(current.targetSeconds) : 'Open duration'}</p>
@@ -296,8 +296,6 @@
               </div>
               {#if current?.optional}<Badge class="border-white/10 bg-white/[0.06] text-white/75">Optional</Badge>{/if}
             </div>
-
-
 
             {#if current && !currentBreak && currentStarted && canCompleteWork}
               <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
@@ -371,3 +369,7 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .focus-canvas { background-image: radial-gradient(ellipse at 80% 10%, #546eab20, transparent 55%); }
+</style>

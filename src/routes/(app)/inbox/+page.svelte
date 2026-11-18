@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
+
+  function panelDuration() {
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220;
+  }
+
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
@@ -44,9 +50,9 @@
 <svelte:head><title>Inbox — Taskiller</title></svelte:head>
 
 <div class="tk-page max-w-[1180px]">
-  <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+  <header class="tk-page-intro grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
     <div>
-      <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} aria-hidden="true" /> Unsorted capture</div>
+      <div class="tk-eyebrow mb-2 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><span class="tk-feature-icon" aria-hidden="true"><TrayIcon size={16} aria-hidden="true" /></span> Unsorted capture</div>
       <h1 class="tk-display text-6xl font-extrabold sm:text-7xl">Inbox</h1>
       <p class="mt-2 max-w-2xl text-base leading-7 text-tk-graphite">Capture Chores here, then organize or plan them when you are ready.</p>
     </div>
@@ -82,14 +88,15 @@
     {:else if inbox.isError}
       <p class="py-10 text-sm text-[var(--danger-text)]" role="alert">Couldn’t load Inbox. <button type="button" class="underline" onclick={() => inbox.refetch()}>Retry</button></p>
     {:else if filtered.length === 0}
-      <div class="tk-panel-soft rounded-[14px] border-dashed p-14 text-center">
+      <div transition:fade={{ duration: panelDuration() }} class="tk-panel tk-empty-state rounded-[24px] p-14 text-center">
+        <span class="tk-feature-icon mx-auto mb-5" aria-hidden="true"><TrayIcon size={25} /></span>
         <p class="text-lg font-bold">Nothing in this view.</p>
         <p class="mt-2 text-sm text-tk-graphite">Capture something above or switch the filter.</p>
       </div>
     {:else}
       <div class="tk-panel overflow-hidden rounded-[14px] px-3 sm:px-4">
-        {#each filtered as item}
-          <WorkItemRow {item} showExport />
+        {#each filtered as item (item.id)}
+          <div transition:fade={{ duration: panelDuration() }}><WorkItemRow {item} showExport /></div>
         {/each}
       </div>
     {/if}

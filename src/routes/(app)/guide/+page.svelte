@@ -36,9 +36,9 @@
 <svelte:head><title>Guide — Taskiller</title></svelte:head>
 
 <div class="tk-page max-w-[1240px]">
-  <header class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
+  <header class="tk-page-intro grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
     <div>
-      <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><InfoIcon size={17} class="text-tk-strike" aria-hidden="true" /> App guide</div>
+      <div class="tk-eyebrow mb-4 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><span class="tk-feature-icon" aria-hidden="true"><InfoIcon size={17} class="text-tk-strike" aria-hidden="true" /></span> App guide</div>
       <h1 class="tk-display max-w-[10ch] text-6xl font-extrabold sm:text-7xl">See the whole system.</h1>
       <p class="mt-5 max-w-2xl text-base leading-7 text-tk-graphite">A visual walkthrough from capture to execution, history, personalization, account security, and offline behavior.</p>
     </div>
@@ -55,33 +55,33 @@
 
   <div class="mt-14 space-y-16">
     <section id="navigation" class="scroll-mt-28 grid gap-5 lg:grid-cols-2">
-      <div class="tk-panel rounded-[14px] p-6">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><MagnifyingGlassIcon size={17} aria-hidden="true" /> Global search</div>
+      <div class="guide-card tk-panel rounded-[22px] p-6">
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><MagnifyingGlassIcon size={17} aria-hidden="true" /> Global search</div>
         <h2 class="mt-2 text-2xl font-bold">Search without crowding your navigation.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Choose the magnifying-glass icon in the top bar to reveal search below it. Find Projects, Sprints, and Chores by name or description. Ctrl+K (⌘K on Mac) opens search; Escape closes it.</p>
       </div>
-      <div class="tk-panel rounded-[14px] p-6">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TreeStructureIcon size={17} aria-hidden="true" /> Browse your hierarchy</div>
+      <div class="guide-card tk-panel rounded-[22px] p-6">
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TreeStructureIcon size={17} aria-hidden="true" /> Browse your hierarchy</div>
         <h2 class="mt-2 text-2xl font-bold">Switch between Projects, Sprints, and Chores.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">On the Projects tab, choose the Projects, Sprints, or Chores view. A Sprint needs a parent Project; Chores can live in Inbox or inside Projects and Sprints.</p>
-        <a href="/projects" class="mt-3 inline-block text-sm font-bold text-tk-strike">Browse work →</a>
+        <a href="/projects" class="mt-3 inline-block text-sm font-bold text-[var(--accent-ink)]">Browse work →</a>
       </div>
     </section>
 
-    <section id="work-types" class="scroll-mt-28 tk-panel rounded-[14px] p-6">
-      <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><SlidersHorizontalIcon size={17} aria-hidden="true" /> Work Types</div>
+    <section id="work-types" class="guide-card scroll-mt-28 tk-panel rounded-[22px] p-6">
+      <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><SlidersHorizontalIcon size={17} aria-hidden="true" /> Work Types</div>
       <h2 class="mt-2 text-2xl font-bold">Create a Work Type with meaningful characteristics.</h2>
       <p class="mt-3 text-sm leading-6 text-tk-graphite">When creating or editing a work item, open <strong>Create / manage types</strong> next to the Work Type field. Give your custom type a display name, unique slug, and description; choose cognitive demand, interruption sensitivity, continuity need, repetitiveness, physicality, and learning mode. You can start from a built-in type. Built-in types are read-only, while your custom types can be edited.</p>
     </section>
 
     <section id="portable-work" class="scroll-mt-28 grid gap-5 lg:grid-cols-2">
-      <div class="tk-panel rounded-[14px] p-6">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><UploadSimpleIcon size={17} aria-hidden="true" /> Portable import</div>
+      <div class="guide-card tk-panel rounded-[22px] p-6">
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><UploadSimpleIcon size={17} aria-hidden="true" /> Portable import</div>
         <h2 class="mt-2 text-2xl font-bold">Import Projects, Sprints, and Chores.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Open your account menu in the top bar and choose Import work. Select a Taskiller portable JSON file or ZIP whose authoritative file is <code>data.json</code>. Preview, confirm, then wait for all items to finish saving. Imported work is created as Draft copies with new IDs.</p>
       </div>
-      <div class="tk-panel rounded-[14px] p-6">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DownloadSimpleIcon size={17} aria-hidden="true" /> Portable export</div>
+      <div class="guide-card tk-panel rounded-[22px] p-6">
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DownloadSimpleIcon size={17} aria-hidden="true" /> Portable export</div>
         <h2 class="mt-2 text-2xl font-bold">Choose what to share or back up.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Open your account menu and choose Export work to export the workspace or a specific root. Choose automatic, JSON, or ZIP format. ZIP archives can include a readable Markdown companion; JSON is the authoritative import data. Portable exports are separate from the full account-data export in Settings.</p>
       </div>
@@ -89,10 +89,10 @@
 
     <section id="capture" class="scroll-mt-28 grid gap-7 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
       <div>
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} aria-hidden="true" /> Capture & Inbox</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} aria-hidden="true" /> Capture & Inbox</div>
         <h2 class="tk-display mt-2 text-4xl font-bold">Get it out of your head first.</h2>
         <p class="mt-4 text-sm leading-7 text-tk-graphite">A Chore only needs a name. Add estimates, priority, deadlines, and structure later.</p>
-        <a class="mt-5 inline-flex text-sm font-bold text-tk-strike" href="/inbox?capture=1">Open Inbox →</a>
+        <a class="mt-5 inline-flex text-sm font-bold text-[var(--accent-ink)]" href="/inbox?capture=1">Open Inbox →</a>
       </div>
       <div class="tk-panel rounded-[14px] p-4">
         <div class="tk-capture-deck flex gap-2 rounded-[15px] p-2">
@@ -119,16 +119,16 @@
         </div>
       </div>
       <div>
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TreeStructureIcon size={16} aria-hidden="true" /> Hierarchy</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TreeStructureIcon size={16} aria-hidden="true" /> Hierarchy</div>
         <h2 class="tk-display mt-2 text-4xl font-bold">Project → Sprint → Chore.</h2>
         <p class="mt-4 text-sm leading-7 text-tk-graphite">Projects hold outcomes. Sprints group a push. Chores are executable. Chores can also live directly under Projects or in Inbox.</p>
-        <a class="mt-5 inline-flex text-sm font-bold text-tk-strike" href="/projects">Open Projects →</a>
+        <a class="mt-5 inline-flex text-sm font-bold text-[var(--accent-ink)]" href="/projects">Open Projects →</a>
       </div>
     </section>
 
     <section id="planning" class="scroll-mt-28">
       <div class="max-w-2xl">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><LightningIcon size={16} aria-hidden="true" /> Plan & Start</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><LightningIcon size={16} aria-hidden="true" /> Plan & Start</div>
         <h2 class="tk-display mt-2 text-4xl font-bold">Turn work into a sequence.</h2>
         <p class="mt-4 text-sm leading-7 text-tk-graphite">Generate a recommendation or build from scratch. Reorder segments, change durations, link Sprint segments to Chores, save, then start.</p>
       </div>
@@ -145,12 +145,12 @@
 
     <section id="focus" class="scroll-mt-28 grid gap-7 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
       <div>
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><ClockCountdownIcon size={16} aria-hidden="true" /> Focus session</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><ClockCountdownIcon size={16} aria-hidden="true" /> Focus session</div>
         <h2 class="tk-display mt-2 text-4xl font-bold">The plan becomes live state.</h2>
         <p class="mt-4 text-sm leading-7 text-tk-graphite">Pause/resume, start the next segment, complete or skip optional blocks, mark linked work complete, then finish or abandon while preserving history.</p>
       </div>
       <div class="tk-session-reactor rounded-[14px] p-6 text-white">
-        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-white/55">Demo session</span><span class="text-xs text-white/40">Segment {demoSegment} / 3</span></div>
+        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-white/55">Demo session</span><span class="text-xs text-white/70">Segment {demoSegment} / 3</span></div>
         <div class="tk-mono mt-8 text-6xl font-semibold tracking-[-0.03em]">{demoPaused ? '24:18' : demoSegment === 1 ? '18:42' : '05:00'}</div>
         <div class="mt-7 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-tk-strike transition-[width] duration-300" style={`width:${demoSegment === 1 ? 58 : 82}%`}></div></div>
         <div class="mt-5 flex flex-wrap gap-2">
@@ -168,7 +168,7 @@
         <p class="mt-4 text-xs leading-5 text-tk-graphite">Focus, fatigue, difficulty, satisfaction, and notes are optional.</p>
       </div>
       <div class="tk-panel rounded-[14px] p-5">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><ClockCounterClockwiseIcon size={16} aria-hidden="true" /> History</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><ClockCounterClockwiseIcon size={16} aria-hidden="true" /> History</div>
         <h2 class="mt-1 text-xl font-bold">Every session stays inspectable.</h2>
         <div class="mt-5 space-y-2">
           {#each [['Production frontend','42 min','Completed'],['API deployment','28 min','Completed'],['Documentation','16 min','Abandoned']] as row}
@@ -179,7 +179,7 @@
     </section>
 
     <section id="analytics" class="scroll-mt-28">
-      <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><ChartLineUpIcon size={16} aria-hidden="true" /> Analytics</div>
+      <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><ChartLineUpIcon size={16} aria-hidden="true" /> Analytics</div>
       <h2 class="tk-display mt-2 text-4xl font-bold">Observe patterns without grading yourself.</h2>
       <p class="mt-4 max-w-2xl text-sm leading-7 text-tk-graphite">Active time, breaks, pauses, completion, adherence, estimate error, start delay, work-type patterns, and review-based focus signals.</p>
       <div class="mt-6 tk-panel rounded-[14px] p-5">
@@ -194,12 +194,12 @@
 
     <section id="account" class="scroll-mt-28 grid gap-5 md:grid-cols-2">
       <div class="tk-panel rounded-[14px] p-5">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><EnvelopeSimpleIcon size={16} aria-hidden="true" /> Account recovery</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><EnvelopeSimpleIcon size={16} aria-hidden="true" /> Account recovery</div>
         <h2 class="mt-1 text-xl font-bold">Verify and recover safely.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Verify email, request password reset, and revoke old sessions when a password changes.</p>
       </div>
       <div class="tk-panel rounded-[14px] p-5">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DevicesIcon size={16} aria-hidden="true" /> Devices</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DevicesIcon size={16} aria-hidden="true" /> Devices</div>
         <h2 class="mt-1 text-xl font-bold">See where you are signed in.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Revoke one device, the current device, or all active sessions from Settings.</p>
       </div>
@@ -207,7 +207,7 @@
 
     <section id="data" class="scroll-mt-28 grid gap-5 md:grid-cols-2">
       <div class="tk-panel rounded-[14px] p-5">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DownloadSimpleIcon size={16} aria-hidden="true" /> Export</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><DownloadSimpleIcon size={16} aria-hidden="true" /> Export</div>
         <h2 class="mt-1 text-xl font-bold">Take your data with you.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Request a compressed JSON archive and watch it move from queued to processing to ready.</p>
       </div>
@@ -220,17 +220,23 @@
 
     <section id="offline" class="scroll-mt-28 grid gap-5 md:grid-cols-2">
       <div class="tk-panel rounded-[14px] p-5">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><WifiSlashIcon size={16} aria-hidden="true" /> Offline</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><WifiSlashIcon size={16} aria-hidden="true" /> Offline</div>
         <h2 class="mt-1 text-xl font-bold">Read safely. Don’t fake writes.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">The PWA recovers its shell and visited navigation offline. Mutations wait for a real connection so ETags and idempotency stay correct.</p>
       </div>
       <div class="tk-panel rounded-[14px] p-5">
-        <div class="flex items-center gap-2 text-sm font-semibold text-tk-graphite"><SlidersHorizontalIcon size={16} aria-hidden="true" /> Appearance & install</div>
+        <div class="tk-eyebrow flex items-center gap-2 text-sm font-semibold text-tk-graphite"><SlidersHorizontalIcon size={16} aria-hidden="true" /> Appearance & install</div>
         <h2 class="mt-1 text-xl font-bold">Light, dark, system, and installable.</h2>
         <p class="mt-3 text-sm leading-6 text-tk-graphite">Theme applies before the app paints, including the loading screen and installed PWA.</p>
       </div>
     </section>
   </div>
 
-  <footer class="mt-16 border-t border-[var(--border)] pt-7"><a href="/today" class="text-sm font-bold text-tk-strike">Return to Today →</a></footer>
+  <footer class="mt-16 border-t border-[var(--border)] pt-7"><a href="/today" class="text-sm font-bold text-[var(--accent-ink)]">Return to Today →</a></footer>
 </div>
+
+<style>
+  .guide-card { transition: transform 260ms, box-shadow 260ms; border-top: 3px solid color-mix(in srgb, var(--blue) 35%, var(--border)); }
+  .guide-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px color-mix(in srgb, var(--blue) 9%, transparent); }
+  @media (prefers-reduced-motion: reduce) { .guide-card { transition: none; } .guide-card:hover { transform: none; } }
+</style>

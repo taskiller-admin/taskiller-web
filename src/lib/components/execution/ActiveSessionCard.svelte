@@ -15,7 +15,7 @@
   const progress = $derived(clock.progress);
 </script>
 
-<section class="tk-session-reactor rounded-[26px] p-6 text-white sm:p-7 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-12" aria-label="Active focus session">
+<section class="focus-reactor tk-session-reactor rounded-[26px] p-6 text-white sm:p-7 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-12" aria-label="Active focus session">
   <div>
     <div class="flex items-center gap-2 text-sm font-semibold text-white/75">
       <span class="grid size-7 place-items-center rounded-[9px] bg-white/8 text-tk-strike">
@@ -38,10 +38,14 @@
     </div>
   </div>
 
-  <div class="mt-4 min-w-0 lg:mt-0 lg:text-right">
-    <div class="tk-mono text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">
+  <div class="mt-6 min-w-0 lg:mt-0 lg:text-right">
+    <div class="timer-orbit" style={`--orbit-progress:${progress}%`}>
+      <span class="orbit-track" aria-hidden="true"></span>
+      <span class="orbit-satellite" aria-hidden="true"></span>
+      <div class="tk-mono relative z-10 text-5xl font-semibold tracking-[-0.03em] sm:text-6xl">
       {formatClock(remaining)}
       <span class="sr-only">{target === null ? ' elapsed in the current segment' : ' remaining in the current segment'}</span>
+      </div>
     </div>
 
     {#if controls}<div class="mt-4">{@render controls()}</div>{/if}
@@ -53,3 +57,17 @@
     </div>{/if}
   </div>
 </section>
+
+<style>
+  .focus-reactor { position: relative; isolation: isolate; overflow: hidden; background: #172c50; border: 1px solid #ffffff20; box-shadow: 0 22px 60px #101f3f24; }
+  .focus-reactor::before { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse at 0% 0%, #8299e02b, transparent 65%), radial-gradient(ellipse at 100% 100%, #ff927226, transparent 65%); animation: reactor-breathe 8s ease-in-out infinite alternate; }
+  .timer-orbit { position: relative; display: grid; place-items: center; width: min(280px, 100%); aspect-ratio: 1; margin-inline: auto; border-radius: 50%; background: radial-gradient(circle, #203c63 50%, transparent 51%); }
+  .orbit-track { position: absolute; inset: 10px; border-radius: 50%; border: 1px solid #ffffff20; box-shadow: inset 0 0 0 12px #ffffff03, 0 0 0 9px #ffffff03; }
+  .orbit-track::after { content: ''; position: absolute; inset: 8px; border-radius: 50%; background: conic-gradient(var(--accent) var(--orbit-progress), #ffffff10 0); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0); }
+  .orbit-satellite { position: absolute; inset: 9px; border-radius: 50%; animation: orbit-turn 28s linear infinite; }
+  .orbit-satellite::before { content: ''; position: absolute; top: -3px; left: calc(50% - 4px); width: 8px; height: 8px; border-radius: 50%; background: #a5dfce; box-shadow: 0 0 18px #a5dfce90; }
+  @keyframes orbit-turn { to { transform: rotate(360deg); } }
+  @keyframes reactor-breathe { to { opacity: .45; transform: scale(1.08); } }
+  @media (min-width: 1024px) { .timer-orbit { margin-left: auto; } }
+  @media (prefers-reduced-motion: reduce) { .focus-reactor::before, .orbit-satellite { animation: none; } }
+</style>

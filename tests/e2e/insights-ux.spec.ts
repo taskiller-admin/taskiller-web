@@ -50,7 +50,7 @@ test('charts expose exact values through keyboard and touch accessible tables', 
   await page.getByText('View hourly data', { exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('table', { name: 'Time of day' }).getByRole('cell', { name: '3.5', exact: true })).toBeVisible();
-  const heights = await page.locator('[aria-hidden="true"] .bg-tk-strike').evaluateAll((bars) => bars.map((bar) => (bar as HTMLElement).style.height));
+  const heights = await page.locator('[aria-hidden="true"] [data-series="active-work"]').evaluateAll((bars) => bars.map((bar) => (bar as HTMLElement).style.height));
   expect(heights).toContain('0px');
 });
 

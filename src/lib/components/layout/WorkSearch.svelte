@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import { tick } from 'svelte';
   import { createQuery } from '@tanstack/svelte-query';
   import MagnifyingGlassIcon from 'phosphor-svelte/lib/MagnifyingGlassIcon';
@@ -87,7 +88,7 @@
       {#if !query.trim()}
         <p class="px-2 py-4 text-xs text-tk-graphite">Search Projects, Sprints and Chores. Press Esc to close · Ctrl/⌘+K to reopen.</p>
       {:else if work.isPending}
-        <p class="px-2 py-4 text-sm text-tk-graphite" role="status">Searching your work…</p>
+        <p class="flex items-center gap-2 px-2 py-4 text-sm text-tk-graphite" role="status"><Spinner size={16} />Searching your work…</p>
       {:else if work.isError}
         <div class="px-2 py-4 text-sm" role="alert">Couldn’t search your work. <button type="button" class="min-h-11 px-2 font-semibold underline" onclick={() => work.refetch()}>Retry search</button></div>
       {:else if results.length || guideMatch}

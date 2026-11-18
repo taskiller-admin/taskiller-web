@@ -157,13 +157,13 @@
   );
 </script>
 
-<form id="work-details" class="scroll-mt-28 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5" onsubmit={submit}>
+<form id="work-details" class="tk-panel scroll-mt-28 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5" onsubmit={submit}>
   <div class="flex items-center justify-between gap-3">
     <div>
       <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Edit</p>
       <h2 class="mt-1 font-bold">Work details</h2>
     </div>
-    <Button type="submit" size="sm" disabled={save.isPending}>
+    <Button loading={save.isPending} type="submit" size="sm" disabled={save.isPending}>
       <FloppyDiskIcon size={16} aria-hidden="true" /> {save.isPending ? 'Saving…' : 'Save'}
     </Button>
   </div>

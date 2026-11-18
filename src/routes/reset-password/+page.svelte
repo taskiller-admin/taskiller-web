@@ -2,7 +2,7 @@
   import { protectUnsaved } from '$lib/actions/unsaved';
   import { page } from '$app/state';
   import KeyIcon from 'phosphor-svelte/lib/KeyIcon';
-  import Logo from '$lib/components/brand/Logo.svelte';
+  import AuthFrame from '$lib/components/brand/AuthFrame.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import { confirmPasswordReset } from '$lib/api/account';
@@ -37,10 +37,8 @@
 </script>
 
 <svelte:head><title>Choose a new password — Taskiller</title></svelte:head>
-<div class="grid min-h-screen place-items-center px-5 py-12">
-  <div class="w-full max-w-md">
-    <a href="/" aria-label="Taskiller home"><Logo class="h-7 w-auto" /></a>
-    <div class="mt-10 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-7">
+<AuthFrame headline="Back to a clearer headspace.">
+    <div class="auth-card">
       <div class="grid size-11 place-items-center rounded-[14px] bg-tk-strike/15 text-[var(--foreground)]"><KeyIcon size={21} aria-hidden="true" /></div>
       <h1 class="tk-display mt-5 text-3xl font-extrabold">Choose a new password</h1>
       {#if done}
@@ -55,10 +53,9 @@
           <label class="block"><span class="mb-1.5 block text-xs font-bold text-[var(--muted)]">Confirm new password</span><Input type={showPassword ? 'text' : 'password'} bind:value={confirmPassword} minlength="10" maxlength="256" required autocomplete="new-password" /></label>
           <p class="text-sm text-[var(--muted)]">Use 10–256 characters.</p>
           <button type="button" class="min-h-11 text-sm font-semibold underline" aria-pressed={showPassword} onclick={() => (showPassword = !showPassword)}>{showPassword ? 'Hide passwords' : 'Show passwords'}</button>
-          <Button class="w-full" type="submit" disabled={busy || !token.trim()}>{busy ? 'Changing…' : 'Change password'}</Button>
+          <Button class="w-full" type="submit" loading={busy} disabled={busy || !token.trim()}>{busy ? 'Changing…' : 'Change password'}</Button>
         </form>
         {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
       {/if}
     </div>
-  </div>
-</div>
+</AuthFrame>

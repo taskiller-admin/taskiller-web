@@ -123,7 +123,7 @@
           <p class="font-bold">Export your Taskiller data</p>
           <p class="mt-1 max-w-md text-sm leading-6 text-[var(--muted)]">Creates a compressed JSON archive of your profile, preferences, work hierarchy, focus plans, execution sessions, events and reviews. Authentication secrets are excluded.</p>
         </div>
-        <Button variant="secondary" size="sm" disabled={createExport.isPending || exportQuery.data?.status === 'queued' || exportQuery.data?.status === 'processing'} onclick={() => createExport.mutate()}>
+        <Button variant="secondary" size="sm" loading={createExport.isPending} disabled={createExport.isPending || exportQuery.data?.status === 'queued' || exportQuery.data?.status === 'processing'} onclick={() => createExport.mutate()}>
           <DownloadSimpleIcon size={15} aria-hidden="true" /> {createExport.isPending ? 'Requesting…' : 'Request export'}
         </Button>
       </div>
@@ -177,8 +177,8 @@
           <Input id="delete-account-phrase" name="delete-account-phrase" class="mt-3 border-[var(--danger-border)]" bind:value={deletePhrase} autocomplete="off" />
           <p class="tk-danger-muted mt-2 text-xs leading-5">You cannot cancel scheduled deletion in Taskiller. Export any data you want to keep before continuing.</p>
           <div class="mt-4 flex gap-2">
-            <Button variant="ghost" size="sm" disabled={deletion.isPending} onclick={() => { deleting = false; deletePhrase = ''; }}>Cancel</Button>
-            <Button variant="danger" size="sm" disabled={deletePhrase !== 'DELETE MY ACCOUNT' || deletion.isPending} onclick={confirmDeletion}>
+            <Button variant="ghost" size="sm" loading={deletion.isPending} disabled={deletion.isPending} onclick={() => { deleting = false; deletePhrase = ''; }}>Cancel</Button>
+            <Button variant="danger" size="sm" loading={deletion.isPending} disabled={deletePhrase !== 'DELETE MY ACCOUNT' || deletion.isPending} onclick={confirmDeletion}>
               <TrashIcon size={15} aria-hidden="true" /> {deletion.isPending ? 'Scheduling…' : 'Schedule deletion'}
             </Button>
           </div>

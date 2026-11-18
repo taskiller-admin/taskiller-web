@@ -1,17 +1,21 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
   import { cn } from '$lib/utils';
+  import Spinner from './Spinner.svelte';
 
   let {
     class: className,
     variant = 'primary',
     size = 'md',
     type = 'button',
+    loading = false,
+    disabled = false,
     children,
     ...rest
   }: HTMLButtonAttributes & {
     variant?: 'primary' | 'secondary' | 'soft' | 'dark' | 'ghost' | 'danger';
     size?: 'sm' | 'md' | 'lg' | 'icon';
+    loading?: boolean;
     children?: import('svelte').Snippet;
   } = $props();
 
@@ -34,13 +38,16 @@
 
 <button
   {type}
+  disabled={disabled || loading}
+  aria-busy={loading || undefined}
   class={cn(
-    'inline-flex shrink-0 items-center justify-center gap-2 border font-semibold transition-[background-color,border-color,color,filter] duration-150 disabled:pointer-events-none disabled:opacity-50',
+    'tk-button inline-flex shrink-0 items-center justify-center gap-2 border font-semibold transition-[background-color,border-color,color,filter] duration-150 disabled:pointer-events-none disabled:opacity-50',
     variants[variant],
     sizes[size],
     className
   )}
   {...rest}
 >
+  {#if loading}<Spinner size={16} />{/if}
   {@render children?.()}
 </button>

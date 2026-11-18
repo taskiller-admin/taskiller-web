@@ -2,8 +2,7 @@
   import { page } from '$app/state';
   import ArrowLeftIcon from 'phosphor-svelte/lib/ArrowLeftIcon';
   import WarningCircleIcon from 'phosphor-svelte/lib/WarningCircleIcon';
-  import Logo from '$lib/components/brand/Logo.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
+  import AuthFrame from '$lib/components/brand/AuthFrame.svelte';
 
   const notFound = $derived(page.status === 404);
 </script>
@@ -13,9 +12,8 @@
   <meta name="robots" content="noindex,nofollow" />
 </svelte:head>
 
-<main class="flex min-h-screen items-center justify-center px-6 py-16">
-  <section class="w-full max-w-xl rounded-[26px] border border-[var(--border)] bg-[var(--surface)] p-7 shadow-[0_26px_70px_rgb(23_23_23/0.08)] sm:p-10">
-    <Logo class="h-7 w-auto" />
+<AuthFrame headline="Let’s find your way back." eyebrow="A SMALL DETOUR">
+  <section class="auth-card">
     <div class="mt-14 grid size-12 place-items-center rounded-[14px] bg-[var(--surface-subtle)] text-tk-strike">
       <WarningCircleIcon size={24} weight="fill" aria-hidden="true" />
     </div>
@@ -33,10 +31,10 @@
       {/if}
     </p>
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/today"><Button>Go to Today</Button></a>
+      <a href="/today" class="inline-flex min-h-11 items-center rounded-[13px] bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-foreground)]">Go to Today</a>
       <button class="inline-flex h-11 items-center gap-2 rounded-[13px] px-4 text-sm font-semibold text-tk-graphite hover:bg-[var(--surface-subtle)]" onclick={() => history.back()}>
         <ArrowLeftIcon size={16} aria-hidden="true" /> Go back
       </button>
     </div>
   </section>
-</main>
+</AuthFrame>

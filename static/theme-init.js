@@ -7,7 +7,7 @@
     document.documentElement.classList.toggle('dark', dark);
     document.documentElement.style.colorScheme = resolved;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? '#101318' : '#f5f6f7';
+    if (meta) meta.content = dark ? '#0e1b2e' : '#eff3f8';
   } catch {
     // Theme preference is cosmetic; never block the app if storage is unavailable.
   }

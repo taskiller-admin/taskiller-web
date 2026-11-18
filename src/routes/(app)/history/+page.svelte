@@ -110,13 +110,13 @@
 <svelte:head><title>History — Taskiller</title></svelte:head>
 
 <div class="mx-auto max-w-[1120px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-  <header class="flex flex-wrap items-end justify-between gap-6 border-b border-[var(--border)] pb-7">
+  <header class="tk-page-intro flex flex-wrap items-end justify-between gap-6 border-b border-[var(--border)] pb-7">
     <div>
-      <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><ClockCounterClockwiseIcon size={15} class="text-tk-blue" aria-hidden="true" /> Execution record</div>
+      <div class="tk-eyebrow mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tk-graphite"><span class="tk-feature-icon" aria-hidden="true"><ClockCounterClockwiseIcon size={15} class="text-tk-blue" aria-hidden="true" /></span> Execution record</div>
       <h1 class="tk-display text-4xl font-extrabold">History</h1>
       <p class="mt-3 max-w-2xl text-base leading-7 text-tk-graphite">Your Execution Sessions, plans, events, and reviews.</p>
     </div>
-    <Button variant="secondary" onclick={() => load(true)} disabled={loading}><ArrowClockwiseIcon size={16} aria-hidden="true" /> Refresh</Button>
+    <Button loading={loading} variant="secondary" onclick={() => load(true)} disabled={loading}><ArrowClockwiseIcon size={16} aria-hidden="true" /> Refresh</Button>
   </header>
 
   <div class="mt-6 flex flex-wrap items-center gap-2">
@@ -144,11 +144,12 @@
   {#if error && sessions.length}<p class="mt-3 text-sm text-tk-graphite">Showing previously loaded sessions for these filters. Refresh to try again.</p>{/if}
 
   <p class="sr-only" role="status">{loading ? 'Loading history…' : loadingMore ? 'Loading older sessions…' : error ? 'History could not be updated.' : `${sessions.length} sessions shown.`}</p>
-  <section aria-busy={loading || loadingMore} class="mt-7 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-5 sm:px-6">
+  <section aria-busy={loading || loadingMore} class="tk-panel mt-7 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-5 sm:px-6">
     {#if loading}
       <div class="space-y-2 py-6">{#each Array(6) as _}<div class="h-20 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>{/each}</div>
     {:else if sessions.length === 0 && !error}
-      <div class="py-16 text-center">
+      <div class="tk-empty-state py-16 text-center">
+        <span class="tk-feature-icon mx-auto mb-5" aria-hidden="true"><ClockCounterClockwiseIcon size={25} /></span>
         <p class="text-lg font-bold">No sessions in this slice.</p>
         <p class="mt-2 text-sm text-tk-graphite">Try a wider range or another state filter.</p>
       </div>
@@ -160,6 +161,6 @@
   </section>
 
   {#if hasMore}
-    <div class="mt-5 flex justify-center"><Button variant="secondary" disabled={loading || loadingMore} onclick={() => load(false)}>{loadingMore ? 'Loading…' : 'Load older sessions'}</Button></div>
+    <div class="mt-5 flex justify-center"><Button loading={loadingMore} variant="secondary" disabled={loading || loadingMore} onclick={() => load(false)}>{loadingMore ? 'Loading…' : 'Load older sessions'}</Button></div>
   {/if}
 </div>

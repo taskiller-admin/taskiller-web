@@ -122,7 +122,7 @@
         <span class="mb-1.5 block text-xs font-bold text-[var(--muted)]">Timezone</span>
         <div class="flex gap-2">
           <Input disabled={save.isPending} aria-label="Timezone" bind:value={timezone} maxlength="100" placeholder="Europe/Istanbul" />
-          <Button type="button" variant="secondary" size="icon" aria-label="Use browser timezone" disabled={save.isPending} onclick={useBrowserTimezone}><CrosshairIcon size={16} aria-hidden="true" /></Button>
+          <Button type="button" variant="secondary" size="icon" aria-label="Use browser timezone" loading={save.isPending} disabled={save.isPending} onclick={useBrowserTimezone}><CrosshairIcon size={16} aria-hidden="true" /></Button>
         </div>
         <span class="mt-1.5 block text-[11px] leading-5 text-[var(--muted)]">Use an IANA timezone, for example Europe/Istanbul.</span>
       </label>
@@ -174,7 +174,7 @@
       </label>
 
       <div class="lg:col-span-2 flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save preferences'}</Button>
+        <Button type="submit" loading={save.isPending} disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save preferences'}</Button>
         {#if message}<span role="status" class="text-sm text-tk-green">{message}</span>{/if}
       </div>
     </form>

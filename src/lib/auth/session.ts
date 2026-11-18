@@ -8,6 +8,7 @@ export type AuthState = { status: AuthStatus; user: User | null };
 
 const state = writable<AuthState>({ status: 'unknown', user: null });
 export const auth = { subscribe: state.subscribe };
+export const authActivity = writable<string | null>(null);
 
 export async function bootstrapAuth(
   onProgress?: (progress: number, stage: string) => void
@@ -57,9 +58,11 @@ export function clearAuth() {
 }
 
 export async function logout() {
+  authActivity.set('Signing you out');
   try {
     await authApi.logout();
   } finally {
     clearAuth();
+    authActivity.set(null);
   }
 }

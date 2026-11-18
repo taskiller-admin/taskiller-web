@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import { createQuery, useQueryClient } from '@tanstack/svelte-query';
   import { beforeNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -148,8 +149,8 @@
 <input bind:this={fileInput} type="file" accept=".json,.zip,application/json,application/zip" disabled={busy} onchange={onFile} class="sr-only" aria-label="Choose Taskiller import file" />
 
 {#if exportOpen}
-  <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4" role="presentation">
-    <div use:modalFocus={{ onclose: () => (exportOpen = false), canClose: () => !exporting }} role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" class="w-full max-w-xl rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
+  <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[#0b1b32]/65 p-4 backdrop-blur-sm" role="presentation">
+    <div use:modalFocus={{ onclose: () => (exportOpen = false), canClose: () => !exporting }} role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" class="tk-panel w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">Taskiller portable work</p>
@@ -188,7 +189,7 @@
       {#if message}<p class="mt-4 text-sm text-[var(--muted)]" role="status">{message}</p>{/if}
       <div class="mt-6 flex justify-end gap-2">
         <button type="button" disabled={exporting} class="rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold" onclick={() => (exportOpen = false)}>Cancel</button>
-        <button type="button" disabled={exporting || busy} onclick={download} class="rounded-xl bg-tk-strike px-5 py-3 text-sm font-bold text-[#24110b] disabled:opacity-50">{exporting ? 'Preparing download…' : 'Download export'}</button>
+        <button type="button" disabled={exporting || busy} aria-busy={exporting} onclick={download} class="tk-button inline-flex items-center justify-center gap-2 rounded-xl bg-tk-strike px-5 py-3 text-sm font-bold text-[#24110b] disabled:opacity-50">{#if exporting}<Spinner size={16} />{/if}{exporting ? 'Preparing download…' : 'Download export'}</button>
       </div>
     </div>
   </div>
@@ -206,8 +207,8 @@
 {/if}
 
 {#if modal && selected}
-  <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4" role="presentation">
-    <div use:modalFocus={{ onclose: () => (modal = false), canClose: () => !busy }} role="dialog" aria-modal="true" aria-labelledby="import-dialog-title" class="w-full max-w-xl rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
+  <div class="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[#0b1b32]/65 p-4 backdrop-blur-sm" role="presentation">
+    <div use:modalFocus={{ onclose: () => (modal = false), canClose: () => !busy }} role="dialog" aria-modal="true" aria-labelledby="import-dialog-title" class="tk-panel w-full max-w-xl rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">Taskiller portable work</p>
@@ -230,8 +231,8 @@
       {/if}
       <label class="mt-5 flex items-start gap-3 text-sm"><input class="mt-1" type="checkbox" bind:checked={confirmed} disabled={busy}/>Create copies with new IDs. Existing items remain unchanged.</label>
       <div class="mt-6 flex flex-wrap gap-2">
-        <button type="button" disabled={busy || !confirmed} class="rounded-xl bg-tk-strike px-5 py-3 text-sm font-bold text-[#24110b] disabled:opacity-50" onclick={() => startImport(false)}>{error ? 'Retry import' : `Import ${selected.items.length} items`}</button>
-        {#if error && failedSourceId}<button type="button" disabled={busy || !confirmed} class="rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold" onclick={() => startImport(true)}>Retry without optional fields on failed item</button>{/if}
+        <button type="button" disabled={busy || !confirmed} aria-busy={busy} class="tk-button inline-flex items-center justify-center gap-2 rounded-xl bg-tk-strike px-5 py-3 text-sm font-bold text-[#24110b] disabled:opacity-50" onclick={() => startImport(false)}>{#if busy}<Spinner size={16} />{/if}{error ? 'Retry import' : `Import ${selected.items.length} items`}</button>
+        {#if error && failedSourceId}<button type="button" disabled={busy || !confirmed} aria-busy={busy} class="rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold" onclick={() => startImport(true)}>Retry without optional fields on failed item</button>{/if}
       </div>
       {#if busy}<p class="mt-4 text-xs text-[var(--muted)]" role="status">Keep this tab open while your work is being imported.</p>{/if}
     </div>

@@ -118,7 +118,7 @@
 
 <svelte:head><title>{item?.name || 'Work item'} — Taskiller</title></svelte:head>
 
-<div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+<div class="tk-page max-w-[1240px]">
   {#if detail.isPending}
     <div class="space-y-5">
       <div class="h-8 w-32 animate-pulse rounded bg-[var(--surface-subtle)]"></div>
@@ -134,7 +134,7 @@
     </a>
 
     {#if parent.isError && item.parentId}<p class="mt-2 text-sm" role="alert">Could not load the parent name. <button type="button" class="underline" onclick={() => parent.refetch()}>Retry</button></p>{/if}
-    <header class="mt-6 flex flex-wrap items-start justify-between gap-6 border-b border-[var(--border)] pb-8">
+    <header class="tk-page-intro mt-6 flex flex-wrap items-start justify-between gap-6 border-b border-[var(--border)] pb-8">
       <div class="flex min-w-0 items-start gap-4">
         <KindMark kind={item.kind} class="mt-1 size-11" />
         <div class="min-w-0">
@@ -159,7 +159,7 @@
     <div class="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_350px]">
       <div class="min-w-0 space-y-7">
         {#if item.kind === 'project'}
-          <section class="relative overflow-hidden rounded-[14px] bg-tk-ink p-6 text-white sm:p-7">
+          <section class="relative overflow-hidden rounded-[24px] bg-tk-ink p-6 text-white sm:p-7">
             <div class="absolute -right-16 -top-16 size-48 rounded-full bg-tk-blue/20 blur-3xl"></div>
             <div class="relative flex flex-wrap items-end justify-between gap-5">
               <div>
@@ -187,7 +187,7 @@
         {/if}
 
         {#if item.kind === 'sprint'}
-          <section class="rounded-[14px] bg-tk-ink p-6 text-white sm:p-7">
+          <section class="rounded-[24px] bg-tk-ink p-6 text-white sm:p-7">
             <div class="flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Execution</p>
@@ -220,7 +220,7 @@
             {:else if rows.length === 0}
               <div class="mt-5 rounded-[14px] border border-dashed border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-tk-graphite">No children yet. Add the next layer above.</div>
             {:else}
-              <div class="mt-5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-4 sm:px-5">
+              <div class="tk-panel mt-5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-4 sm:px-5">
                 {#each rows as row}
                   {@const directIndex = row.depth === 1 ? directChildren.findIndex((child) => child.id === row.item.id) : -1}
                   <div class:opacity-50={movingId === row.item.id}>
@@ -239,7 +239,7 @@
             <p class="mt-3 text-xs leading-5 text-tk-graphite">Direct children have explicit up/down controls so reordering never depends on drag-and-drop. Nested descendants keep their own parent’s order.</p>
           </section>
         {:else}
-          <section class="rounded-[14px] bg-tk-ink p-6 text-white sm:p-7">
+          <section class="rounded-[24px] bg-tk-ink p-6 text-white sm:p-7">
             <div class="flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Execution</p>
@@ -254,8 +254,8 @@
 
       <aside class="space-y-4">
         {#key item.id}<WorkEditor item={item} etag={detail.data?.etag ?? null} onupdated={() => detail.refetch()} />{/key}
-        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
-          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">At a glance</p>
+        <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
+          <p class="tk-section-label">At a glance</p>
           <dl class="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-sm">
             <div><dt class="text-xs text-tk-graphite">Estimate</dt><dd class="tk-mono mt-1 font-semibold">{formatDuration(item.estimatedEffortSeconds)}</dd></div>
             <div><dt class="text-xs text-tk-graphite">Priority</dt><dd class="mt-1 font-semibold">{item.priority ?? '—'}</dd></div>

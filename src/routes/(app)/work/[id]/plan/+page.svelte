@@ -376,8 +376,8 @@
         <h1 class="tk-display mt-3 text-3xl font-extrabold sm:text-4xl">Projects don’t run. Their next action does.</h1>
         <p class="mt-5 max-w-2xl text-base leading-7 text-white/75">Taskiller keeps Projects as containers. Choose the next Sprint or Chore to plan its work.</p>
       </div>
-      <div class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6">
-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Next action</p>
+      <div class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6">
+        <p class="tk-section-label">Next action</p>
         {#if nextAction.isPending}
           <div class="mt-5 h-20 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>
         {:else if nextAction.data?.nextAction}
@@ -390,9 +390,10 @@
       </div>
     </section>
   {:else}
-    <header class="mt-6 flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border)] pb-7">
+    <header class="tk-page-intro mt-6 flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border)] pb-7">
       <div>
         <div class="mb-2 flex items-center gap-2"><Badge>{kindLabel(item.kind)}</Badge><span class="text-xs text-tk-graphite">{item.status.replaceAll('_', ' ')}</span></div>
+        <p class="tk-eyebrow mb-3"><span class="tk-feature-icon" aria-hidden="true"><MagicWandIcon size={18} /></span> Shape your focus</p>
         <h1 class="tk-display text-3xl font-extrabold sm:text-4xl">Plan & Start</h1>
         <p class="mt-2 max-w-2xl text-base leading-7 text-tk-graphite">{item.name}</p>
       </div>
@@ -429,7 +430,7 @@
 
     <div class="mt-7 grid gap-7 xl:grid-cols-[330px_minmax(0,1fr)_300px]">
       <aside class="space-y-5">
-        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
+        <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
           <div class="flex items-center gap-2"><MagicWandIcon size={18} class="text-tk-strike" weight="fill" aria-hidden="true" /><h2 class="font-bold">Recommendation</h2></div>
           <p class="mt-2 text-sm leading-6 text-tk-graphite">Build a starting plan from this work, your preferences, and past sessions.</p>
           <label class="mt-5 block text-xs font-bold text-tk-graphite">Strategy
@@ -447,7 +448,7 @@
           <Button class="mt-2 w-full" variant="secondary" disabled={busy !== null} onclick={startScratch}>Start from scratch</Button>
         </section>
 
-        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
+        <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
           <div class="flex items-center justify-between"><h2 class="font-bold">Saved plans</h2><span class="text-xs text-tk-graphite">{plans.data?.items.length ?? 0}</span></div>
           <div class="mt-3 space-y-2">
             {#if plans.isPending}
@@ -468,10 +469,10 @@
       </aside>
 
       <div class="min-w-0 xl:order-none {segments.length ? 'order-first' : ''}">
-        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
+        <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-[220px] flex-1">
-              <label for="focus-plan-name" class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Plan name</label>
+              <label for="focus-plan-name" class="tk-section-label">Plan name</label>
               <Input disabled={busy !== null} id="focus-plan-name" class="mt-1.5" bind:value={planName} placeholder="Focus plan" />
             </div>
             <div class="rounded-[14px] bg-[var(--surface-subtle)] px-4 py-3 text-right">
@@ -526,8 +527,8 @@
       </div>
 
       <aside class="space-y-4">
-        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
-          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Context</p>
+        <section class="tk-panel rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
+          <p class="tk-section-label">Context</p>
           <dl class="mt-4 space-y-3">
             <div class="flex justify-between gap-3"><dt class="text-tk-graphite">Task estimate</dt><dd class="tk-mono font-bold">{formatDuration(item.estimatedEffortSeconds)}</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-tk-graphite">Draft segments</dt><dd class="font-bold">{segments.length}</dd></div>

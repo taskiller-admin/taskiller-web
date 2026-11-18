@@ -91,7 +91,7 @@
             </div>
             <p class="mt-1 text-xs text-[var(--muted)]">Last used {formatDate(session.lastUsedAt)} · expires {formatDate(session.expiresAt)}</p>
           </div>
-          <Button variant={session.current ? 'danger' : 'secondary'} size="sm" disabled={revoke.isPending || logoutAll.isPending} onclick={() => revoke.mutate({ id: session.id, current: session.current })}>
+          <Button variant={session.current ? 'danger' : 'secondary'} size="sm" loading={busyId === session.id && revoke.isPending} disabled={revoke.isPending || logoutAll.isPending} onclick={() => revoke.mutate({ id: session.id, current: session.current })}>
             {busyId === session.id ? 'Revoking…' : session.current ? 'Sign out here' : 'Revoke'}
           </Button>
         </div>
@@ -110,7 +110,7 @@
       {#if confirmAll}
         <div class="flex gap-2">
           <Button variant="ghost" size="sm" onclick={() => (confirmAll = false)}>Cancel</Button>
-          <Button variant="danger" size="sm" disabled={logoutAll.isPending} onclick={() => logoutAll.mutate()}><SignOutIcon size={15} aria-hidden="true" /> {logoutAll.isPending ? 'Signing out…' : 'Confirm all devices'}</Button>
+          <Button variant="danger" size="sm" loading={logoutAll.isPending} disabled={logoutAll.isPending} onclick={() => logoutAll.mutate()}><SignOutIcon size={15} aria-hidden="true" /> {logoutAll.isPending ? 'Signing out…' : 'Confirm all devices'}</Button>
         </div>
       {:else}
         <Button variant="secondary" size="sm" onclick={() => (confirmAll = true)}><SignOutIcon size={15} aria-hidden="true" /> Sign out all</Button>
