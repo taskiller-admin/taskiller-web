@@ -13,7 +13,7 @@
 <select
   bind:value
   class={cn(
-    'h-11 w-full rounded-[13px] border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 text-[15px] text-tk-ink transition-[border-color,box-shadow,background-color] duration-200 hover:border-[var(--border-strong)] focus:border-tk-strike/55 focus:shadow-[0_0_0_4px_rgb(255_99_63/0.08)]',
+    'h-11 w-full rounded-[10px] border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 text-base text-[var(--foreground)] transition-[border-color,background-color] duration-150 hover:border-[var(--border-strong)] focus:border-[var(--focus-ring)]',
     className
   )}
   {...rest}

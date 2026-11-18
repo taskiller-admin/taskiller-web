@@ -54,6 +54,12 @@
     enabled: detail.data?.item.kind === 'project'
   }));
 
+  const parent = createQuery(() => ({
+    queryKey: queryKeys.work.detail(detail.data?.item.parentId ?? ''),
+    queryFn: () => getWorkItem(detail.data!.item.parentId!),
+    enabled: Boolean(detail.data?.item.parentId)
+  }));
+
   const item = $derived(detail.data?.item ?? null);
   const rows = $derived(tree.data ? flattenWorkTree(tree.data).slice(1) : []);
   const directChildren = $derived(tree.data?.children ?? []);
@@ -92,7 +98,7 @@
   }
 
   async function removeItem() {
-    if (!item || !confirm(`Delete “${item.name}”? This uses Taskiller’s normal soft-delete rules.`)) return;
+    if (!item || !confirm(`Delete “${item.name}”? This removes this ${kindLabel(item.kind)} from your work lists.${item.kind !== 'chore' ? ' Review its child work before deleting.' : ''}`)) return;
     deleting = true;
     actionError = '';
     try {
@@ -115,18 +121,19 @@
 <div class="mx-auto max-w-[1240px] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
   {#if detail.isPending}
     <div class="space-y-5">
-      <div class="h-8 w-32 animate-pulse rounded bg-black/[0.05]"></div>
-      <div class="h-20 max-w-2xl animate-pulse rounded-[18px] bg-black/[0.05]"></div>
-      <div class="grid gap-7 lg:grid-cols-[minmax(0,1fr)_350px]"><div class="h-96 animate-pulse rounded-[20px] bg-black/[0.05]"></div><div class="h-96 animate-pulse rounded-[20px] bg-black/[0.05]"></div></div>
+      <div class="h-8 w-32 animate-pulse rounded bg-[var(--surface-subtle)]"></div>
+      <div class="h-20 max-w-2xl animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>
+      <div class="grid gap-7 lg:grid-cols-[minmax(0,1fr)_350px]"><div class="h-96 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div><div class="h-96 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div></div>
     </div>
   {:else if detail.isError || !item}
-    <a href="/today" class="inline-flex items-center gap-2 text-sm font-bold text-tk-graphite"><ArrowLeftIcon size={16} /> Today</a>
-    <div class="mt-8 rounded-[20px] border border-red-200 bg-red-50 p-6 text-red-800">Couldn’t load this work item.</div>
+    <a href="/today" class="inline-flex items-center gap-2 text-sm font-bold text-tk-graphite"><ArrowLeftIcon size={16} aria-hidden="true" /> Today</a>
+    <div class="mt-8 rounded-[14px] border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-[var(--danger-text)]">Couldn’t load this work item.</div>
   {:else}
-    <a href={backHref} class="inline-flex items-center gap-2 rounded-lg py-1 text-sm font-bold text-tk-graphite hover:text-tk-ink">
-      <ArrowLeftIcon size={16} /> Back
+    <a href={backHref} class="inline-flex items-center gap-2 rounded-lg py-1 text-sm font-bold text-tk-graphite hover:text-[var(--foreground)]">
+      <ArrowLeftIcon size={16} aria-hidden="true" /> {parent.data?.item.name ?? (item.kind === 'project' ? 'Projects' : item.parentId ? 'Parent work' : 'Inbox')}
     </a>
 
+    {#if parent.isError && item.parentId}<p class="mt-2 text-sm" role="alert">Could not load the parent name. <button type="button" class="underline" onclick={() => parent.refetch()}>Retry</button></p>{/if}
     <header class="mt-6 flex flex-wrap items-start justify-between gap-6 border-b border-[var(--border)] pb-8">
       <div class="flex min-w-0 items-start gap-4">
         <KindMark kind={item.kind} class="mt-1 size-11" />
@@ -135,42 +142,44 @@
             <Badge tone={item.kind === 'project' ? 'blue' : item.kind === 'sprint' ? 'neutral' : 'accent'}>{kindLabel(item.kind)}</Badge>
             <StatusBadge status={item.status} />
           </div>
-          <h1 class="tk-display mt-3 max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl">{item.name}</h1>
+          <h1 class="tk-display [overflow-wrap:anywhere] mt-3 max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl">{item.name}</h1>
           {#if item.description}<p class="mt-4 max-w-3xl whitespace-pre-wrap text-base leading-7 text-tk-graphite">{item.description}</p>{/if}
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <ExportWorkButton workId={item.id} label="Export" />
-      <Button variant="ghost" class="text-red-700 hover:bg-red-50" disabled={deleting} onclick={removeItem}>
-        <TrashIcon size={17} /> {deleting ? 'Deleting…' : 'Delete'}
+      <Button variant="ghost" class="text-[var(--danger-text)] hover:bg-[var(--danger-bg)]" disabled={deleting} onclick={removeItem}>
+        <TrashIcon size={17} aria-hidden="true" /> {deleting ? 'Deleting…' : 'Delete'}
       </Button>
       </div>
     </header>
 
-    {#if actionError}<div class="mt-5 rounded-[14px] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">{actionError}</div>{/if}
+    {#if actionError}<div class="mt-5 rounded-[14px] border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-sm text-[var(--warning-text)]" role="alert">{actionError}</div>{/if}
 
     <div class="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_350px]">
-      <main class="min-w-0 space-y-7">
+      <div class="min-w-0 space-y-7">
         {#if item.kind === 'project'}
-          <section class="relative overflow-hidden rounded-[22px] bg-tk-ink p-6 text-white sm:p-7">
+          <section class="relative overflow-hidden rounded-[14px] bg-tk-ink p-6 text-white sm:p-7">
             <div class="absolute -right-16 -top-16 size-48 rounded-full bg-tk-blue/20 blur-3xl"></div>
             <div class="relative flex flex-wrap items-end justify-between gap-5">
               <div>
-                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-white/45"><LightningIcon size={15} class="text-tk-strike" /> Next actionable work</div>
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-white/45"><LightningIcon size={15} class="text-tk-strike" aria-hidden="true" /> Next actionable work</div>
                 {#if nextAction.isPending}
                   <div class="mt-5 h-8 w-56 animate-pulse rounded bg-white/10"></div>
+                {:else if nextAction.isError}
+                  <p class="mt-4 text-sm" role="alert">Could not load next work. <button type="button" class="underline" onclick={() => nextAction.refetch()}>Retry</button></p>
                 {:else if nextAction.data?.nextAction}
-                  <h2 class="tk-display mt-4 text-2xl font-bold sm:text-3xl">{nextAction.data.nextAction.name}</h2>
+                  <h2 class="tk-display [overflow-wrap:anywhere] mt-4 text-2xl font-bold sm:text-3xl">{nextAction.data.nextAction.name}</h2>
                   <p class="mt-2 text-sm text-white/50">{kindLabel(nextAction.data.nextAction.kind)} · {nextAction.data.nextAction.status.replace('_', ' ')}</p>
                 {:else}
-                  <h2 class="tk-display mt-4 text-2xl font-bold">Nothing executable right now.</h2>
+                  <h2 class="tk-display [overflow-wrap:anywhere] mt-4 text-2xl font-bold">Nothing executable right now.</h2>
                   <p class="mt-2 text-sm text-white/50">Add or reactivate a Sprint or Chore below.</p>
                 {/if}
               </div>
               {#if nextAction.data?.nextAction}
                 <div class="flex flex-wrap gap-2">
-                  <a href={`/work/${nextAction.data.nextAction.id}`} class="inline-flex h-11 items-center gap-2 rounded-[13px] border border-white/15 bg-white/10 px-4 text-sm font-bold text-white">Open next <ArrowRightIcon size={16} /></a>
-                  <a href={`/work/${nextAction.data.nextAction.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
+                  <a href={`/work/${nextAction.data.nextAction.id}`} class="inline-flex h-11 items-center gap-2 rounded-[13px] border border-white/15 bg-white/10 px-4 text-sm font-bold text-white">Open next <ArrowRightIcon size={16} aria-hidden="true" /></a>
+                  <a href={`/work/${nextAction.data.nextAction.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" aria-hidden="true" /></a>
                 </div>
               {/if}
             </div>
@@ -178,14 +187,14 @@
         {/if}
 
         {#if item.kind === 'sprint'}
-          <section class="rounded-[22px] bg-tk-ink p-6 text-white sm:p-7">
+          <section class="rounded-[14px] bg-tk-ink p-6 text-white sm:p-7">
             <div class="flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Execution</p>
                 <h2 class="tk-display mt-2 text-2xl font-bold">Build the Sprint plan around its Chores.</h2>
                 <p class="mt-3 max-w-xl text-sm leading-6 text-white/55">Recommendation generation can preserve linked Chores, and you can edit the segment sequence before starting.</p>
               </div>
-              <a href={`/work/${item.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
+              <a href={`/work/${item.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" aria-hidden="true" /></a>
             </div>
           </section>
         {/if}
@@ -194,7 +203,7 @@
           <section>
             <div class="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-tk-graphite"><TreeStructureIcon size={15} /> Hierarchy</div>
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-tk-graphite"><TreeStructureIcon size={15} aria-hidden="true" /> Hierarchy</div>
                 <h2 class="mt-1 text-xl font-bold">{item.kind === 'project' ? 'Sprints & chores' : 'Sprint chores'}</h2>
               </div>
               <span class="text-sm text-tk-graphite">{rows.length} descendants</span>
@@ -205,11 +214,13 @@
             </div>
 
             {#if tree.isPending}
-              <div class="mt-5 space-y-2">{#each Array(4) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}</div>
+              <div class="mt-5 space-y-2">{#each Array(4) as _}<div class="h-16 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>{/each}</div>
+            {:else if tree.isError}
+              <p class="mt-5 text-sm" role="alert">Could not load the hierarchy. <button type="button" class="underline" onclick={() => tree.refetch()}>Retry</button></p>
             {:else if rows.length === 0}
-              <div class="mt-5 rounded-[20px] border border-dashed border-[var(--border)] bg-white/45 p-10 text-center text-sm text-tk-graphite">No children yet. Add the next layer above.</div>
+              <div class="mt-5 rounded-[14px] border border-dashed border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-tk-graphite">No children yet. Add the next layer above.</div>
             {:else}
-              <div class="mt-5 rounded-[20px] border border-[var(--border)] bg-white/72 px-4 sm:px-5">
+              <div class="mt-5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-4 sm:px-5">
                 {#each rows as row}
                   {@const directIndex = row.depth === 1 ? directChildren.findIndex((child) => child.id === row.item.id) : -1}
                   <div class:opacity-50={movingId === row.item.id}>
@@ -228,22 +239,22 @@
             <p class="mt-3 text-xs leading-5 text-tk-graphite">Direct children have explicit up/down controls so reordering never depends on drag-and-drop. Nested descendants keep their own parent’s order.</p>
           </section>
         {:else}
-          <section class="rounded-[22px] bg-tk-ink p-6 text-white sm:p-7">
+          <section class="rounded-[14px] bg-tk-ink p-6 text-white sm:p-7">
             <div class="flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Execution</p>
                 <h2 class="tk-display mt-2 text-2xl font-bold">Turn this Chore into a Focus Plan.</h2>
                 <p class="mt-3 max-w-xl text-sm leading-6 text-white/55">Generate a recommendation from the task context, edit the timer structure, save it, then start.</p>
               </div>
-              <a href={`/work/${item.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
+              <a href={`/work/${item.id}/plan`} class="inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" aria-hidden="true" /></a>
             </div>
           </section>
         {/if}
-      </main>
+      </div>
 
       <aside class="space-y-4">
-        <WorkEditor item={item} etag={detail.data?.etag ?? null} onupdated={() => detail.refetch()} />
-        <section class="rounded-[20px] border border-[var(--border)] bg-white/70 p-5">
+        {#key item.id}<WorkEditor item={item} etag={detail.data?.etag ?? null} onupdated={() => detail.refetch()} />{/key}
+        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
           <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">At a glance</p>
           <dl class="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 text-sm">
             <div><dt class="text-xs text-tk-graphite">Estimate</dt><dd class="tk-mono mt-1 font-semibold">{formatDuration(item.estimatedEffortSeconds)}</dd></div>

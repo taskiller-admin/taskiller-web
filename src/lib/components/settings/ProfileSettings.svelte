@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { protectUnsaved } from '$lib/actions/unsaved';
   import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
   import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
   import EnvelopeSimpleIcon from 'phosphor-svelte/lib/EnvelopeSimpleIcon';
@@ -24,7 +25,10 @@
   }));
 
   let displayName = $state('');
+  let baseline = $state('');
   let draftInitializedFor = $state<string | null>(null);
+  const dirty = $derived(draftInitializedFor !== null && displayName !== baseline);
+  protectUnsaved(() => dirty);
   let conflict = $state(false);
   let message = $state('');
   let error = $state('');
@@ -33,6 +37,7 @@
     const current = profile.data?.user;
     if (!current || draftInitializedFor !== null) return;
     displayName = current.displayName ?? '';
+    baseline = displayName;
     draftInitializedFor = current.updatedAt;
   });
 
@@ -41,6 +46,8 @@
     onSuccess: async (result) => {
       conflict = false;
       error = '';
+      displayName = result.user.displayName ?? '';
+      baseline = displayName;
       message = 'Profile saved.';
       updateAuthenticatedUser(result.user);
       queryClient.setQueryData(queryKeys.account.profile, result);
@@ -73,55 +80,59 @@
     const current = profile.data?.user;
     if (!current) return;
     displayName = current.displayName ?? '';
+    baseline = displayName;
     conflict = false;
     error = '';
     message = '';
   }
 </script>
 
-<section id="profile" class="scroll-mt-24 rounded-[22px] border border-[var(--border)] bg-white/78 p-5 sm:p-6">
+<section id="profile" class="scroll-mt-24 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div class="flex items-start gap-3">
-      <div class="grid size-10 place-items-center rounded-[13px] bg-black/[0.055]"><UserCircleIcon size={21} /></div>
+      <div class="grid size-10 place-items-center rounded-[13px] bg-[var(--surface-subtle)]"><UserCircleIcon size={21} aria-hidden="true" /></div>
       <div>
-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Identity</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Identity</p>
         <h2 class="mt-1 text-xl font-bold">Profile</h2>
       </div>
     </div>
     {#if profile.data?.user.emailVerified}
-      <Badge tone="green"><CheckCircleIcon size={13} weight="fill" /> Verified email</Badge>
-    {:else}
+      <Badge tone="green"><CheckCircleIcon size={13} weight="fill" aria-hidden="true" /> Verified email</Badge>
+    {:else if profile.data}
       <Badge tone="accent">Email unverified</Badge>
     {/if}
   </div>
 
   {#if profile.isPending}
-    <div class="mt-6 h-32 animate-pulse rounded-[16px] bg-black/[0.04]"></div>
+    <div role="status" aria-label="Loading profile" class="mt-6 h-32 animate-pulse rounded-[16px] bg-[var(--surface-subtle)]"></div>
+  {:else if profile.isError && !profile.data}
+    <p role="alert" class="mt-6 text-sm">Could not load your profile.</p>
+    <Button variant="secondary" onclick={() => profile.refetch()}>Retry profile</Button>
   {:else if profile.data}
     <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.7fr)]">
-      <form class="space-y-4" onsubmit={(event) => { event.preventDefault(); save.mutate(); }}>
+      <form class="space-y-4" oninput={() => (message = '')} onsubmit={(event) => { event.preventDefault(); save.mutate(); }}>
         <label class="block">
-          <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Display name</span>
-          <Input bind:value={displayName} maxlength="200" placeholder="How Taskiller should address you" />
+          <span class="mb-1.5 block text-xs font-bold text-[var(--muted)]">Display name</span>
+          <Input disabled={save.isPending} aria-label="Display name" bind:value={displayName} maxlength="200" placeholder="How Taskiller should address you" />
         </label>
         <label class="block">
-          <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Email</span>
+          <span class="mb-1.5 block text-xs font-bold text-[var(--muted)]">Email</span>
           <Input value={profile.data.user.email} disabled />
         </label>
         <div class="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save profile'}</Button>
-          {#if message}<span class="text-sm text-tk-green">{message}</span>{/if}
+          {#if message}<span role="status" class="text-sm text-tk-green">{message}</span>{/if}
         </div>
       </form>
 
-      <div class="rounded-[17px] bg-[#f0f0ec] p-4">
+      <div class="rounded-[17px] bg-[var(--surface-raised)] p-4">
         <p class="text-sm font-bold">Email verification</p>
         {#if profile.data.user.emailVerified}
-          <p class="mt-2 text-sm leading-6 text-tk-graphite">Your address has been verified and can receive account-recovery messages.</p>
+          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">Your address has been verified and can receive account-recovery messages.</p>
         {:else}
-          <p class="mt-2 text-sm leading-6 text-tk-graphite">Verify your email so password recovery and important account notices have a confirmed destination.</p>
+          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">Verify your email so password recovery and important account notices have a confirmed destination.</p>
           <Button class="mt-4" variant="secondary" size="sm" disabled={verification.isPending} onclick={() => verification.mutate()}>
-            <EnvelopeSimpleIcon size={15} /> {verification.isPending ? 'Requesting…' : 'Send verification email'}
+            <EnvelopeSimpleIcon size={15} aria-hidden="true" /> {verification.isPending ? 'Requesting…' : 'Send verification email'}
           </Button>
         {/if}
       </div>
@@ -129,11 +140,11 @@
   {/if}
 
   {#if conflict}
-    <div class="mt-5 rounded-[14px] border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" role="alert">
+    <div class="mt-5 rounded-[14px] border border-[var(--warning-border)] bg-[var(--warning-bg)] p-4 text-sm text-[var(--warning-text)]" role="alert">
       <p class="font-bold">Your profile changed on another client.</p>
-      <p class="mt-1 leading-5">The newest server version is loaded. Your current draft is still in the field above.</p>
-      <Button variant="ghost" size="sm" class="mt-2 text-amber-950" onclick={useServerVersion}><ArrowsClockwiseIcon size={15} /> Use server version</Button>
+      <p class="mt-1 leading-5">Your draft is preserved. You can keep editing or replace it with your latest saved profile.</p>
+      <Button variant="ghost" size="sm" class="mt-2 text-[var(--warning-text)]" onclick={useServerVersion}><ArrowsClockwiseIcon size={15} aria-hidden="true" /> Use saved profile</Button>
     </div>
   {/if}
-  {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+  {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
 </section>

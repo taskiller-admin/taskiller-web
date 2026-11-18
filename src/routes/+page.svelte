@@ -1,162 +1,62 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
-  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon';
-  import TreeStructureIcon from 'phosphor-svelte/lib/TreeStructureIcon';
-  import LightningIcon from 'phosphor-svelte/lib/LightningIcon';
-  import StackIcon from 'phosphor-svelte/lib/StackIcon';
   import Logo from '$lib/components/brand/Logo.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
   import ThemeToggle from '$lib/components/theme/ThemeToggle.svelte';
-
-  let driftX = $state(0);
-  let driftY = $state(0);
-  let stage = $state<HTMLElement | null>(null);
-
-  function moveStage(event: PointerEvent) {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const target = event.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    driftX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    driftY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-  }
-
-  function resetStage() {
-    driftX = 0;
-    driftY = 0;
-  }
-
-  onMount(() => {
-    const node = stage;
-    if (!node) return;
-    const leave = () => resetStage();
-    node.addEventListener('pointermove', moveStage);
-    node.addEventListener('pointerleave', leave);
-    return () => {
-      node.removeEventListener('pointermove', moveStage);
-      node.removeEventListener('pointerleave', leave);
-    };
+  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon';
+  import { formatClock } from '$lib/utils';
+  let step = $state(0);
+  let demoName = $state('Write the launch announcement');
+  let running = $state(false);
+  let seconds = $state(1500);
+  const stages = ['Capture', 'Plan', 'Focus'];
+  $effect(() => {
+    if (!running || step !== 2) return;
+    const interval = window.setInterval(() => { seconds = Math.max(0, seconds - 1); if (!seconds) running = false; }, 1000);
+    return () => clearInterval(interval);
   });
+  function preview(index: number) { running = false; step = index; }
 </script>
 
-<svelte:head>
-  <title>Taskiller — Turn plans into motion</title>
-  <meta name="description" content="Taskiller turns Projects, Sprints and Chores into focused execution sessions." />
-</svelte:head>
-
-<div class="min-h-screen overflow-hidden">
-  <header class="relative z-30 mx-auto flex max-w-[1360px] items-center justify-between px-5 py-5 sm:px-8 lg:py-7">
-    <Logo class="h-6 w-auto" />
-    <div class="flex items-center gap-2">
-      <ThemeToggle compact />
-      <a href="/login"><Button variant="ghost">Log in</Button></a>
-      <a href="/register"><Button variant="dark">Start working</Button></a>
+<svelte:head><title>Taskiller — Turn plans into motion</title><meta name="description" content="Capture Chores, organize Projects and Sprints, and make room for focused work with Taskiller." /></svelte:head>
+<header class="mx-auto flex max-w-[1280px] items-center justify-between gap-3 px-5 py-5 sm:px-8">
+  <a href="/" aria-label="Taskiller home"><Logo class="h-6 w-auto" /></a>
+  <nav class="flex items-center gap-1 sm:gap-3" aria-label="Get started"><ThemeToggle compact /><a href="/login" class="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold hover:bg-[var(--surface-subtle)]">Log in</a><a href="/register" class="tk-capture-link hidden sm:inline-flex">Start working</a></nav>
+</header>
+<main>
+  <section class="mx-auto grid max-w-[1280px] items-center gap-12 px-5 pb-20 pt-12 sm:px-8 lg:min-h-[680px] lg:grid-cols-[1fr_1fr] lg:gap-16 lg:py-20">
+    <div>
+      <p class="mb-6 text-sm font-medium text-[var(--accent-ink)]">A little structure. Room to focus.</p>
+      <h1 class="tk-display max-w-[10ch] text-[clamp(3.5rem,7vw,6rem)] font-bold leading-[1.03]">Your work should move.</h1>
+      <p class="mt-7 max-w-[45ch] text-lg leading-8 text-tk-graphite">Capture what’s on your mind. Turn it into a plan you can act on. Give the next Chore your full attention.</p>
+      <a href="/register" class="tk-capture-link mt-8 gap-3 px-5 py-4">Build momentum <ArrowRightIcon size={18} aria-hidden="true" /></a>
+      <p class="mt-4 text-sm text-tk-graphite">Already have an account? <a href="/login" class="font-semibold text-[var(--foreground)] underline underline-offset-4">Pick up where you left off.</a></p>
     </div>
-  </header>
-
-  <main>
-    <section class="relative mx-auto grid min-h-[calc(100dvh-84px)] max-w-[1360px] items-center gap-16 px-5 pb-20 pt-8 sm:px-8 lg:grid-cols-[0.88fr_1.12fr] lg:gap-20 lg:pb-24">
-      <div class="relative z-10 max-w-[720px]" style="animation:tk-hero-in 620ms cubic-bezier(.2,.8,.2,1) both">
-        <div class="mb-7 flex items-center gap-3 text-sm font-semibold text-tk-graphite">
-          <span class="relative flex size-2.5">
-            <span class="absolute inline-flex size-full animate-ping rounded-full bg-tk-strike opacity-35"></span>
-            <span class="relative inline-flex size-2.5 rounded-full bg-tk-strike"></span>
-          </span>
-          Plans are useful. Motion is the point.
-        </div>
-
-        <h1 class="tk-display max-w-[12ch] text-[clamp(4.2rem,9vw,8rem)] font-extrabold leading-[0.84]">
-          Your work should move.
-        </h1>
-
-        <p class="mt-8 max-w-[54ch] text-lg leading-8 text-tk-graphite sm:text-xl">
-          Taskiller turns Projects into Sprints, Chores, and focus sessions without turning the planning itself into another job.
-        </p>
-
-        <div class="mt-10 flex flex-wrap items-center gap-3">
-          <a href="/register"><Button size="lg" variant="dark">Build momentum <ArrowRightIcon size={17} /></Button></a>
-          <a href="/login" class="rounded-[12px] px-3 py-3 text-sm font-bold text-tk-graphite transition-colors hover:text-tk-ink">I already have an account</a>
-        </div>
-
-        <div class="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-xs font-semibold text-tk-graphite">
-          <span>No productivity personality test.</span>
-          <span>No fake streak pressure.</span>
-          <span>Your data stays server-backed.</span>
-        </div>
+    <div class="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+      <div class="flex items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4"><span class="text-sm font-semibold">Try the flow</span><span class="rounded-md bg-[var(--surface-subtle)] px-2 py-1 text-xs text-tk-graphite">Interactive example</span></div>
+      <div class="grid grid-cols-3 gap-2 border-b border-[var(--border)] px-4 py-3" aria-label="Example steps">
+        {#each stages as stage, index}<button type="button" aria-pressed={step === index} class={`min-h-11 rounded-lg text-sm font-semibold ${step === index ? 'bg-[var(--accent-soft)] text-[var(--accent-ink)]' : 'text-tk-graphite hover:bg-[var(--surface-subtle)]'}`} onclick={() => preview(index)}>{index + 1}. {stage}</button>{/each}
       </div>
-
-      <div bind:this={stage} class="relative min-h-[560px] lg:min-h-[660px]">
-        <div class="absolute inset-0 rounded-[44px] tk-grid opacity-70 [mask-image:radial-gradient(circle_at_center,black,transparent_72%)]"></div>
-
-        <div
-          class="tk-panel absolute left-[2%] top-[7%] w-[88%] rounded-[26px] p-5 sm:left-[6%] sm:w-[76%] sm:p-6"
-          style={`transform:translate3d(${driftX * -8}px,${driftY * -6}px,0) rotate(-1.6deg);transition:transform 180ms cubic-bezier(.2,.8,.2,1);animation:tk-hero-in 680ms 90ms cubic-bezier(.2,.8,.2,1) both`}
-        >
-          <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <span class="grid size-10 place-items-center rounded-[12px] bg-tk-blue/10 text-tk-blue"><TreeStructureIcon size={20} weight="fill" /></span>
-              <div><p class="text-xs font-semibold text-tk-graphite">Project</p><p class="font-bold">Launch Taskiller</p></div>
-            </div>
-            <span class="h-2 w-16 overflow-hidden rounded-full bg-[var(--surface-subtle)]"><span class="block h-full w-2/3 rounded-full bg-tk-strike"></span></span>
-          </div>
-
-          <div class="mt-6 space-y-2.5 border-l border-[var(--border)] pl-5">
-            <div class="flex items-center gap-3 rounded-[14px] bg-[var(--surface-subtle)] p-3">
-              <StackIcon size={18} class="text-violet-500" weight="fill" />
-              <div class="min-w-0"><p class="text-xs text-tk-graphite">Sprint</p><p class="truncate text-sm font-bold">Production frontend</p></div>
-            </div>
-            <div class="ml-7 flex items-center gap-3 rounded-[14px] border border-tk-strike/20 bg-tk-strike/7 p-3">
-              <CheckCircleIcon size={18} class="text-tk-strike" />
-              <div class="min-w-0"><p class="text-xs text-tk-graphite">Chore</p><p class="truncate text-sm font-bold">Ship the interactive workspace</p></div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="tk-session-reactor absolute bottom-[6%] right-[1%] w-[86%] rounded-[28px] p-6 text-white sm:right-[5%] sm:w-[72%] sm:p-7"
-          style={`transform:translate3d(${driftX * 11}px,${driftY * 9}px,0) rotate(1.8deg);transition:transform 180ms cubic-bezier(.2,.8,.2,1);animation:tk-hero-in 720ms 170ms cubic-bezier(.2,.8,.2,1) both`}
-        >
-          <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-2 text-sm font-semibold text-white/55"><LightningIcon size={15} class="text-tk-strike" weight="fill" aria-hidden="true" /> Focus is live</div>
-            <span class="rounded-md bg-white/8 px-2 py-1 text-[10px] font-bold text-white/45">SEGMENT 1 / 3</span>
-          </div>
-          <div class="tk-mono mt-12 text-[clamp(4rem,10vw,7rem)] font-semibold tracking-[-0.075em]">24:18</div>
-          <div class="mt-8 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="tk-progress-beam h-full w-[68%] rounded-full bg-tk-strike"></div></div>
-          <div class="mt-4 flex items-center justify-between text-xs text-white/40"><span>Work block</span><span>45 min target</span></div>
-        </div>
-
-        <div class="absolute left-[6%] top-[56%] hidden h-px w-[34%] overflow-visible bg-gradient-to-r from-transparent via-tk-strike/45 to-transparent sm:block">
-          <span class="absolute -top-1 left-[38%] size-2 rounded-full bg-tk-strike shadow-[0_0_20px_rgb(255_99_63/0.65)]" style="animation:tk-float 2.7s ease-in-out infinite"></span>
-        </div>
+      <div class="flex min-h-[360px] flex-col p-6 sm:p-8">
+        {#if step === 0}
+          <h2 class="text-2xl font-semibold">Start with one Chore.</h2><p class="mt-3 text-sm leading-6 text-tk-graphite">A name is enough to get it out of your head. Details can come later.</p>
+          <label for="example-chore" class="mt-8 text-sm font-medium">What would you like to work on?</label><input id="example-chore" name="example-chore" class="mt-2 min-h-12 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--surface-raised)] px-4 text-base" bind:value={demoName} maxlength="100" autocomplete="off" />
+          <button type="button" class="tk-capture-link mt-5 self-start" disabled={!demoName.trim()} onclick={() => preview(1)}>Preview a plan <ArrowRightIcon size={16} aria-hidden="true" /></button>
+        {:else if step === 1}
+          <h2 class="break-words text-2xl font-semibold">{demoName.trim() || 'Your next Chore'}</h2><p class="mt-3 text-sm leading-6 text-tk-graphite">An example plan with a work block and a break. In your workspace, you can generate or edit a plan to suit the work.</p>
+          <ol class="my-6 divide-y divide-[var(--border)]"><li class="flex justify-between py-4 text-sm"><span>Focused work</span><span class="tk-mono font-medium">25 min</span></li><li class="flex justify-between py-4 text-sm"><span>Break</span><span class="tk-mono font-medium">5 min</span></li></ol>
+          <button type="button" class="tk-capture-link mt-auto self-start" onclick={() => preview(2)}>Preview focus <ArrowRightIcon size={16} aria-hidden="true" /></button>
+        {:else}
+          <p class="break-words text-sm font-medium text-tk-graphite">{demoName.trim() || 'Your next Chore'}</p><h2 class="mt-4 text-xl font-semibold">One block. One thing.</h2><p class="tk-mono my-7 text-6xl font-semibold tracking-[-0.03em]" aria-label={`${formatClock(seconds)} on the example timer`}>{formatClock(seconds)}</p>
+          <div class="flex flex-wrap gap-3"><button type="button" class="tk-capture-link" onclick={() => running = !running}>{running ? 'Pause preview' : 'Start preview'}</button><button type="button" class="min-h-11 rounded-lg border border-[var(--border)] px-4 text-sm font-semibold" onclick={() => { running = false; seconds = 1500; }}>Reset</button></div>
+        {/if}
+        <p class="mt-6 text-xs leading-5 text-tk-graphite">Example only. Nothing here is saved or recorded as a session.</p>
       </div>
-    </section>
-
-    <section class="border-y border-[var(--border)] bg-[var(--surface)]/45">
-      <div class="mx-auto grid max-w-[1360px] gap-0 px-5 sm:px-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div class="py-12 pr-0 lg:py-16 lg:pr-16">
-          <p class="text-sm font-semibold text-tk-graphite">One system, three scales.</p>
-          <h2 class="tk-display mt-3 max-w-[11ch] text-4xl font-bold sm:text-5xl">Plan wide. Execute narrow.</h2>
-        </div>
-
-        <div class="grid border-t border-[var(--border)] lg:grid-cols-3 lg:border-l lg:border-t-0">
-          {#each [
-            ['Project', 'Hold the outcome.'],
-            ['Sprint', 'Group the push.'],
-            ['Chore', 'Name the next move.']
-          ] as step, index}
-            <div class="relative border-b border-[var(--border)] p-6 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0">
-              <span class="tk-mono text-xs text-tk-graphite">0{index + 1}</span>
-              <p class="mt-10 text-xl font-bold">{step[0]}</p>
-              <p class="mt-2 text-sm leading-6 text-tk-graphite">{step[1]}</p>
-            </div>
-          {/each}
-        </div>
-      </div>
-    </section>
-
-    <footer class="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-5 py-10 text-sm text-tk-graphite sm:px-8">
-      <Logo class="h-5 w-auto opacity-70" />
-      <span>Less ceremony. More finished work.</span>
-    </footer>
-  </main>
-</div>
+    </div>
+  </section>
+  <section class="border-y border-[var(--border)] bg-[var(--surface)]">
+    <div class="mx-auto grid max-w-[1280px] gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1fr_2fr]">
+      <div><h2 class="tk-display text-3xl font-bold">Plan wide.<br />Execute narrow.</h2><p class="mt-4 max-w-sm text-sm leading-6 text-tk-graphite">Keep the bigger outcome in view without carrying every detail into your focus session.</p></div>
+      <dl class="grid gap-8 sm:grid-cols-3"><div><dt class="text-lg font-semibold">Project</dt><dd class="mt-3 text-sm leading-6 text-tk-graphite">The outcome you’re working toward. Hold Sprints and Chores together.</dd></div><div><dt class="text-lg font-semibold">Sprint</dt><dd class="mt-3 text-sm leading-6 text-tk-graphite">A connected group of Chores. Make a larger effort manageable.</dd></div><div><dt class="text-lg font-semibold">Chore</dt><dd class="mt-3 text-sm leading-6 text-tk-graphite">The concrete next piece of work. Plan it, focus on it, and review how it went.</dd></div></dl>
+    </div>
+  </section>
+</main>
+<footer class="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-5 px-5 py-8 text-sm text-tk-graphite sm:px-8"><Logo class="h-5 w-auto" /><p>Less ceremony. More finished work.</p></footer>

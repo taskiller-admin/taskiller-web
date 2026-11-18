@@ -1,42 +1,26 @@
 <script lang="ts">
+  import { tick, type Component } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { createQuery } from '@tanstack/svelte-query';
+  import { createQuery, useQueryClient } from '@tanstack/svelte-query';
   import Logo from '$lib/components/brand/Logo.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
-  import ThemeToggle from '$lib/components/theme/ThemeToggle.svelte';
-  import WorkSearch from '$lib/components/layout/WorkSearch.svelte';
-  import PortableWorkSettings from '$lib/components/settings/PortableWorkSettings.svelte';
-  import DownloadSimpleIcon from 'phosphor-svelte/lib/DownloadSimpleIcon';
-  import UploadSimpleIcon from 'phosphor-svelte/lib/UploadSimpleIcon';
+  import WorkSearch from './WorkSearch.svelte';
   import FloatingSessionTimer from '$lib/components/execution/FloatingSessionTimer.svelte';
   import { auth, logout } from '$lib/auth/session';
   import { getActiveSession } from '$lib/api/execution';
   import { queryKeys } from '$lib/api/query-keys';
   import { online } from '$lib/pwa/connectivity';
-  import { cn } from '$lib/utils';
   import HouseIcon from 'phosphor-svelte/lib/HouseIcon';
   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
   import FolderSimpleIcon from 'phosphor-svelte/lib/FolderSimpleIcon';
   import ChartLineUpIcon from 'phosphor-svelte/lib/ChartLineUpIcon';
   import ClockCounterClockwiseIcon from 'phosphor-svelte/lib/ClockCounterClockwiseIcon';
-  import GearSixIcon from 'phosphor-svelte/lib/GearSixIcon';
-  import SignOutIcon from 'phosphor-svelte/lib/SignOutIcon';
   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
-  import InfoIcon from 'phosphor-svelte/lib/InfoIcon';
 
   let { children }: { children?: import('svelte').Snippet } = $props();
-
   const focusMode = $derived(page.url.pathname.startsWith('/session/'));
-  const activeSession = createQuery(() => ({
-    queryKey: queryKeys.execution.active,
-    queryFn: getActiveSession,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000
-  }));
-
+  const queryClient = useQueryClient();
+  const active = createQuery(() => ({ queryKey: queryKeys.execution.active, queryFn: getActiveSession, staleTime: 0, refetchOnWindowFocus: true, refetchInterval: 15_000 }));
   const nav = [
     { href: '/today', label: 'Today', icon: HouseIcon },
     { href: '/inbox', label: 'Inbox', icon: TrayIcon },
@@ -44,101 +28,87 @@
     { href: '/history', label: 'History', icon: ClockCounterClockwiseIcon },
     { href: '/analytics', label: 'Analytics', icon: ChartLineUpIcon }
   ];
-
-  const initials = $derived(
-    ($auth.user?.displayName || $auth.user?.email || 'T')
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('')
-  );
-
+  const initials = $derived(($auth.user?.displayName || $auth.user?.email || 'T').split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() ?? '').join(''));
+  let menu = $state<HTMLDivElement>();
+  let PortableTools = $state<Component | null>(null);
+  let toolsBusy = $state(false);
+  let error = $state('');
+  let importInput: HTMLInputElement;
+  async function portable(kind: 'import' | 'export') {
+    menu?.hidePopover();
+    // Keep the native file picker inside the user's click, before loading tools.
+    if (kind === 'import') { importInput.click(); return; }
+    toolsBusy = true;
+    error = '';
+    try {
+      PortableTools ??= (await import('$lib/components/settings/PortableWorkSettings.svelte')).default;
+      await tick();
+      window.dispatchEvent(new Event(`taskiller:portable-${kind}`));
+    } catch { error = 'Could not open work files. Please try again.'; }
+    finally { toolsBusy = false; }
+  }
+  async function selectImport(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    error = '';
+    toolsBusy = true;
+    try {
+      PortableTools ??= (await import('$lib/components/settings/PortableWorkSettings.svelte')).default;
+      await tick();
+      window.dispatchEvent(new CustomEvent('taskiller:portable-import-file', { detail: file }));
+    } catch { error = 'Could not open your file. Please try again.'; }
+    finally { toolsBusy = false; }
+  }
   async function signOut() {
-    await logout();
-    await goto('/login');
+    try { await logout(); }
+    finally { queryClient.clear(); await goto('/login'); }
   }
 </script>
 
 {#if focusMode}
-  <div class="fixed right-4 top-4 z-50 flex gap-2" aria-label="Portable work tools">
-    <button type="button" class="grid size-10 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface)]" aria-label="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
-    <button type="button" class="grid size-10 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface)]" aria-label="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
-  </div>
   {@render children?.()}
 {:else}
   <a class="tk-skip-link" href="#main-content">Skip to content</a>
-
-  <div class="min-h-screen">
-    <div class="pointer-events-none fixed inset-x-0 top-0 z-50 hidden px-5 xl:block">
-      <header class="tk-rail pointer-events-auto mx-auto mt-4 flex h-[64px] max-w-[1320px] items-center gap-2.5 rounded-[18px] px-3">
-        <a href="/today" class="flex h-10 shrink-0 items-center px-2" aria-label="Taskiller Today"><Logo class="h-5.5 w-auto" /></a>
-
-        <nav class="ml-1 flex min-w-0 items-center gap-0.5" aria-label="Primary navigation">
-          {#each nav as item}
-            {@const active = page.url.pathname.startsWith(item.href)}
-            <a href={item.href} aria-current={active ? 'page' : undefined} class={cn('tk-nav-item', active && 'is-active')} data-sveltekit-preload-code="hover">
-              <item.icon size={17} weight={active ? 'fill' : 'regular'} />
-              <span>{item.label}</span>
-            </a>
-          {/each}
-        </nav>
-
-        <div class="min-w-0 flex-1"></div>
-        <div class="flex shrink-0 items-center gap-1" aria-label="Search and portable work tools">
-          <WorkSearch />
-          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:text-tk-ink" aria-label="Import work" title="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
-          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:text-tk-ink" aria-label="Export work" title="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
-        </div>
-
-        <a href="/inbox?capture=1" class="inline-flex h-10 shrink-0 items-center gap-2 rounded-[11px] bg-tk-strike px-3 text-xs font-black text-[#24110b] transition-[transform,filter] duration-200 hover:-translate-y-px hover:brightness-105 active:translate-y-0 active:scale-[0.98]">
-          <PlusIcon size={16} weight="bold" /> Capture
-        </a>
-
-        <a href="/guide" class="grid size-10 shrink-0 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink" aria-label="App guide"><InfoIcon size={17} /></a>
-        <ThemeToggle compact />
-        <a href="/settings" class="grid size-10 shrink-0 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite transition-colors hover:text-tk-ink" aria-label="Settings"><GearSixIcon size={17} /></a>
-        <a href="/settings#profile" class="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[var(--surface-strong)] text-xs font-black" aria-label="Profile">{initials}</a>
-        <Button variant="ghost" size="icon" class="size-10" aria-label="Sign out" onclick={signOut}><SignOutIcon size={16} /></Button>
-      </header>
+  <header class="tk-app-header">
+    <div class="mx-auto flex h-17 max-w-[1280px] items-center gap-3 px-4 sm:px-7">
+      <a href="/today" class="mr-auto flex min-h-11 shrink-0 items-center lg:mr-6" aria-label="Taskiller Today"><Logo class="h-6 w-auto" /></a>
+      <nav class="hidden flex-1 items-center gap-1 lg:flex" aria-label="Primary navigation">
+        {#each nav as item}
+          <a href={item.href} class={`tk-nav-item ${page.url.pathname.startsWith(item.href) ? 'is-active' : ''}`} aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}>
+            <item.icon size={18} aria-hidden="true" /><span>{item.label}</span>
+          </a>
+        {/each}
+      </nav>
+      <WorkSearch />
+      <a href="/inbox?capture=1" class="tk-capture-link" aria-label="Capture work"><PlusIcon size={19} weight="bold" aria-hidden="true" /><span class="hidden sm:inline">Capture</span></a>
+      <button type="button" class="grid size-11 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface-subtle)] text-xs font-bold hover:border-[var(--border-strong)]" aria-label="Account menu" popovertarget="account-menu">{initials}</button>
+      <div bind:this={menu} id="account-menu" popover="auto" class="tk-account-menu">
+        <p class="border-b border-[var(--border)] px-3 pb-3 pt-2 text-sm font-semibold">{$auth.user?.displayName || 'Your account'}<span class="mt-1 block truncate text-xs font-normal text-[var(--muted)]">{$auth.user?.email}</span></p>
+        <a href="/settings" onclick={() => menu?.hidePopover()}>Settings</a>
+        <a href="/settings#profile" onclick={() => menu?.hidePopover()}>Profile</a>
+        <a href="/settings#appearance" onclick={() => menu?.hidePopover()}>Appearance</a>
+        <a href="/guide" onclick={() => menu?.hidePopover()}>App guide</a>
+        <div class="my-1 border-t border-[var(--border)]"></div>
+        <button type="button" disabled={toolsBusy} onclick={() => portable('import')}>Import work</button>
+        <button type="button" disabled={toolsBusy} onclick={() => portable('export')}>Export work</button>
+        <div class="my-1 border-t border-[var(--border)]"></div>
+        <button type="button" onclick={signOut}>Sign out</button>
+      </div>
     </div>
-
-    <header class="tk-rail sticky top-0 z-40 rounded-none border-x-0 border-t-0 px-4 py-3 xl:hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <a href="/today" aria-label="Taskiller Today"><Logo class="h-5.5 w-auto" /></a>
-        <div class="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
-          <WorkSearch />
-          <a href="/guide" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)] text-tk-graphite" aria-label="App guide"><InfoIcon size={17} /></a>
-          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)]" aria-label="Import work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-import'))}><UploadSimpleIcon size={18} /></button>
-          <button type="button" class="grid size-10 place-items-center rounded-[11px] border border-[var(--border)] bg-[var(--surface)]" aria-label="Export work" onclick={() => window.dispatchEvent(new Event('taskiller:portable-export'))}><DownloadSimpleIcon size={18} /></button>
-          <ThemeToggle compact />
-          <a href="/inbox?capture=1" class="grid size-10 place-items-center rounded-[11px] bg-tk-strike text-[#24110b]" aria-label="Capture work"><PlusIcon size={18} weight="bold" /></a>
-        </div>
-      </div>
-    </header>
-
-    {#if !$online}
-      <div class="sticky top-[4.7rem] z-30 border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-xs font-bold text-amber-900 xl:top-[84px]" role="status" aria-live="polite">
-        Offline — loaded data stays visible, but server actions are paused until you reconnect.
-      </div>
-    {/if}
-
-    <main id="main-content" tabindex="-1" class="min-w-0 pb-24 outline-none xl:pt-[84px] xl:pb-0">{@render children?.()}</main>
-
-    {#if activeSession.data?.session}
-      <FloatingSessionTimer session={activeSession.data.session} />
-    {/if}
-
-    <nav class="tk-rail fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-[18px] p-1.5 xl:hidden" aria-label="Mobile navigation">
-      {#each nav as item}
-        {@const active = page.url.pathname.startsWith(item.href)}
-        <a href={item.href} aria-current={active ? 'page' : undefined} class={cn('relative flex flex-col items-center gap-1 rounded-[13px] py-2 text-[10px] font-bold text-tk-graphite transition-[background-color,color,transform] duration-180 active:scale-[0.97]', active && 'bg-[var(--surface-strong)] text-tk-ink')}>
-          <item.icon size={19} weight={active ? 'fill' : 'regular'} />
-          {item.label}
-          {#if active}<span class="absolute bottom-1 h-0.5 w-4 rounded-full bg-tk-strike"></span>{/if}
-        </a>
-      {/each}
-    </nav>
-  </div>
+  </header>
+  {#if !$online}<div class="border-b border-[var(--border)] bg-[var(--surface-subtle)] px-4 py-3 text-center text-sm" role="status">You’re offline. Your loaded work stays here; reconnect to make changes.</div>{/if}
+  {#if error}<p role="alert" class="mx-auto max-w-5xl px-5 py-3 text-[var(--danger-text)]">{error}</p>{/if}
+  <main id="main-content" tabindex="-1" class="tk-workspace min-w-0 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none lg:pb-0">{@render children?.()}</main>
+  {#if active.data?.session}<FloatingSessionTimer session={active.data.session} />{/if}
+  <nav class="tk-mobile-nav" aria-label="Mobile navigation">
+    {#each nav as item}
+      <a href={item.href} class:active={page.url.pathname.startsWith(item.href)} aria-current={page.url.pathname.startsWith(item.href) ? 'page' : undefined}>
+        <item.icon size={21} weight={page.url.pathname.startsWith(item.href) ? 'fill' : 'regular'} aria-hidden="true" />{item.label}
+      </a>
+    {/each}
+  </nav>
 {/if}
-
-<PortableWorkSettings />
+<input bind:this={importInput} type="file" hidden accept=".json,.zip,application/json,application/zip" onchange={selectImport} aria-label="Select work file to import" />
+{#if PortableTools}<section aria-label="Portable work"><PortableTools /></section>{/if}

@@ -3,6 +3,6 @@
   let { class: className, children }: { class?: string; children?: import('svelte').Snippet } = $props();
 </script>
 
-<div class={cn('tk-panel rounded-[20px]', className)}>
+<div class={cn('tk-panel rounded-[14px]', className)}>
   {@render children?.()}
 </div>

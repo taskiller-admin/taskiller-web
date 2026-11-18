@@ -18,7 +18,7 @@ test('login bootstraps the authenticated app and quick capture refreshes Today',
   await page.getByLabel('Quick capture chore').fill('Write production notes');
   await page.getByRole('button', { name: 'Capture chore' }).click();
 
-  await expect(page.getByText('Write production notes')).toBeVisible();
+  await expect(page.getByText('Write production notes', { exact: true })).toBeVisible();
 });
 
 test('authenticated shell remains keyboard navigable', async ({ page }) => {

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { spotlight } from '$lib/actions/spotlight';
 
   let {
     label,
@@ -21,7 +20,7 @@
   } as const;
 </script>
 
-<div use:spotlight class="tk-panel tk-spotlight tk-lift rounded-[18px] p-5">
+<div class="tk-panel rounded-[14px] p-5">
   <div class="flex items-center justify-between gap-4">
     <p class="text-xs font-semibold text-tk-graphite">{label}</p>
     <span class={`h-1.5 w-7 rounded-full ${toneClass[tone]}`}></span>

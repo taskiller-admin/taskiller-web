@@ -45,7 +45,23 @@ export async function listWorkItems(filters: {
 }
 
 export async function listChores() {
-  return listWorkItems({ kind: 'chore', limit: 100 });
+  return listAllWorkItems({ kind: 'chore' });
+}
+
+// Follow every cursor before filtering locally: nested work must never hide Inbox items.
+export async function listAllWorkItems(filters: Parameters<typeof listWorkItems>[0] = {}) {
+  const items: WorkItem[] = [];
+  const seen = new Set<string>();
+  let cursor: string | null = null;
+  do {
+    const page = await listWorkItems({ ...filters, limit: 100, cursor });
+    items.push(...page.items);
+    if (!page.page.hasMore) break;
+    cursor = page.page.nextCursor;
+    if (!cursor || seen.has(cursor)) throw new Error('Could not load all work. Please retry.');
+    seen.add(cursor);
+  } while (true);
+  return { items, page: { hasMore: false, nextCursor: null } };
 }
 
 export async function listProjects() {

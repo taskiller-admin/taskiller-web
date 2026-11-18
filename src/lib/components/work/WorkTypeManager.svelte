@@ -6,6 +6,8 @@
   import { problemMessage } from '$lib/api/problem';
   import XIcon from 'phosphor-svelte/lib/XIcon';
   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
+  import { protectUnsaved } from '$lib/actions/unsaved';
+  import { modalFocus } from '$lib/actions/modal';
   import { portal } from '$lib/actions/portal';
 
   type CreateInput = components['schemas']['CreateWorkTypeRequest'];
@@ -45,6 +47,10 @@
   let notice = $state('');
   let busy = $state(false);
   let confirmingDelete = $state(false);
+  let baseline = $state(JSON.stringify(payload()));
+  const dirty = $derived(JSON.stringify(payload()) !== baseline);
+  protectUnsaved(() => open && dirty);
+  function canDiscard() { return !dirty || confirm('Discard your unsaved Work Type changes?'); }
 
   function cleanForm() {
     editingId = null;
@@ -61,6 +67,7 @@
     error = '';
     notice = '';
     confirmingDelete = false;
+    baseline = JSON.stringify(payload());
   }
 
   function copyCharacteristics(type: WorkType) {
@@ -73,13 +80,14 @@
   }
 
   function useTemplate(type: WorkType) {
+    if (!canDiscard()) return;
     cleanForm();
     copyCharacteristics(type);
     notice = `Copied the characteristics of ${type.displayName}. Give your new Work Type its own name and slug.`;
   }
 
   async function edit(type: WorkType) {
-    if (busy || type.system) return;
+    if (busy || type.system || !canDiscard()) return;
     busy = true;
     error = '';
     try {
@@ -92,6 +100,7 @@
       copyCharacteristics(fresh.item);
       notice = '';
       confirmingDelete = false;
+      baseline = JSON.stringify(payload());
     } catch (cause) {
       error = problemMessage(cause, 'Could not load this Work Type.');
     } finally {
@@ -162,7 +171,7 @@
       await deleteWorkType(editingId, etag);
       await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
       cleanForm();
-      notice = 'Custom Work Type deleted. Existing work items must be reassigned before deletion if the server requires it.';
+      notice = 'Custom Work Type deleted.';
     } catch (cause) {
       error = problemMessage(cause, 'Unable to delete this Work Type. It may be in use by existing work.');
     } finally {
@@ -170,15 +179,15 @@
     }
   }
 
-  function close() { if (!busy) { open = false; confirmingDelete = false; } }
+  function close() { if (!busy && canDiscard()) { open = false; cleanForm(); } }
 </script>
 
-<svelte:window onkeydown={(event) => { if (open && event.key === 'Escape') close(); }} />
+
 
 {#if open}
   <div use:portal class="fixed inset-0 z-[120] grid place-items-center bg-black/75 p-3 sm:p-6" role="presentation">
-    <div role="dialog" aria-modal="true" aria-labelledby="work-type-dialog-title"
-      class="tk-panel flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl min-h-0 flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-7">
+    <div use:modalFocus={{ onclose: close, canClose: () => !busy }} role="dialog" aria-modal="true" aria-labelledby="work-type-dialog-title"
+      class="tk-panel flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl min-h-0 flex-col overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-7">
       <header class="flex shrink-0 items-start justify-between gap-4 pb-3">
         <div>
           <p class="text-[11px] font-bold uppercase tracking-widest text-tk-graphite">Taskiller · Work taxonomy</p>
@@ -186,7 +195,7 @@
           <p class="mt-2 max-w-xl text-sm leading-6 text-tk-graphite">Create a type using the same six characteristics as Taskiller's built-in types. Its defaults become available immediately when creating or editing work.</p>
         </div>
         <button type="button" aria-label="Close Work Type manager" onclick={close} disabled={busy}
-          class="grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--border)] text-tk-graphite hover:text-tk-ink disabled:opacity-50"><XIcon size={18} /></button>
+          class="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--border)] text-tk-graphite hover:text-[var(--foreground)] disabled:opacity-50"><XIcon size={18} aria-hidden="true" /></button>
       </header>
 
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" role="region" aria-label="Work Type manager content">
@@ -195,7 +204,7 @@
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-subtle)] p-4">
             <div class="mb-3 flex items-center justify-between gap-2">
               <h3 class="text-sm font-black">Your custom types</h3>
-              <button type="button" disabled={busy} onclick={cleanForm} class="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-bold hover:border-[var(--border-strong)]"><PlusIcon size={14} /> New</button>
+              <button type="button" disabled={busy} onclick={() => { if (canDiscard()) cleanForm(); }} class="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-bold hover:border-[var(--border-strong)]"><PlusIcon size={14} aria-hidden="true" /> New</button>
             </div>
             {#if customTypes.length === 0}
               <p class="text-xs leading-5 text-tk-graphite">Nothing custom yet. Create a Work Type or start from a built-in template.</p>

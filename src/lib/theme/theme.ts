@@ -22,7 +22,7 @@ function apply(modeValue: ThemeMode, persist = true) {
   document.documentElement.style.colorScheme = value;
 
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (meta) meta.content = value === 'dark' ? '#090c10' : '#edf2f4';
+  if (meta) meta.content = value === 'dark' ? '#101318' : '#f5f6f7';
 
   if (persist) localStorage.setItem('taskiller-theme', modeValue);
 }

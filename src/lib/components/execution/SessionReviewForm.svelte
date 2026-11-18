@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+  import { protectUnsaved } from '$lib/actions/unsaved';
   import Button from '$lib/components/ui/Button.svelte';
   import Textarea from '$lib/components/ui/Textarea.svelte';
   import type { SessionReview, SessionReviewInput } from '$lib/api/execution';
@@ -19,19 +21,58 @@
   let satisfactionScore = $state<number | null>(null);
   let note = $state('');
 
+  let baseline = $state('');
+  let loadedVersion = $state<string | null>(null);
+  const draft = $derived(JSON.stringify([focusScore, fatigueScore, difficultyScore, satisfactionScore, note]));
+  const dirty = $derived(baseline !== '' && draft !== baseline);
+  protectUnsaved(() => dirty);
+
+  let remoteChanged = $state(false);
+
+  function reviewSnapshot(value: SessionReviewInput | null, normalize = false) {
+    const text = value?.note ?? '';
+    return JSON.stringify([
+      value?.focusScore ?? null,
+      value?.fatigueScore ?? null,
+      value?.difficultyScore ?? null,
+      value?.satisfactionScore ?? null,
+      normalize ? text.trim() : text
+    ]);
+  }
+
+  function useSavedReview(saved: SessionReview | null) {
+    focusScore = saved?.focusScore ?? null;
+    fatigueScore = saved?.fatigueScore ?? null;
+    difficultyScore = saved?.difficultyScore ?? null;
+    satisfactionScore = saved?.satisfactionScore ?? null;
+    note = saved?.note ?? '';
+    baseline = reviewSnapshot(saved);
+    remoteChanged = false;
+  }
+
   $effect(() => {
-    focusScore = review?.focusScore ?? null;
-    fatigueScore = review?.fatigueScore ?? null;
-    difficultyScore = review?.difficultyScore ?? null;
-    satisfactionScore = review?.satisfactionScore ?? null;
-    note = review?.note ?? '';
+    const saved = review;
+    const version = saved ? `${saved.sessionId}:${saved.version}` : 'new';
+    untrack(() => {
+      if (loadedVersion === version) return;
+      loadedVersion = version;
+      const incoming = reviewSnapshot(saved);
+      const normalizedDraft = reviewSnapshot({ focusScore, fatigueScore, difficultyScore, satisfactionScore, note }, true);
+      // A successful save can trim the note or turn an empty note into null.
+      // Matching content acknowledges that save without treating it as a conflict.
+      if (dirty && reviewSnapshot(saved, true) !== normalizedDraft) {
+        remoteChanged = incoming !== baseline;
+        return;
+      }
+      useSavedReview(saved);
+    });
   });
 
   const rows = [
-    { label: 'Focus', key: 'focus' },
-    { label: 'Fatigue', key: 'fatigue' },
-    { label: 'Difficulty', key: 'difficulty' },
-    { label: 'Satisfaction', key: 'satisfaction' }
+    { label: 'Focus', key: 'focus', low: 'Distracted', high: 'Fully focused' },
+    { label: 'Fatigue', key: 'fatigue', low: 'Rested', high: 'Exhausted' },
+    { label: 'Difficulty', key: 'difficulty', low: 'Easy', high: 'Very difficult' },
+    { label: 'Satisfaction', key: 'satisfaction', low: 'Dissatisfied', high: 'Very satisfied' }
   ] as const;
 
   function current(key: (typeof rows)[number]['key']) {
@@ -60,41 +101,50 @@
   }
 </script>
 
-<section class="rounded-[24px] border border-white/10 bg-white/[0.055] p-5 sm:p-6">
+<section class="rounded-[14px] border border-white/10 bg-white/[0.055] p-5 sm:p-6">
   <div class="max-w-xl">
-    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/35">Session review</p>
-    <h2 class="tk-display mt-2 text-2xl font-bold">Capture the signal while it’s fresh.</h2>
-    <p class="mt-2 text-sm leading-6 text-white/48">Optional. These scores help Taskiller personalize future focus recommendations.</p>
+    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/75">Session review</p>
+    <h2 class="tk-display mt-2 text-2xl font-bold">How did the session feel?</h2>
+    <p class="mt-2 text-sm leading-6 text-white/75">Optional. These scores help Taskiller personalize future focus recommendations.</p>
   </div>
+
+  {#if remoteChanged}
+    <div role="status" class="mt-5 rounded-[12px] border border-[var(--warning-border)]/30 bg-amber-200/10 p-4 text-sm text-white">
+      <p>A newer saved review is available. Your unsaved reflection is still here.</p>
+      <Button class="mt-3 border-white/20 text-white hover:bg-white/10" variant="ghost" disabled={busy} onclick={() => useSavedReview(review)}>Use saved review</Button>
+    </div>
+  {/if}
 
   <div class="mt-6 grid gap-4 sm:grid-cols-2">
     {#each rows as row}
-      <div class="rounded-[16px] bg-white/[0.045] p-4">
+      <fieldset disabled={busy} class="min-w-0 rounded-[16px] bg-white/[0.045] p-4">
+        <legend class="px-1 text-sm font-semibold">{row.label}</legend>
         <div class="flex items-center justify-between gap-4">
-          <span class="text-sm font-semibold text-white/75">{row.label}</span>
-          <span class="text-[11px] text-white/30">1–5</span>
+          <span class="text-xs text-white/75">1: {row.low}</span>
+          <span class="text-xs text-white/75">5: {row.high}</span>
         </div>
         <div class="mt-3 grid grid-cols-5 gap-1.5">
           {#each [1, 2, 3, 4, 5] as score}
             <button
               type="button"
               onclick={() => setScore(row.key, score)}
-              class="tk-mono h-9 rounded-[10px] border text-xs font-bold transition {current(row.key) === score ? 'border-tk-strike bg-tk-strike text-[#1a1512]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:bg-white/[0.09]'}"
+              aria-label={`${row.label}, ${score} of 5${score === 1 ? `, ${row.low}` : score === 5 ? `, ${row.high}` : ''}`}
+              class="tk-mono h-11 rounded-[10px] border text-xs font-bold transition {current(row.key) === score ? 'border-tk-strike bg-tk-strike text-[#1a1512]' : 'border-white/10 bg-white/[0.04] text-white/75 hover:bg-white/[0.09]'}"
               aria-pressed={current(row.key) === score}
             >{score}</button>
           {/each}
         </div>
-      </div>
+      </fieldset>
     {/each}
   </div>
 
-  <label class="mt-5 block text-xs font-bold text-white/55">
+  <label class="mt-5 block text-xs font-bold text-white/75">
     Note
-    <Textarea class="mt-2 min-h-28 border-white/10 bg-white/[0.06] text-white placeholder:text-white/28" bind:value={note} placeholder="What helped? What got in the way?" maxlength="4000" />
+    <Textarea disabled={busy} class="mt-2 min-h-28 border-white/10 bg-white/[0.06] text-white placeholder:text-white/75" bind:value={note} placeholder="What helped? What got in the way?" maxlength="4000" />
   </label>
 
   <div class="mt-5 flex items-center gap-3">
     <Button variant="dark" disabled={busy} onclick={submit}>{review ? 'Update review' : 'Save review'}</Button>
-    {#if review}<span class="text-xs text-white/35">Saved · v{review.version}</span>{/if}
+    {#if dirty}<span class="text-xs text-white/75">Unsaved changes</span>{:else if review}<span class="text-xs text-white/75">Saved</span>{/if}
   </div>
 </section>

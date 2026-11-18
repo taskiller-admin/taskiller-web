@@ -14,9 +14,9 @@
   const tones = {
     neutral: 'border-[var(--border)] bg-[var(--surface-subtle)] text-tk-graphite',
     accent: 'border-tk-strike/25 bg-tk-strike/10 text-[var(--accent-ink)]',
-    blue: 'border-tk-blue/20 bg-tk-blue/10 text-[#4f67d9] dark:text-[#aebcff]',
+    blue: 'border-tk-blue/20 bg-tk-blue/10 text-[var(--blue)] dark:text-[#aebcff]',
     green: 'border-tk-green/20 bg-tk-green/10 text-[#237754] dark:text-[#6ed2a0]',
-    danger: 'border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300'
+    danger: 'border-red-500/20 bg-red-500/10 text-[var(--danger-text)] dark:text-red-300'
   } as const;
 </script>
 

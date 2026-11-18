@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
   import FunnelSimpleIcon from 'phosphor-svelte/lib/FunnelSimpleIcon';
   import TrayIcon from 'phosphor-svelte/lib/TrayIcon';
@@ -9,7 +11,12 @@
   import { cn } from '$lib/utils';
 
   type Filter = 'open' | 'draft' | 'ready' | 'in_progress' | 'completed';
-  let filter = $state<Filter>('open');
+  const filter = $derived<Filter>(['open', 'draft', 'ready', 'in_progress', 'completed'].includes(page.url.searchParams.get('filter') ?? '') ? page.url.searchParams.get('filter') as Filter : 'open');
+  function selectFilter(value: Filter) {
+    const url = new URL(page.url);
+    url.searchParams.set('filter', value);
+    void goto(url, { keepFocus: true, noScroll: true });
+  }
 
   const inbox = createQuery(() => ({
     queryKey: queryKeys.work.inbox,
@@ -39,30 +46,30 @@
 <div class="tk-page max-w-[1180px]">
   <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
     <div>
-      <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} /> Unsorted capture</div>
+      <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-tk-graphite"><TrayIcon size={16} aria-hidden="true" /> Unsorted capture</div>
       <h1 class="tk-display text-6xl font-extrabold sm:text-7xl">Inbox</h1>
-      <p class="mt-4 max-w-2xl text-base leading-7 text-tk-graphite">A holding area, not a guilt wall. Capture now; decide where it belongs when context returns.</p>
+      <p class="mt-2 max-w-2xl text-base leading-7 text-tk-graphite">Capture Chores here, then organize or plan them when you are ready.</p>
     </div>
     <span class="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-bold text-tk-graphite">{inbox.data?.items.length ?? 0} root Chores</span>
   </header>
 
-  <div class="mt-10 max-w-4xl">
+  <div class="mt-6 max-w-4xl">
     <WorkComposer compact label="Capture" />
   </div>
 
-  <div class="mt-10 flex flex-wrap items-center gap-2">
-    <span class="mr-1 flex items-center gap-1.5 text-xs font-bold text-tk-graphite"><FunnelSimpleIcon size={15} />Filter</span>
+  <div class="mt-6 flex flex-wrap items-center gap-2">
+    <span class="mr-1 flex items-center gap-1.5 text-xs font-bold text-tk-graphite"><FunnelSimpleIcon size={15} aria-hidden="true" />Filter</span>
     {#each filters as option}
       <button
         type="button"
         aria-pressed={filter === option.value}
         class={cn(
-          'rounded-[10px] border px-3 py-2 text-xs font-bold transition-[transform,background-color,border-color,color] duration-180 active:scale-[0.98]',
+          'min-h-11 rounded-[10px] border px-3 py-2 text-xs font-bold transition-[transform,background-color,border-color,color] duration-180 active:scale-[0.98]',
           filter === option.value
-            ? 'border-tk-strike/25 bg-tk-strike/10 text-tk-ink'
-            : 'border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:border-[var(--border-strong)] hover:text-tk-ink'
+            ? 'border-tk-strike/25 bg-tk-strike/10 text-[var(--foreground)]'
+            : 'border-[var(--border)] bg-[var(--surface)] text-tk-graphite hover:border-[var(--border-strong)] hover:text-[var(--foreground)]'
         )}
-        onclick={() => (filter = option.value)}
+        onclick={() => selectFilter(option.value)}
       >
         {option.label}
       </button>
@@ -71,16 +78,16 @@
 
   <section class="mt-5">
     {#if inbox.isPending}
-      <div class="space-y-2">{#each Array(5) as _}<div class="h-16 animate-pulse rounded-[14px] bg-black/[0.045]"></div>{/each}</div>
+      <div class="space-y-2">{#each Array(5) as _}<div class="h-16 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>{/each}</div>
     {:else if inbox.isError}
-      <p class="py-10 text-sm text-red-700">Couldn’t load Inbox.</p>
+      <p class="py-10 text-sm text-[var(--danger-text)]" role="alert">Couldn’t load Inbox. <button type="button" class="underline" onclick={() => inbox.refetch()}>Retry</button></p>
     {:else if filtered.length === 0}
-      <div class="tk-panel-soft rounded-[20px] border-dashed p-14 text-center">
+      <div class="tk-panel-soft rounded-[14px] border-dashed p-14 text-center">
         <p class="text-lg font-bold">Nothing in this view.</p>
         <p class="mt-2 text-sm text-tk-graphite">Capture something above or switch the filter.</p>
       </div>
     {:else}
-      <div class="tk-panel overflow-hidden rounded-[20px] px-3 sm:px-4">
+      <div class="tk-panel overflow-hidden rounded-[14px] px-3 sm:px-4">
         {#each filtered as item}
           <WorkItemRow {item} showExport />
         {/each}

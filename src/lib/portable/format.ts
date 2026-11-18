@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 import type { WorkItem, WorkType } from '$lib/api/work';
 
 export const FORMAT = 'taskiller.portable.work.v1';
@@ -106,6 +105,7 @@ export async function exportDocument(doc: PortableDocument): Promise<{ blob: Blo
       name: `${prefix}.json`
     };
   }
+  const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
   zip.file('data.json', JSON.stringify(doc, null, 2));
   zip.file('README.md', markdownDocument(doc));
@@ -181,6 +181,7 @@ export async function importFile(file: File): Promise<PortableDocument> {
   const extension = file.name.toLowerCase();
   let content: string;
   if (extension.endsWith('.zip')) {
+    const { default: JSZip } = await import('jszip');
     const zip = await JSZip.loadAsync(file, { checkCRC32: true });
     const entries = Object.values(zip.files);
     if (entries.length > MAX_ITEMS * 3 + 10) throw new Error('Too many files in ZIP.');

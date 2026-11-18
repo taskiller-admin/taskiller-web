@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { protectUnsaved } from '$lib/actions/unsaved';
   import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
   import FloppyDiskIcon from 'phosphor-svelte/lib/FloppyDiskIcon';
   import ArrowsClockwiseIcon from 'phosphor-svelte/lib/ArrowsClockwiseIcon';
@@ -8,7 +9,7 @@
   import Select from '$lib/components/ui/Select.svelte';
   import WorkTypeSelect from '$lib/components/work/WorkTypeSelect.svelte';
   import {
-    listWorkItems,
+    listAllWorkItems,
     updateWorkItem,
     WorkConflictError,
     type WorkItem,
@@ -64,16 +65,24 @@
   let targetEndDate = $state(initial.targetEndDate);
   let conflict = $state(false);
   let error = $state('');
+  let notice = $state('');
+  let submittedDraft = '';
+  let savedEtag = $state<string | null>(null);
+  function snapshot() { return JSON.stringify({ name, description, status, parentId, workTypeId, estimateMinutes, priority, plannedStart, deadline, targetStartDate, targetEndDate }); }
+  let baseline = $state(snapshot());
+  const dirty = $derived(snapshot() !== baseline);
+  protectUnsaved(() => dirty);
+  $effect(() => { if (dirty) notice = ''; });
 
   const projects = createQuery(() => ({
-    queryKey: queryKeys.work.list({ kind: 'project' }),
-    queryFn: () => listWorkItems({ kind: 'project' }),
+    queryKey: queryKeys.work.list({ kind: 'project', all: true }),
+    queryFn: () => listAllWorkItems({ kind: 'project' }),
     enabled: item.kind !== 'project'
   }));
 
   const sprints = createQuery(() => ({
-    queryKey: queryKeys.work.list({ kind: 'sprint' }),
-    queryFn: () => listWorkItems({ kind: 'sprint' }),
+    queryKey: queryKeys.work.list({ kind: 'sprint', all: true }),
+    queryFn: () => listAllWorkItems({ kind: 'sprint' }),
     enabled: item.kind === 'chore'
   }));
 
@@ -91,13 +100,19 @@
     targetEndDate = item.targetEndDate ?? '';
     conflict = false;
     error = '';
+    baseline = snapshot();
+    notice = '';
+    savedEtag = null;
   }
 
   const save = createMutation(() => ({
-    mutationFn: (input: UpdateWorkItemInput) => updateWorkItem(item.id, input, etag),
-    onSuccess: async () => {
+    mutationFn: (input: UpdateWorkItemInput) => updateWorkItem(item.id, input, savedEtag ?? etag),
+    onSuccess: async (result) => {
+      savedEtag = result.etag;
       conflict = false;
       error = '';
+      baseline = submittedDraft;
+      notice = 'Changes saved.';
       await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
       onupdated?.();
     },
@@ -105,6 +120,7 @@
       if (cause instanceof WorkConflictError) {
         conflict = true;
         await queryClient.invalidateQueries({ queryKey: queryKeys.work.detail(item.id) });
+        savedEtag = null;
         return;
       }
       error = problemMessage(cause, 'Could not save changes.');
@@ -116,6 +132,7 @@
     const trimmed = name.trim();
     if (!trimmed) return;
     const estimate = estimateMinutes ? Math.max(0, Math.round(Number(estimateMinutes) * 60)) : null;
+    submittedDraft = snapshot();
     save.mutate({
       name: trimmed,
       description: description.trim() || null,
@@ -140,23 +157,23 @@
   );
 </script>
 
-<form id="work-details" class="scroll-mt-28 rounded-[20px] border border-[var(--border)] bg-white/88 p-5" onsubmit={submit}>
+<form id="work-details" class="scroll-mt-28 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5" onsubmit={submit}>
   <div class="flex items-center justify-between gap-3">
     <div>
       <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Edit</p>
       <h2 class="mt-1 font-bold">Work details</h2>
     </div>
     <Button type="submit" size="sm" disabled={save.isPending}>
-      <FloppyDiskIcon size={16} /> {save.isPending ? 'Saving…' : 'Save'}
+      <FloppyDiskIcon size={16} aria-hidden="true" /> {save.isPending ? 'Saving…' : 'Save'}
     </Button>
   </div>
 
   {#if conflict}
-    <div class="mt-4 rounded-[13px] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+    <div class="mt-4 rounded-[13px] border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-sm text-[var(--warning-text)]" role="alert">
       <p class="font-bold">This item changed somewhere else.</p>
-      <p class="mt-1 leading-5">The newest server version was fetched in the background. Your current draft is still here.</p>
-      <Button type="button" variant="ghost" size="sm" class="mt-2 text-amber-950" onclick={resetFromServer}>
-        <ArrowsClockwiseIcon size={15} /> Use server version
+      <p class="mt-1 leading-5">The latest saved changes are available. Your current draft is still here.</p>
+      <Button type="button" variant="ghost" size="sm" class="mt-2 text-[var(--warning-text)]" onclick={resetFromServer}>
+        <ArrowsClockwiseIcon size={15} aria-hidden="true" /> Use saved version
       </Button>
     </div>
   {/if}
@@ -202,7 +219,8 @@
     {#if item.kind !== 'project'}
       <label class="block">
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Parent</span>
-        <Select bind:value={parentId}>
+        <Select bind:value={parentId} disabled={projects.isPending || (item.kind === 'chore' && sprints.isPending)}>
+          {#if parentId && ![...(projects.data?.items ?? []), ...(sprints.data?.items ?? [])].some((parent) => parent.id === parentId)}<option value={parentId}>Current parent</option>{/if}
           {#if item.kind === 'chore'}<option value="">Inbox / no parent</option>{/if}
           {#if projects.data?.items.length}
             <optgroup label="Projects">
@@ -220,6 +238,7 @@
           {/if}
         </Select>
       </label>
+      {#if projects.isError || (item.kind === 'chore' && sprints.isError)}<p role="alert" class="text-sm">Could not load parent choices. <button type="button" class="underline" onclick={() => { void projects.refetch(); if (item.kind === 'chore') void sprints.refetch(); }}>Retry</button></p>{/if}
     {/if}
 
     <label class="block">
@@ -251,5 +270,6 @@
     {/if}
   </div>
 
-  {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+  {#if notice}<p class="mt-4 text-sm" role="status">{notice}</p>{/if}
+  {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
 </form>

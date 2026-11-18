@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { protectUnsaved } from '$lib/actions/unsaved';
   import { createMutation, useQueryClient } from '@tanstack/svelte-query';
   import CaretDownIcon from 'phosphor-svelte/lib/CaretDownIcon';
   import PlusIcon from 'phosphor-svelte/lib/PlusIcon';
@@ -18,7 +19,8 @@
     allowedKinds = ['chore'],
     compact = false,
     label = 'Create work',
-    oncreated
+    oncreated,
+    ondirtychange
   }: {
     parentId?: string | null;
     defaultKind?: WorkItemKind;
@@ -26,6 +28,7 @@
     compact?: boolean;
     label?: string;
     oncreated?: (item: WorkItem) => void;
+    ondirtychange?: (dirty: boolean) => void;
   } = $props();
 
   const queryClient = useQueryClient();
@@ -44,10 +47,17 @@
   let targetEndDate = $state('');
   let advanced = $state(initialAdvanced());
   let error = $state('');
+  let notice = $state('');
+  const uid = $props.id();
+  const dirty = $derived(Boolean(name || workTypeId || description || estimateMinutes || priority || deadline || targetStartDate || targetEndDate));
+  protectUnsaved(() => dirty);
+  $effect(() => { ondirtychange?.(dirty); });
+  $effect(() => { if (dirty) notice = ''; });
 
   const create = createMutation(() => ({
     mutationFn: createWorkItem,
     onSuccess: async (item) => {
+      notice = `${item.kind === 'project' ? 'Project' : item.kind === 'sprint' ? 'Sprint' : 'Chore'} created.`;
       name = '';
       workTypeId = '';
       description = '';
@@ -87,7 +97,9 @@
   }
 </script>
 
-<form class="tk-capture-deck rounded-[18px] p-2.5" onsubmit={submit}>
+<form class="tk-capture-deck rounded-[14px] p-2.5" onsubmit={submit}>
+  <fieldset disabled={create.isPending} class="min-w-0">
+  <label for={`${uid}-name`} class="mb-1.5 block px-2 text-sm font-semibold">{kind === 'project' ? 'Project name' : kind === 'sprint' ? 'Sprint name' : 'Chore name'}</label>
   <div class="flex gap-2">
     {#if allowedKinds.length > 1}
       <Select class="w-32 shrink-0 border-transparent bg-[var(--surface-subtle)]" bind:value={kind} aria-label="Work item kind">
@@ -98,6 +110,8 @@
     {/if}
 
     <Input
+      id={`${uid}-name`}
+      name="name"
       class="flex-1 border-transparent bg-transparent text-base focus:border-transparent focus:shadow-none"
       bind:value={name}
       placeholder={kind === 'project' ? 'Name the Project…' : kind === 'sprint' ? 'Name the Sprint…' : 'What needs to move?…'}
@@ -107,7 +121,7 @@
     />
 
     <Button type="submit" variant="dark" aria-label={label} disabled={create.isPending || !name.trim()}>
-      <PlusIcon size={17} weight="bold" />
+      <PlusIcon size={17} weight="bold" aria-hidden="true" />
       <span class="hidden sm:inline">{create.isPending ? 'Saving…' : label}</span>
     </Button>
   </div>
@@ -127,16 +141,16 @@
   <button
     type="button"
     aria-expanded={advanced}
-    aria-controls="work-composer-details"
-    class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite transition-colors hover:bg-[var(--surface-subtle)] hover:text-tk-ink"
+    aria-controls={`${uid}-details`}
+    class="mt-1.5 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-tk-graphite transition-colors hover:bg-[var(--surface-subtle)] hover:text-[var(--foreground)]"
     onclick={() => (advanced = !advanced)}
   >
-    <CaretDownIcon size={13} class={advanced ? 'rotate-180' : ''} />
+    <CaretDownIcon size={13} class={advanced ? 'rotate-180' : ''} aria-hidden="true" />
     {advanced ? 'Fewer fields' : 'Add details'}
   </button>
 
   {#if advanced}
-    <div id="work-composer-details" class="mt-3 grid gap-3 border-t border-[var(--border)] px-1 pt-4 sm:grid-cols-2">
+    <div id={`${uid}-details`} class="mt-3 grid gap-3 border-t border-[var(--border)] px-1 pt-4 sm:grid-cols-2">
       <label class="sm:col-span-2">
         <span class="mb-1.5 block text-xs font-bold text-tk-graphite">Description</span>
         <Textarea bind:value={description} placeholder="Context, outcome, or notes…" maxlength="20000" />
@@ -173,5 +187,7 @@
     </div>
   {/if}
 
-  {#if error}<p class="mt-3 px-2 text-sm text-red-700" role="alert">{error}</p>{/if}
+  {#if notice}<p class="mt-3 px-2 text-sm" role="status">{notice}</p>{/if}
+  {#if error}<p class="mt-3 px-2 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
+  </fieldset>
 </form>

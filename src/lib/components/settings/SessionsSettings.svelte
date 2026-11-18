@@ -21,6 +21,7 @@
   let busyId = $state<string | null>(null);
   let confirmAll = $state(false);
   let error = $state('');
+  let message = $state('');
 
   const revoke = createMutation(() => ({
     mutationFn: async (session: { id: string; current: boolean }) => {
@@ -30,6 +31,7 @@
     },
     onSuccess: async (session) => {
       error = '';
+      message = 'Device signed out.';
       busyId = null;
       if (session.current) {
         clearAuth();
@@ -61,58 +63,61 @@
   }
 </script>
 
-<section id="devices" class="scroll-mt-24 rounded-[22px] border border-[var(--border)] bg-white/78 p-5 sm:p-6">
+<section id="devices" class="scroll-mt-24 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div class="flex items-start gap-3">
-      <div class="grid size-10 place-items-center rounded-[13px] bg-tk-green/10 text-[#237754]"><DevicesIcon size={21} /></div>
+      <div class="grid size-10 place-items-center rounded-[13px] bg-tk-green/10 text-[var(--foreground)]"><DevicesIcon size={21} aria-hidden="true" /></div>
       <div>
-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Security</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Security</p>
         <h2 class="mt-1 text-xl font-bold">Devices & sessions</h2>
       </div>
     </div>
-    <Button variant="secondary" size="sm" onclick={() => sessions.refetch()}>Refresh</Button>
+    <Button variant="secondary" size="sm" disabled={sessions.isFetching} onclick={() => sessions.refetch()}>Refresh</Button>
   </div>
 
   {#if sessions.isPending}
-    <div class="mt-6 space-y-2">{#each Array(3) as _}<div class="h-20 animate-pulse rounded-[15px] bg-black/[0.04]"></div>{/each}</div>
+    <div role="status" aria-label="Loading devices" class="mt-6 space-y-2">{#each Array(3) as _}<div class="h-20 animate-pulse rounded-[15px] bg-[var(--surface-subtle)]"></div>{/each}</div>
+  {:else if sessions.isError}
+    <p role="alert" class="mt-6 text-sm">Could not load devices. Refresh to try again.</p>
   {:else if sessions.data?.length}
-    <div class="mt-6 divide-y divide-[var(--border)] rounded-[18px] border border-[var(--border)] bg-white/70">
+    <div class="mt-6 divide-y divide-[var(--border)] rounded-[14px] border border-[var(--border)] bg-[var(--surface)]">
       {#each sessions.data as session}
         <div class="flex flex-wrap items-center gap-4 p-4">
-          <div class="grid size-10 shrink-0 place-items-center rounded-[12px] bg-black/[0.045]"><DesktopIcon size={19} /></div>
+          <div class="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[var(--surface-subtle)]"><DesktopIcon size={19} aria-hidden="true" /></div>
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
               <p class="truncate text-sm font-bold">{session.deviceName || 'Unnamed device'}</p>
-              {#if session.current}<Badge tone="green"><ShieldCheckIcon size={12} weight="fill" /> Current</Badge>{/if}
+              {#if session.current}<Badge tone="green"><ShieldCheckIcon size={12} weight="fill" aria-hidden="true" /> Current</Badge>{/if}
             </div>
-            <p class="mt-1 text-xs text-tk-graphite">Last used {formatDate(session.lastUsedAt)} · expires {formatDate(session.expiresAt)}</p>
+            <p class="mt-1 text-xs text-[var(--muted)]">Last used {formatDate(session.lastUsedAt)} · expires {formatDate(session.expiresAt)}</p>
           </div>
-          <Button variant={session.current ? 'danger' : 'secondary'} size="sm" disabled={busyId === session.id} onclick={() => revoke.mutate({ id: session.id, current: session.current })}>
+          <Button variant={session.current ? 'danger' : 'secondary'} size="sm" disabled={revoke.isPending || logoutAll.isPending} onclick={() => revoke.mutate({ id: session.id, current: session.current })}>
             {busyId === session.id ? 'Revoking…' : session.current ? 'Sign out here' : 'Revoke'}
           </Button>
         </div>
       {/each}
     </div>
   {:else}
-    <p class="mt-6 text-sm text-tk-graphite">No active sessions were returned.</p>
+    <p class="mt-6 text-sm text-[var(--muted)]">No active sessions were returned.</p>
   {/if}
 
-  <div class="mt-6 rounded-[17px] bg-[#f0f0ec] p-4">
+  <div class="mt-6 rounded-[17px] bg-[var(--surface-raised)] p-4">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <p class="text-sm font-bold">Sign out every device</p>
-        <p class="mt-1 text-xs leading-5 text-tk-graphite">This revokes all refresh sessions, including this browser. You will need to sign in again everywhere.</p>
+        <p class="mt-1 text-xs leading-5 text-[var(--muted)]">This revokes all refresh sessions, including this browser. You will need to sign in again everywhere.</p>
       </div>
       {#if confirmAll}
         <div class="flex gap-2">
           <Button variant="ghost" size="sm" onclick={() => (confirmAll = false)}>Cancel</Button>
-          <Button variant="danger" size="sm" disabled={logoutAll.isPending} onclick={() => logoutAll.mutate()}><SignOutIcon size={15} /> {logoutAll.isPending ? 'Signing out…' : 'Confirm all devices'}</Button>
+          <Button variant="danger" size="sm" disabled={logoutAll.isPending} onclick={() => logoutAll.mutate()}><SignOutIcon size={15} aria-hidden="true" /> {logoutAll.isPending ? 'Signing out…' : 'Confirm all devices'}</Button>
         </div>
       {:else}
-        <Button variant="secondary" size="sm" onclick={() => (confirmAll = true)}><SignOutIcon size={15} /> Sign out all</Button>
+        <Button variant="secondary" size="sm" onclick={() => (confirmAll = true)}><SignOutIcon size={15} aria-hidden="true" /> Sign out all</Button>
       {/if}
     </div>
   </div>
 
-  {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+  {#if message}<p class="mt-4 text-sm" role="status">{message}</p>{/if}
+  {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
 </section>

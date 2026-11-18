@@ -107,29 +107,29 @@
   }
 </script>
 
-<section id="data" class="scroll-mt-24 rounded-[22px] border border-[var(--border)] bg-white/78 p-5 sm:p-6">
+<section id="data" class="scroll-mt-24 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
   <div class="flex items-start gap-3">
-    <div class="grid size-10 place-items-center rounded-[13px] bg-tk-blue/10 text-[#3654c9]"><ArchiveIcon size={21} /></div>
+    <div class="grid size-10 place-items-center rounded-[13px] bg-tk-blue/10 text-[var(--foreground)]"><ArchiveIcon size={21} aria-hidden="true" /></div>
     <div>
-      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Portability & privacy</p>
+      <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Portability & privacy</p>
       <h2 class="mt-1 text-xl font-bold">Your data</h2>
     </div>
   </div>
 
   <div class="mt-6 grid gap-5 xl:grid-cols-2">
-    <div class="rounded-[18px] border border-[var(--border)] bg-white/70 p-5">
+    <div class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p class="font-bold">Export your Taskiller data</p>
-          <p class="mt-1 max-w-md text-sm leading-6 text-tk-graphite">Creates a compressed JSON archive of your profile, preferences, work hierarchy, focus plans, execution sessions, events and reviews. Authentication secrets are excluded.</p>
+          <p class="mt-1 max-w-md text-sm leading-6 text-[var(--muted)]">Creates a compressed JSON archive of your profile, preferences, work hierarchy, focus plans, execution sessions, events and reviews. Authentication secrets are excluded.</p>
         </div>
         <Button variant="secondary" size="sm" disabled={createExport.isPending || exportQuery.data?.status === 'queued' || exportQuery.data?.status === 'processing'} onclick={() => createExport.mutate()}>
-          <DownloadSimpleIcon size={15} /> {createExport.isPending ? 'Requesting…' : 'Request export'}
+          <DownloadSimpleIcon size={15} aria-hidden="true" /> {createExport.isPending ? 'Requesting…' : 'Request export'}
         </Button>
       </div>
 
       {#if exportRequestId}
-        <div class="mt-5 rounded-[15px] bg-[#f0f0ec] p-4">
+        <div class="mt-5 rounded-[15px] bg-[var(--surface-raised)] p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
               <span class="text-sm font-bold">Latest request</span>
@@ -137,56 +137,58 @@
               {:else if exportQuery.data?.status === 'failed'}<Badge tone="danger">Failed</Badge>
               {:else}<Badge tone="blue">{exportQuery.data?.status ?? 'Loading'}</Badge>{/if}
             </div>
-            <button type="button" class="text-xs font-bold text-tk-graphite hover:text-tk-ink" onclick={() => exportQuery.refetch()}>Refresh</button>
+            <button type="button" class="text-xs font-bold text-[var(--muted)] hover:text-[var(--foreground)]" onclick={() => exportQuery.refetch()}>Refresh</button>
           </div>
+          {#if exportQuery.isError}<p class="mt-3 text-sm" role="alert">Could not load export status. Refresh to try again.</p>{/if}
           {#if exportQuery.data}
             <dl class="mt-4 grid grid-cols-2 gap-4 text-sm">
-              <div><dt class="text-xs text-tk-graphite">Created</dt><dd class="mt-1 font-semibold">{formatDate(exportQuery.data.createdAt)}</dd></div>
-              <div><dt class="text-xs text-tk-graphite">Size</dt><dd class="tk-mono mt-1 font-semibold">{formatBytes(exportQuery.data.archiveSizeBytes)}</dd></div>
-              <div><dt class="text-xs text-tk-graphite">Expires</dt><dd class="mt-1 font-semibold">{formatDate(exportQuery.data.expiresAt)}</dd></div>
-              <div><dt class="text-xs text-tk-graphite">SHA-256</dt><dd class="tk-mono mt-1 truncate font-semibold" title={exportQuery.data.archiveSha256 ?? ''}>{exportQuery.data.archiveSha256 ? `${exportQuery.data.archiveSha256.slice(0, 12)}…` : '—'}</dd></div>
+              <div><dt class="text-xs text-[var(--muted)]">Created</dt><dd class="mt-1 font-semibold">{formatDate(exportQuery.data.createdAt)}</dd></div>
+              <div><dt class="text-xs text-[var(--muted)]">Size</dt><dd class="tk-mono mt-1 font-semibold">{formatBytes(exportQuery.data.archiveSizeBytes)}</dd></div>
+              <div><dt class="text-xs text-[var(--muted)]">Expires</dt><dd class="mt-1 font-semibold">{formatDate(exportQuery.data.expiresAt)}</dd></div>
+              <div><dt class="text-xs text-[var(--muted)]">SHA-256</dt><dd class="tk-mono mt-1 truncate font-semibold" title={exportQuery.data.archiveSha256 ?? ''}>{exportQuery.data.archiveSha256 ? `${exportQuery.data.archiveSha256.slice(0, 12)}…` : '—'}</dd></div>
             </dl>
             {#if exportQuery.data.status === 'ready' && exportQuery.data.downloadUrl}
               <a class="mt-4 inline-flex h-10 items-center gap-2 rounded-[12px] bg-tk-ink px-4 text-sm font-bold text-white" href={exportDownloadUrl(exportQuery.data.downloadUrl)}>
-                <DownloadSimpleIcon size={15} /> Download archive
+                <DownloadSimpleIcon size={15} aria-hidden="true" /> Download archive
               </a>
             {:else if exportQuery.data.status === 'failed'}
-              <p class="mt-4 text-sm text-red-700">Export failed{exportQuery.data.failureCode ? ` · ${exportQuery.data.failureCode}` : ''}.</p>
+              <p class="mt-4 text-sm text-[var(--danger-text)]">Export failed{exportQuery.data.failureCode ? ` · ${exportQuery.data.failureCode}` : ''}.</p>
             {:else}
-              <p class="mt-4 text-xs leading-5 text-tk-graphite">The free Render deployment may sleep when idle, so background export processing can be delayed until the service is awake.</p>
+              <p class="mt-4 text-xs leading-5 text-[var(--muted)]">Your archive is being prepared. You can leave this page and check back later.</p>
             {/if}
           {/if}
         </div>
       {/if}
-      {#if exportMessage}<p class="mt-3 text-sm text-tk-green">{exportMessage}</p>{/if}
+      {#if exportMessage}<p role="status" class="mt-3 text-sm text-tk-green">{exportMessage}</p>{/if}
     </div>
 
-    <div class="tk-danger-zone rounded-[18px] p-5">
+    <div class="tk-danger-zone rounded-[14px] p-5">
       <div class="flex items-start gap-3">
-        <WarningCircleIcon size={20} class="mt-0.5 shrink-0" weight="fill" />
+        <WarningCircleIcon size={20} class="mt-0.5 shrink-0" weight="fill" aria-hidden="true" />
         <div>
           <p class="font-bold">Delete account</p>
-          <p class="tk-danger-muted mt-1 text-sm leading-6">Scheduling deletion immediately deactivates the account and revokes all device sessions. The backend permanently deletes account data after its configured grace period.</p>
+          <p class="tk-danger-muted mt-1 text-sm leading-6">Scheduling deletion immediately deactivates the account and revokes all device sessions. Your account data will be permanently deleted after the waiting period. The confirmation page will show the scheduled date.</p>
         </div>
       </div>
 
       {#if deleting}
         <div class="mt-5 rounded-[14px] border border-[var(--danger-border)] bg-[var(--surface-raised)] p-4 text-[var(--danger-text)]">
-          <p class="text-sm font-bold">Type DELETE MY ACCOUNT to continue.</p>
-          <Input class="mt-3 border-[var(--danger-border)]" bind:value={deletePhrase} autocomplete="off" />
-          <p class="tk-danger-muted mt-2 text-xs leading-5">Taskiller currently exposes no cancellation endpoint for a scheduled deletion, so only confirm when you intend to leave.</p>
+          <label for="delete-account-phrase" class="block text-sm font-bold">Type DELETE MY ACCOUNT to continue.</label>
+          <Input id="delete-account-phrase" name="delete-account-phrase" class="mt-3 border-[var(--danger-border)]" bind:value={deletePhrase} autocomplete="off" />
+          <p class="tk-danger-muted mt-2 text-xs leading-5">You cannot cancel scheduled deletion in Taskiller. Export any data you want to keep before continuing.</p>
           <div class="mt-4 flex gap-2">
-            <Button variant="ghost" size="sm" onclick={() => { deleting = false; deletePhrase = ''; }}>Cancel</Button>
+            <Button variant="ghost" size="sm" disabled={deletion.isPending} onclick={() => { deleting = false; deletePhrase = ''; }}>Cancel</Button>
             <Button variant="danger" size="sm" disabled={deletePhrase !== 'DELETE MY ACCOUNT' || deletion.isPending} onclick={confirmDeletion}>
-              <TrashIcon size={15} /> {deletion.isPending ? 'Scheduling…' : 'Schedule deletion'}
+              <TrashIcon size={15} aria-hidden="true" /> {deletion.isPending ? 'Scheduling…' : 'Schedule deletion'}
             </Button>
           </div>
         </div>
       {:else}
-        <Button class="mt-5" variant="danger" size="sm" disabled={profile.isPending || !profile.data?.etag} onclick={beginDeletion}><TrashIcon size={15} /> Delete account</Button>
+        <Button class="mt-5" variant="danger" size="sm" disabled={profile.isPending || !profile.data?.etag} onclick={beginDeletion}><TrashIcon size={15} aria-hidden="true" /> Delete account</Button>
       {/if}
     </div>
   </div>
 
-  {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+  {#if profile.isError}<p class="mt-4 text-sm" role="alert">Could not load account details. Deletion is unavailable until they load.</p><Button variant="secondary" onclick={() => profile.refetch()}>Retry account details</Button>{/if}
+  {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
 </section>

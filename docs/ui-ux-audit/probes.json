@@ -1,0 +1,60 @@
+[
+  {
+    "probe": "intermediate-width",
+    "width": 768,
+    "layout": {
+      "settings": false,
+      "overflow": []
+    }
+  },
+  {
+    "probe": "intermediate-width",
+    "width": 1024,
+    "layout": {
+      "settings": false,
+      "overflow": []
+    }
+  },
+  {
+    "probe": "intermediate-width",
+    "width": 1280,
+    "layout": {
+      "settings": true,
+      "overflow": []
+    }
+  },
+  {
+    "probe": "work-type-initial-focus",
+    "inside": false
+  },
+  {
+    "probe": "work-type-tab-focus",
+    "inside": false
+  },
+  {
+    "probe": "projects-refresh-tab",
+    "selected": "Projects"
+  },
+  {
+    "probe": "create-project-link",
+    "selected": "Sprints"
+  },
+  {
+    "probe": "resume-paused-timer",
+    "before": "23:00\nremaining in the current segment",
+    "after": "23:00\nremaining in the current segment",
+    "state": "running"
+  },
+  {
+    "probe": "reduced-motion",
+    "animations": [
+      "1e-05s",
+      "1e-05s",
+      "1e-05s"
+    ]
+  },
+  {
+    "probe": "zoom-equivalent-640",
+    "scrollWidth": 640
+  }
+]

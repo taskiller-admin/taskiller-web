@@ -33,10 +33,10 @@
   <div class="mb-1.5 flex items-center justify-between gap-3">
     <span class="block text-xs font-bold text-tk-graphite">{label}</span>
     <button type="button" onclick={() => (manageOpen = true)}
-      class="rounded-lg px-2 py-1 text-[11px] font-bold text-tk-strike hover:bg-[var(--surface-subtle)]"
+      class="rounded-lg px-2 py-1 text-[11px] font-bold text-[var(--accent-ink)] hover:bg-[var(--surface-subtle)]"
       aria-label="Create or manage Work Types">+ Create / manage types</button>
   </div>
-  <Select bind:value aria-label={label}>
+  <Select bind:value aria-label={label} disabled={types.isPending}>
     <option value="">No Work Type selected</option>
     {#if systemTypes.length}
       <optgroup label="Built-in">
@@ -53,13 +53,14 @@
       </optgroup>
     {/if}
   </Select>
-  {#if !compact}
+  {#if compact && !types.isPending && !types.isError && !value}<p class="mt-2 text-sm text-[var(--muted)]">{help}</p>{/if}
+  {#if types.isPending}
+    <p class="mt-2 text-sm text-[var(--muted)]" role="status">Loading available Work Types…</p>
+  {:else if types.isError}
+    <p class="mt-2 text-sm" role="alert">Work Types could not be loaded. <button type="button" class="underline" onclick={() => types.refetch()}>Retry</button></p>
+  {:else if !compact}
     <p class="mt-1.5 text-[11px] leading-5 text-tk-graphite">
-      {#if types.isPending}
-        Loading available Work Types…
-      {:else if types.isError}
-        Work Types could not be loaded. You can still save the item and try again later.
-      {:else if selected}
+      {#if selected}
         {selected.description || `${selected.displayName} characteristics will be used as defaults.`}
       {:else}
         {help}

@@ -10,6 +10,7 @@ coverage
 .DS_Store
 playwright-report
 test-results
+test-results-*
 __pycache__/
 apply.py
 apply_*.py

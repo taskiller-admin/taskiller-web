@@ -17,7 +17,7 @@
     Math.max(0, Math.round(((session.endedAt ? Date.parse(session.endedAt) : Date.now()) - Date.parse(session.sessionStartedAt)) / 1000))
   );
   const stateTone = $derived(
-    session.state === 'completed' ? 'bg-emerald-50 text-emerald-700' : session.state === 'abandoned' ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-700'
+    session.state === 'completed' ? 'bg-emerald-50 text-emerald-700' : session.state === 'abandoned' ? 'bg-[var(--warning-bg)] text-amber-800' : 'bg-blue-50 text-blue-700'
   );
 </script>
 
@@ -27,8 +27,8 @@
       <span class={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${stateTone}`}>{session.state}</span>
       <span class="text-xs text-tk-graphite">{formatShortDate(session.sessionStartedAt)}</span>
     </div>
-    <a href={`/work/${session.workItemId}`} class="mt-2 block truncate text-[15px] font-bold hover:text-tk-blue">
-      {work.data?.item.name || 'Loading work item…'}
+    <a href={`/work/${session.workItemId}`} class="mt-2 block break-words text-[15px] font-bold hover:text-tk-blue">
+      {work.data?.item.name || (work.isError ? 'Work item unavailable' : 'Loading work item…')}
     </a>
     <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-tk-graphite">
       <span>{session.planSnapshot.segments.length} planned segments</span>
@@ -36,5 +36,5 @@
       {#if session.planSnapshot.strategy}<span>{session.planSnapshot.strategy}</span>{/if}
     </div>
   </div>
-  <a href={`/session/${session.id}`} class="inline-flex h-10 items-center justify-center gap-1 rounded-[12px] border border-[var(--border)] bg-white px-3 text-sm font-bold hover:bg-[#f4f4f0]">Open session <ArrowRightIcon size={15} /></a>
+  <a href={`/session/${session.id}`} class="inline-flex min-h-11 items-center justify-center gap-1 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-bold hover:bg-[var(--surface-subtle)]">Open session <ArrowRightIcon size={15} aria-hidden="true" /></a>
 </div>

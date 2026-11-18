@@ -1,7 +1,6 @@
 <script lang="ts">
   import CaretUpIcon from 'phosphor-svelte/lib/CaretUpIcon';
   import CaretDownIcon from 'phosphor-svelte/lib/CaretDownIcon';
-  import ArrowUpRightIcon from 'phosphor-svelte/lib/ArrowUpRightIcon';
   import type { WorkItem } from '$lib/api/work';
   import Button from '$lib/components/ui/Button.svelte';
   import KindMark from './KindMark.svelte';
@@ -37,8 +36,8 @@
   <a href={`/work/${item.id}`} class="flex min-w-0 items-center gap-3 rounded-[12px] py-1.5 pl-2">
     {#if showKind}<KindMark kind={item.kind} />{/if}
     <div class="min-w-0 flex-1">
-      <div class="flex min-w-0 items-center gap-2.5">
-        <span class="truncate font-semibold text-tk-ink transition-transform duration-180 group-hover:translate-x-0.5">{item.name}</span>
+      <div class="flex min-w-0 flex-wrap items-center gap-2.5">
+        <span class="min-w-0 [overflow-wrap:anywhere] font-semibold text-[var(--foreground)] transition-transform duration-180 group-hover:translate-x-0.5">{item.name}</span>
         <StatusBadge status={item.status} />
       </div>
       <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-tk-graphite">
@@ -54,18 +53,12 @@
     {#if showExport}<ExportWorkButton workId={item.id} label={`Export ${item.name}`} compact />{/if}
     {#if onmoveup || onmovedown}
       <Button size="icon" variant="ghost" disabled={!canMoveUp} aria-label={`Move ${item.name} up`} onclick={onmoveup}>
-        <CaretUpIcon size={16} weight="bold" />
+        <CaretUpIcon size={16} weight="bold" aria-hidden="true" />
       </Button>
       <Button size="icon" variant="ghost" disabled={!canMoveDown} aria-label={`Move ${item.name} down`} onclick={onmovedown}>
-        <CaretDownIcon size={16} weight="bold" />
+        <CaretDownIcon size={16} weight="bold" aria-hidden="true" />
       </Button>
     {/if}
-    <a
-      class="grid size-9 place-items-center rounded-[11px] text-tk-graphite opacity-55 transition-[opacity,background-color,color,transform] duration-180 hover:bg-[var(--surface-strong)] hover:text-tk-ink group-hover:translate-x-0.5 group-hover:opacity-100"
-      href={`/work/${item.id}`}
-      aria-label={`Open ${item.name}`}
-    >
-      <ArrowUpRightIcon size={17} />
-    </a>
+
   </div>
 </div>

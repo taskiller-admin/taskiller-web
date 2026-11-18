@@ -8,6 +8,7 @@ export const queryKeys = {
   },
   work: {
     all: ['work'] as const,
+    search: ['work', 'search'] as const,
     list: (filters: Record<string, unknown> = {}) => ['work', 'list', filters] as const,
     chores: ['work', 'chores'] as const,
     inbox: ['work', 'inbox'] as const,

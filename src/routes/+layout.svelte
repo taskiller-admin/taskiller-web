@@ -3,7 +3,6 @@
   import { onMount } from 'svelte';
   import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
   import UpdateAvailable from '$lib/components/pwa/UpdateAvailable.svelte';
-  import AmbientBackground from '$lib/components/layout/AmbientBackground.svelte';
   import { initConnectivity } from '$lib/pwa/connectivity';
   import { initInstallPrompt } from '$lib/pwa/install';
   import { initTheme } from '$lib/theme/theme';
@@ -25,9 +24,12 @@
   });
 
   onMount(() => {
+    const clearPrivateData = () => queryClient.clear();
+    window.addEventListener('taskiller:auth-cleared', clearPrivateData);
     initTheme();
     initConnectivity();
     initInstallPrompt();
+    return () => window.removeEventListener('taskiller:auth-cleared', clearPrivateData);
   });
 </script>
 
@@ -42,8 +44,6 @@
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
 </svelte:head>
-
-<AmbientBackground />
 
 <div class="relative z-[1] min-h-screen">
   <QueryClientProvider client={queryClient}>

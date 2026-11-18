@@ -12,7 +12,7 @@
       ? 'Shaped by your history'
       : provenance === 'preference_informed'
         ? 'Shaped by your preferences'
-        : 'Bootstrap recommendation'
+        : 'Starting recommendation'
   );
 
   function labelName(label: components['schemas']['RecommendationReasonLabel']) {
@@ -20,7 +20,7 @@
   }
 </script>
 
-<section class="rounded-[20px] border border-[var(--border)] bg-white/76 p-5 sm:p-6">
+<section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Why this plan</p>
@@ -31,10 +31,10 @@
 
   <div class="mt-5 space-y-3">
     {#each reasons as reason}
-      <div class="rounded-[15px] bg-[#f1f1ed] px-4 py-3.5">
+      <div class="rounded-[15px] bg-[var(--surface-raised)] px-4 py-3.5">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-bold text-tk-ink">{labelName(reason.label)}</span>
-          <span class="tk-mono text-[10px] text-tk-graphite">{reason.code}</span>
+          <span class="text-xs font-bold text-[var(--foreground)]">{labelName(reason.label)}</span>
+
         </div>
         <p class="mt-1.5 text-sm leading-6 text-tk-graphite">{reason.message}</p>
       </div>

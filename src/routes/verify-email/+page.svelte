@@ -37,23 +37,24 @@
 <div class="grid min-h-screen place-items-center px-5 py-12">
   <div class="w-full max-w-md">
     <a href="/" aria-label="Taskiller home"><Logo class="h-7 w-auto" /></a>
-    <div class="mt-10 rounded-[24px] border border-[var(--border)] bg-white/82 p-6 sm:p-7">
+    <div class="mt-10 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-7">
       {#if verified}
-        <div class="grid size-11 place-items-center rounded-[14px] bg-tk-green/10 text-[#237754]"><CheckCircleIcon size={22} weight="fill" /></div>
+        <div class="grid size-11 place-items-center rounded-[14px] bg-tk-green/10 text-[var(--foreground)]"><CheckCircleIcon size={22} weight="fill" aria-hidden="true" /></div>
         <h1 class="tk-display mt-5 text-3xl font-extrabold">Email verified</h1>
-        <p class="mt-3 text-sm leading-6 text-tk-graphite">Your address is confirmed. You can return to Taskiller.</p>
+        <p role="status" class="mt-3 text-sm leading-6 text-[var(--muted)]">Your address is confirmed. You can return to Taskiller.</p>
         <a class="mt-6 inline-flex text-sm font-bold text-tk-blue" href="/today">Open Taskiller →</a>
       {:else}
-        <div class="grid size-11 place-items-center rounded-[14px] bg-tk-blue/10 text-[#3654c9]"><EnvelopeOpenIcon size={21} /></div>
+        <div class="grid size-11 place-items-center rounded-[14px] bg-tk-blue/10 text-[var(--foreground)]"><EnvelopeOpenIcon size={21} aria-hidden="true" /></div>
         <h1 class="tk-display mt-5 text-3xl font-extrabold">Verify your email</h1>
         {#if !page.url.searchParams.get('token')}
-          <p class="mt-3 text-sm leading-6 text-tk-graphite">Paste the verification token from your email.</p>
-          <Input class="mt-5" bind:value={token} minlength="20" maxlength="512" />
+          <p class="mt-3 text-sm leading-6 text-[var(--muted)]">Paste the verification token from your email.</p>
+          <label for="verification-token" class="mt-5 block text-sm font-semibold">Verification token</label>
+          <Input id="verification-token" name="verification-token" class="mt-2" bind:value={token} minlength="20" maxlength="512" />
         {:else}
-          <p class="mt-3 text-sm leading-6 text-tk-graphite">{busy ? 'Confirming your verification link…' : 'Ready to verify this address.'}</p>
+          <p class="mt-3 text-sm leading-6 text-[var(--muted)]">{busy ? 'Confirming your verification link…' : 'Ready to verify this address.'}</p>
         {/if}
         <Button class="mt-5 w-full" disabled={busy || !token.trim()} onclick={confirm}>{busy ? 'Verifying…' : 'Verify email'}</Button>
-        {#if error}<p class="mt-4 text-sm text-red-700" role="alert">{error}</p>{/if}
+        {#if error}<p class="mt-4 text-sm text-[var(--danger-text)]" role="alert">{error}</p>{/if}
       {/if}
     </div>
   </div>

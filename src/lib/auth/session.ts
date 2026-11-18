@@ -52,6 +52,7 @@ export function updateAuthenticatedUser(user: User) {
 
 export function clearAuth() {
   setAccessToken(null);
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('taskiller:auth-cleared'));
   state.set({ status: 'anonymous', user: null });
 }
 

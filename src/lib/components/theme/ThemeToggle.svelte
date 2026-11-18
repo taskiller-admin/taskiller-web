@@ -18,8 +18,8 @@
 <button
   type="button"
   class={cn(
-    'inline-flex h-10 items-center gap-2 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-bold text-tk-graphite transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-px hover:border-[var(--border-strong)] hover:text-tk-ink active:translate-y-0 active:scale-[0.98]',
-    compact && 'size-10 justify-center px-0',
+    'inline-flex h-11 items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-bold text-[var(--muted)] transition-[background-color,color,border-color] duration-150 hover:border-[var(--border-strong)] hover:text-[var(--foreground)]',
+    compact && 'size-11 justify-center px-0',
     className
   )}
   aria-label={`Appearance: ${label}. Switch theme`}

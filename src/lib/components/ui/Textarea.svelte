@@ -21,7 +21,7 @@
   maxlength={maxlength === undefined ? undefined : Number(maxlength)}
   minlength={minlength === undefined ? undefined : Number(minlength)}
   class={cn(
-    'min-h-28 w-full resize-y rounded-[13px] border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-3 text-[15px] leading-6 text-tk-ink transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-tk-graphite/60 hover:border-[var(--border-strong)] focus:border-tk-strike/55 focus:shadow-[0_0_0_4px_rgb(255_99_63/0.08)]',
+    'min-h-28 w-full resize-y rounded-[10px] border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-3 text-base leading-6 text-[var(--foreground)] transition-[border-color,background-color] duration-150 placeholder:text-[var(--muted)] hover:border-[var(--border-strong)] focus:border-[var(--focus-ring)]',
     className
   )}
   {...rest}

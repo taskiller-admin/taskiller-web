@@ -36,10 +36,10 @@
       <div class="pb-5">
         <p class="text-sm font-semibold text-white/85">{labels[event.type]}</p>
         {#if event.segmentIndex !== null}
-          <p class="mt-0.5 text-xs text-white/38">Segment {event.segmentIndex + 1}</p>
+          <p class="mt-0.5 text-xs text-white/75">Segment {event.segmentIndex + 1}</p>
         {/if}
       </div>
-      <time class="tk-mono pt-0.5 text-[11px] text-white/32" datetime={event.occurredAt}>{eventTime(event.occurredAt)}</time>
+      <time class="tk-mono pt-0.5 text-[11px] text-white/75" datetime={event.occurredAt}>{eventTime(event.occurredAt)}</time>
     </div>
   {/each}
 </div>

@@ -14,6 +14,7 @@
     index,
     total,
     linkedOptions = [],
+    disabled = false,
     onpatch,
     onremove,
     onmove
@@ -22,6 +23,7 @@
     index: number;
     total: number;
     linkedOptions?: WorkItem[];
+    disabled?: boolean;
     onpatch: (patch: Partial<FocusPlanSegmentInput>) => void;
     onremove: () => void;
     onmove: (direction: -1 | 1) => void;
@@ -54,7 +56,7 @@
   }
 </script>
 
-<div class="rounded-[18px] border border-[var(--border)] bg-white/82 p-4 shadow-[0_8px_24px_rgb(20_20_20/0.035)]">
+<fieldset {disabled} aria-label={`Segment ${index + 1}`} class="min-w-0 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_8px_24px_rgb(20_20_20/0.035)]">
   <div class="flex items-start gap-3">
     <div class="tk-mono mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-tk-ink text-[11px] font-bold text-white">
       {index + 1}
@@ -66,9 +68,9 @@
           <p class="mt-0.5 text-xs text-tk-graphite">{durationSummary}</p>
         </div>
         <div class="flex items-center gap-1">
-          <Button size="icon" variant="ghost" aria-label="Move segment up" disabled={index === 0} onclick={() => onmove(-1)}><ArrowUpIcon size={16} /></Button>
-          <Button size="icon" variant="ghost" aria-label="Move segment down" disabled={index === total - 1} onclick={() => onmove(1)}><ArrowDownIcon size={16} /></Button>
-          <Button size="icon" variant="ghost" aria-label="Remove segment" onclick={onremove}><TrashIcon size={16} /></Button>
+          <Button size="icon" variant="ghost" aria-label="Move segment up" disabled={disabled || index === 0} onclick={() => onmove(-1)}><ArrowUpIcon size={16} aria-hidden="true" /></Button>
+          <Button size="icon" variant="ghost" aria-label="Move segment down" disabled={disabled || index === total - 1} onclick={() => onmove(1)}><ArrowDownIcon size={16} aria-hidden="true" /></Button>
+          <Button size="icon" variant="ghost" disabled={disabled} aria-label="Remove segment" onclick={onremove}><TrashIcon size={16} aria-hidden="true" /></Button>
         </div>
       </div>
 
@@ -121,10 +123,10 @@
         {/if}
       </div>
 
-      <label class="mt-3 flex cursor-pointer items-center gap-2 text-sm text-tk-graphite">
+      <label class="mt-3 min-h-11 flex cursor-pointer items-center gap-2 text-sm text-tk-graphite">
         <input type="checkbox" checked={segment.optional ?? false} onchange={(event) => onpatch({ optional: event.currentTarget.checked })} />
         Optional segment
       </label>
     </div>
   </div>
-</div>
+</fieldset>

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { protectUnsaved } from '$lib/actions/unsaved';
+  import WorkTypeSelect from '$lib/components/work/WorkTypeSelect.svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -29,7 +31,7 @@
     type RecommendationStrategy
   } from '$lib/api/focus';
   import { getActiveSession, OpenSessionConflictError, startExecutionSession } from '$lib/api/execution';
-  import { getProjectNextAction, getWorkItem, getWorkItemTree, flattenWorkTree, type WorkItem } from '$lib/api/work';
+  import { updateWorkItem, getProjectNextAction, getWorkItem, getWorkItemTree, flattenWorkTree, type WorkItem } from '$lib/api/work';
   import { queryKeys } from '$lib/api/query-keys';
   import { problemMessage } from '$lib/api/problem';
   import { formatDuration, kindLabel } from '$lib/utils';
@@ -45,11 +47,38 @@
   let loadedPlanId = $state<string | null>(null);
   let loadedPlanEtag = $state<string | null>(null);
   let loadedRecommendationId = $state<string | null>(null);
-  let busy = $state<'recommend' | 'save' | 'start' | 'load' | null>(null);
+  let busy = $state<'recommend' | 'save' | 'start' | 'load' | 'prerequisite' | null>(null);
   let errorMessage = $state('');
   let notice = $state('');
   let conflict = $state(false);
   let openSession = $state<{ id: string; workItemId: string } | null>(null);
+
+  let selectedWorkType = $state('');
+  let baseline = $state(JSON.stringify(['Focus plan', []]));
+  const draft = $derived(JSON.stringify([planName, segments]));
+  const dirty = $derived(draft !== baseline || selectedWorkType !== '');
+  protectUnsaved(() => dirty);
+
+  function canReplace() {
+    return !busy && (!dirty || confirm('Replace your unsaved Focus Plan changes?'));
+  }
+
+  async function saveWorkType() {
+    if (busy || !selectedWorkType || !detail.data?.etag) return;
+    resetMessages();
+    busy = 'prerequisite';
+    try {
+      const saved = await updateWorkItem(id, { workTypeId: selectedWorkType }, detail.data.etag);
+      queryClient.setQueryData(queryKeys.work.detail(id), saved);
+      selectedWorkType = '';
+      await queryClient.invalidateQueries({ queryKey: queryKeys.work.all });
+      notice = 'Work Type saved. You can now generate a plan.';
+    } catch (error) {
+      errorMessage = problemMessage(error, 'Couldn’t save the Work Type. Reload the work item and try again.');
+    } finally {
+      busy = null;
+    }
+  }
 
   const detail = createQuery(() => ({
     queryKey: queryKeys.work.detail(id),
@@ -137,6 +166,7 @@
   }
 
   function startScratch() {
+    if (!canReplace()) return;
     resetMessages();
     recommendation = null;
     loadedPlanId = null;
@@ -157,7 +187,7 @@
   }
 
   async function generateRecommendation() {
-    if (!item || item.kind === 'project') return;
+    if (!item || item.kind === 'project' || !canReplace()) return;
     resetMessages();
     busy = 'recommend';
     try {
@@ -182,6 +212,7 @@
   }
 
   async function loadPlan(plan: FocusPlan) {
+    if (!canReplace()) return;
     resetMessages();
     busy = 'load';
     try {
@@ -192,7 +223,8 @@
       loadedRecommendationId = loaded.plan.recommendationId;
       planName = loaded.plan.name;
       segments = editableSegments(loaded.plan);
-      notice = 'Saved plan loaded. Changes will use optimistic concurrency.';
+      baseline = JSON.stringify([planName, segments]);
+      notice = 'Saved plan loaded.';
     } catch (error) {
       errorMessage = problemMessage(error, 'Couldn’t load the Focus Plan.');
     } finally {
@@ -253,6 +285,8 @@
         loadedPlanEtag = result.etag;
         loadedRecommendationId = result.plan.recommendationId;
         segments = editableSegments(result.plan);
+        planName = result.plan.name;
+        baseline = JSON.stringify([planName, segments]);
         notice = 'Focus Plan updated.';
         await queryClient.invalidateQueries({ queryKey: queryKeys.focus.plans(id) });
         return { id: result.plan.id, recommendationId: result.plan.recommendationId };
@@ -270,13 +304,15 @@
       loadedPlanEtag = result.etag;
       loadedRecommendationId = result.plan.recommendationId;
       segments = editableSegments(result.plan);
+      planName = result.plan.name;
+      baseline = JSON.stringify([planName, segments]);
       notice = 'Focus Plan saved.';
       await queryClient.invalidateQueries({ queryKey: queryKeys.focus.plans(id) });
       return { id: result.plan.id, recommendationId: result.plan.recommendationId };
     } catch (error) {
       if (error instanceof FocusPlanConflictError) {
         conflict = true;
-        errorMessage = 'This plan changed elsewhere. Your draft is still here; reload the saved plan before overwriting it.';
+        errorMessage = 'This plan changed elsewhere. Your draft is still here. Refresh saved plans, then choose a plan to reload or keep editing this draft.';
       } else {
         errorMessage = problemMessage(error, 'Couldn’t save the Focus Plan.');
       }
@@ -326,28 +362,28 @@
 
 <svelte:head><title>Plan & Start — Taskiller</title></svelte:head>
 
-<div class="mx-auto max-w-[1280px] px-5 py-7 sm:px-8 lg:px-12 lg:py-10">
-  <a href={`/work/${id}`} class="inline-flex items-center gap-1.5 text-sm font-bold text-tk-graphite hover:text-tk-ink"><ArrowLeftIcon size={15} /> Work item</a>
+<div class="tk-page mx-auto max-w-[1280px] px-5 pb-48 pt-7 sm:px-8 lg:px-12 xl:pb-10">
+  <a href={`/work/${id}`} class="inline-flex items-center gap-1.5 text-sm font-bold text-tk-graphite hover:text-[var(--foreground)]"><ArrowLeftIcon size={15} aria-hidden="true" /> Work item</a>
 
   {#if detail.isPending}
-    <div class="mt-8 h-80 animate-pulse rounded-[24px] bg-black/[0.045]"></div>
+    <div class="mt-8 h-80 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>
   {:else if detail.isError || !item}
-    <div class="mt-8 rounded-[20px] border border-red-200 bg-red-50 p-6 text-red-800">Couldn’t load this work item.</div>
+    <div role="alert" class="mt-8 rounded-[14px] border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-[var(--danger-text)]">Couldn’t load this work item. <button class="underline" onclick={() => detail.refetch()}>Try again</button></div>
   {:else if item.kind === 'project'}
     <section class="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div class="rounded-[26px] bg-tk-ink p-7 text-white sm:p-9">
-        <p class="text-xs font-bold uppercase tracking-[0.14em] text-white/45">Project handoff</p>
-        <h1 class="tk-display mt-3 text-4xl font-extrabold sm:text-5xl">Projects don’t run. Their next action does.</h1>
-        <p class="mt-5 max-w-2xl text-base leading-7 text-white/60">Taskiller keeps Projects as containers. Plan & Start should target the executable Sprint or Chore selected by the backend.</p>
+        <p class="text-xs font-bold uppercase tracking-[0.14em] text-white/75">Project handoff</p>
+        <h1 class="tk-display mt-3 text-3xl font-extrabold sm:text-4xl">Projects don’t run. Their next action does.</h1>
+        <p class="mt-5 max-w-2xl text-base leading-7 text-white/75">Taskiller keeps Projects as containers. Choose the next Sprint or Chore to plan its work.</p>
       </div>
-      <div class="rounded-[22px] border border-[var(--border)] bg-white/76 p-6">
-        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Server-selected next action</p>
+      <div class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-6">
+        <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Next action</p>
         {#if nextAction.isPending}
-          <div class="mt-5 h-20 animate-pulse rounded-[14px] bg-black/[0.05]"></div>
+          <div class="mt-5 h-20 animate-pulse rounded-[14px] bg-[var(--surface-subtle)]"></div>
         {:else if nextAction.data?.nextAction}
           <h2 class="mt-4 text-xl font-bold">{nextAction.data.nextAction.name}</h2>
           <p class="mt-1 text-sm text-tk-graphite">{kindLabel(nextAction.data.nextAction.kind)} · {nextAction.data.nextAction.status.replaceAll('_', ' ')}</p>
-          <a href={`/work/${nextAction.data.nextAction.id}/plan`} class="mt-5 inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" /></a>
+          <a href={`/work/${nextAction.data.nextAction.id}/plan`} class="mt-5 inline-flex h-11 items-center gap-2 rounded-[13px] bg-tk-strike px-4 text-sm font-bold text-[#1a1512]">Plan & Start <LightningIcon size={16} weight="fill" aria-hidden="true" /></a>
         {:else}
           <p class="mt-4 text-sm leading-6 text-tk-graphite">This Project has no executable next action yet. Add or ready a Sprint/Chore first.</p>
         {/if}
@@ -357,7 +393,7 @@
     <header class="mt-6 flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border)] pb-7">
       <div>
         <div class="mb-2 flex items-center gap-2"><Badge>{kindLabel(item.kind)}</Badge><span class="text-xs text-tk-graphite">{item.status.replaceAll('_', ' ')}</span></div>
-        <h1 class="tk-display text-4xl font-extrabold sm:text-5xl">Plan & Start</h1>
+        <h1 class="tk-display text-3xl font-extrabold sm:text-4xl">Plan & Start</h1>
         <p class="mt-2 max-w-2xl text-base leading-7 text-tk-graphite">{item.name}</p>
       </div>
       {#if active.data?.session}
@@ -366,19 +402,24 @@
     </header>
 
     {#if errorMessage}
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        <span class="flex items-center gap-2"><WarningCircleIcon size={18} /> {errorMessage}</span>
+      <div role="alert" class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger-text)]">
+        <span class="flex items-center gap-2"><WarningCircleIcon size={18} aria-hidden="true" /> {errorMessage}</span>
         {#if openSession}<a class="font-bold underline" href={`/session/${openSession.id}`}>Resume session</a>{/if}
         {#if conflict && loadedPlanId}<button class="font-bold underline" onclick={() => plans.refetch()}>Refresh saved plans</button>{/if}
       </div>
     {:else if notice}
-      <div class="mt-5 rounded-[16px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>
+      <div role="status" class="mt-5 rounded-[16px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>
     {/if}
 
     {#if item.kind === 'chore' && !recommendationContextReady}
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-3 text-sm text-[var(--warning-text)]">
         <span>Generated plans need a Work Type or complete characteristic overrides for this Chore.</span>
-        <a class="font-bold underline underline-offset-4" href={`/work/${id}#work-details`}>Set Work Type</a>
+        <div class="w-full max-w-lg">
+          <fieldset disabled={busy !== null}>
+            <WorkTypeSelect bind:value={selectedWorkType} label="Work Type" help="Choose the kind of work to tailor this plan." />
+            <Button class="mt-3" disabled={busy !== null || !selectedWorkType || !detail.data?.etag} onclick={saveWorkType}>Save Work Type</Button>
+          </fieldset>
+        </div>
       </div>
     {:else if item.kind === 'sprint'}
       <div class="mt-5 rounded-[16px] border border-[var(--border)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-tk-graphite">
@@ -388,9 +429,9 @@
 
     <div class="mt-7 grid gap-7 xl:grid-cols-[330px_minmax(0,1fr)_300px]">
       <aside class="space-y-5">
-        <section class="rounded-[20px] border border-[var(--border)] bg-white/76 p-5">
-          <div class="flex items-center gap-2"><MagicWandIcon size={18} class="text-tk-strike" weight="fill" /><h2 class="font-bold">Recommendation</h2></div>
-          <p class="mt-2 text-sm leading-6 text-tk-graphite">Ask the backend to shape a plan from task characteristics, preferences, and eligible personal history.</p>
+        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div class="flex items-center gap-2"><MagicWandIcon size={18} class="text-tk-strike" weight="fill" aria-hidden="true" /><h2 class="font-bold">Recommendation</h2></div>
+          <p class="mt-2 text-sm leading-6 text-tk-graphite">Build a starting plan from this work, your preferences, and past sessions.</p>
           <label class="mt-5 block text-xs font-bold text-tk-graphite">Strategy
             <Select bind:value={strategy}>
               <option value="auto">Auto</option><option value="continuous">Continuous</option><option value="structured">Structured</option><option value="flexible">Flexible</option>
@@ -400,22 +441,23 @@
             <Input type="number" min="5" max="720" placeholder="Optional" bind:value={availableMinutes} />
           </label>
           <Button class="mt-4 w-full" disabled={busy !== null || !recommendationContextReady} onclick={generateRecommendation}>
-            {#if busy === 'recommend'}<SpinnerGapIcon size={17} class="animate-spin" />{:else}<MagicWandIcon size={17} />{/if}
+            {#if busy === 'recommend'}<SpinnerGapIcon size={17} class="animate-spin" aria-hidden="true" />{:else}<MagicWandIcon size={17} aria-hidden="true" />{/if}
             Generate plan
           </Button>
           <Button class="mt-2 w-full" variant="secondary" disabled={busy !== null} onclick={startScratch}>Start from scratch</Button>
         </section>
 
-        <section class="rounded-[20px] border border-[var(--border)] bg-white/76 p-5">
+        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5">
           <div class="flex items-center justify-between"><h2 class="font-bold">Saved plans</h2><span class="text-xs text-tk-graphite">{plans.data?.items.length ?? 0}</span></div>
           <div class="mt-3 space-y-2">
             {#if plans.isPending}
-              <div class="h-16 animate-pulse rounded-[13px] bg-black/[0.05]"></div>
+              <div class="h-16 animate-pulse rounded-[13px] bg-[var(--surface-subtle)]"></div>
+            {:else if plans.isError}<p role="alert" class="text-sm">Couldn’t load saved plans. <button class="underline" onclick={() => plans.refetch()}>Try again</button></p>
             {:else if plans.data?.items.length}
               {#each plans.data.items as saved}
-                <button onclick={() => loadPlan(saved)} class="w-full rounded-[13px] border border-transparent bg-[#f1f1ed] px-3.5 py-3 text-left hover:border-[var(--border-strong)] hover:bg-white">
+                <button disabled={busy !== null} onclick={() => loadPlan(saved)} class="w-full rounded-[13px] border border-transparent bg-[var(--surface-raised)] px-3.5 py-3 text-left hover:border-[var(--border-strong)] hover:bg-[var(--surface)]">
                   <p class="truncate text-sm font-bold">{saved.name}</p>
-                  <p class="mt-1 text-xs text-tk-graphite">{saved.segments.length} segments · v{saved.version}</p>
+                  <p class="mt-1 text-xs text-tk-graphite">{saved.segments.length} segments</p>
                 </button>
               {/each}
             {:else}
@@ -425,12 +467,12 @@
         </section>
       </aside>
 
-      <main class="min-w-0">
-        <section class="rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
+      <div class="min-w-0 xl:order-none {segments.length ? 'order-first' : ''}">
+        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-[220px] flex-1">
               <label for="focus-plan-name" class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Plan name</label>
-              <Input id="focus-plan-name" class="mt-1.5" bind:value={planName} placeholder="Focus plan" />
+              <Input disabled={busy !== null} id="focus-plan-name" class="mt-1.5" bind:value={planName} placeholder="Focus plan" />
             </div>
             <div class="rounded-[14px] bg-[var(--surface-subtle)] px-4 py-3 text-right">
               <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-tk-graphite">Target time</p>
@@ -438,11 +480,27 @@
             </div>
           </div>
 
+        {#if segments.length}
+          <section aria-label="Focus Plan actions" class="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-40 rounded-[16px] border border-white/15 bg-[#111214] p-3 text-white shadow-lg xl:static xl:mt-5 xl:p-4">
+          <p class="mb-2 text-xs text-white/75">Save & start opens your session. Save only keeps this plan for later.</p>
+          <div class="grid grid-cols-2 gap-2">
+          <Button class="w-full" variant="dark" disabled={busy !== null || !segments.length} onclick={saveAndStart}>
+            {#if busy === 'start' || busy === 'save'}<SpinnerGapIcon size={17} class="animate-spin" aria-hidden="true" />{:else}<LightningIcon size={17} weight="fill" aria-hidden="true" />{/if}
+            Save & start
+          </Button>
+          <Button class="w-full border-white/15 text-white hover:bg-white/10" variant="ghost" disabled={busy !== null || !segments.length} onclick={savePlan}>
+            <FloppyDiskIcon size={17} aria-hidden="true" /> Save only
+          </Button>
+          </div>
+          </section>
+          {/if}
+
           {#if segments.length}
             <div class="mt-5 space-y-3">
               {#each segments as segment, index}
                 <SegmentEditor
                   {segment}
+                  disabled={busy !== null}
                   {index}
                   total={segments.length}
                   linkedOptions={linkedChores}
@@ -453,35 +511,22 @@
               {/each}
             </div>
           {:else}
-            <div class="mt-5 rounded-[18px] border border-dashed border-[var(--border-strong)] bg-[var(--surface-subtle)]/55 px-6 py-12 text-center">
+            <div class="mt-5 rounded-[14px] border border-dashed border-[var(--border-strong)] bg-[var(--surface-subtle)]/55 px-6 py-12 text-center">
               <p class="text-lg font-bold">No plan on the table yet.</p>
               <p class="mt-2 text-sm text-tk-graphite">Generate a recommendation or start from scratch.</p>
             </div>
           {/if}
 
-          <Button class="mt-4" variant="secondary" onclick={addSegment}><PlusIcon size={16} /> Add segment</Button>
+          <Button class="mt-4" variant="secondary" disabled={busy !== null} onclick={addSegment}><PlusIcon size={16} aria-hidden="true" /> Add segment</Button>
         </section>
 
         {#if recommendation}
           <div class="mt-5"><RecommendationReasons reasons={recommendation.reasons} provenance={recommendation.provenance} /></div>
         {/if}
-      </main>
+      </div>
 
       <aside class="space-y-4">
-        <section class="rounded-[22px] bg-tk-ink p-6 text-white">
-          <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">Ready when you are</p>
-          <h2 class="tk-display mt-3 text-2xl font-bold">Save the plan, then enter execution.</h2>
-          <p class="mt-3 text-sm leading-6 text-white/55">Starting creates an immutable session snapshot. Editing this Focus Plan later won’t rewrite history.</p>
-          <Button class="mt-6 w-full" variant="dark" disabled={busy !== null || !segments.length} onclick={saveAndStart}>
-            {#if busy === 'start' || busy === 'save'}<SpinnerGapIcon size={17} class="animate-spin" />{:else}<LightningIcon size={17} weight="fill" />{/if}
-            Save & start
-          </Button>
-          <Button class="mt-2 w-full border-white/15 text-white hover:bg-white/10" variant="ghost" disabled={busy !== null || !segments.length} onclick={savePlan}>
-            <FloppyDiskIcon size={17} /> Save only
-          </Button>
-        </section>
-
-        <section class="rounded-[20px] border border-[var(--border)] bg-white/76 p-5 text-sm">
+        <section class="rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
           <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-tk-graphite">Context</p>
           <dl class="mt-4 space-y-3">
             <div class="flex justify-between gap-3"><dt class="text-tk-graphite">Task estimate</dt><dd class="tk-mono font-bold">{formatDuration(item.estimatedEffortSeconds)}</dd></div>
