@@ -3,6 +3,10 @@
   import Input from '$lib/components/ui/Input.svelte';
   import Select from '$lib/components/ui/Select.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
+  import { page } from '$app/state';
+  import { untrack } from 'svelte';
+  import ArrowClockwiseIcon from 'phosphor-svelte/lib/ArrowClockwiseIcon';
+  import AdminOverview from './AdminOverview.svelte';
   import AdminTable from './AdminTable.svelte';
   import AdminCommand from './AdminCommand.svelte';
   import AdminBulk from './AdminBulk.svelte';
@@ -15,7 +19,10 @@
 
   let { data }: { data: { section: string; id: string; kind?: string; staff: Staff; writesEnabled: boolean } } = $props();
   let tab = $state('account');
-  let status = $state('');
+  let status = $state(untrack(() => {
+    const state = page.url.searchParams.get('state') ?? '';
+    return data.section === 'operations' && ['dead', 'queued'].includes(state) ? state : '';
+  }));
   let verified = $state('');
   let search = $state('');
   let type = $state('');
@@ -26,10 +33,13 @@
   let windowEnd = $state(new Date().toISOString());
   let actorId = $state('');
   let targetId = $state('');
-  let outcome = $state('');
+  let outcome = $state(untrack(() => data.section === 'audit' && page.url.searchParams.get('outcome') === 'denied' ? 'denied' : ''));
   let from = $state('');
   let to = $state('');
-  let range = $state('30');
+  let range = $state(untrack(() => {
+    const days = page.url.searchParams.get('days') ?? '';
+    return data.section === 'operations' && ['7', '30', '90'].includes(days) ? days : '30';
+  }));
   let cursors = $state<string[]>([]);
   let selected = $state<string[]>([]);
   let revision = $state(0);
@@ -39,6 +49,7 @@
   let record = $state<Row>();
   let etag = $state<string>();
   let overview = $state<Overview>();
+  let overviewWindow = $state<{ start: string; end: string }>();
   let next = $state<string>();
   let busy = $state(true);
   let failure = $state('');
@@ -49,8 +60,6 @@
   const detailFields: [string, string][] = [...workFields, ['description', 'Description'], ['ownerId', 'Account'], ['parentId', 'Parent'], ['workItemId', 'Work item'], ['focusPlanId', 'Focus Plan'], ['priority', 'Priority'], ['estimatedEffortSeconds', 'Estimated seconds']];
   const fields = { users: userFields, jobs: jobFields, privacy: privacyFields, audit: auditFields,
     staff: staffFields, sessions: sessionFields, activity: activityFields, work: workFields };
-  const metrics: [keyof Overview, string][] = [['registrations', 'Registrations'], ['accountsWithExecutionActivity', 'Accounts with execution activity'],
-    ['completedExecutionSessions', 'Completed Execution Sessions'], ['queuedJobs', 'Queued jobs'], ['failedJobs', 'Failed jobs']];
   const can = (key: string) => data.staff.capabilities.some(capability => capability === key);
   let bulk = $derived(data.writesEnabled && can(c.suspend) ?
     (['suspend', 'reactivate', 'revoke-sessions'] as const).slice() : []);
@@ -62,7 +71,10 @@
   ];
 
   function reset() { cursors = []; selected = []; }
-  function refresh() { revision++; }
+  function refresh() {
+    if (section === 'overview') windowEnd = new Date().toISOString();
+    revision++;
+  }
   function done(message: string) { notice = message; refresh(); }
 
   $effect(() => {
@@ -71,11 +83,11 @@
     const id = data.id;
     const cursor = cursors.at(-1) ?? '';
     const query = search.trim();
-    const end = to && ['jobs', 'audit', 'privacy'].includes(view)
+    const end = to && ['users', 'jobs', 'audit', 'privacy'].includes(view)
       ? new Date(Math.min(Date.parse(to + 'T00:00:00Z') + 86_400_000, Date.parse(windowEnd))).toISOString()
       : windowEnd;
-    const days = view === 'overview' ? Number(range) : 30;
-    const start = from && ['jobs', 'audit', 'privacy'].includes(view) ? from + 'T00:00:00Z'
+    const days = view === 'overview' || view === 'jobs' ? Number(range) : 30;
+    const start = from && ['users', 'jobs', 'audit', 'privacy'].includes(view) ? from + 'T00:00:00Z'
       : new Date(Date.parse(end) - days * 86_400_000).toISOString();
     const filter = Object.fromEntries(Object.entries({
       start, end, cursor,
@@ -115,6 +127,7 @@
         if (view === 'overview') {
           if (!result.data || typeof result.data !== 'object') throw new Error('Invalid overview');
           overview = result.data as Overview;
+          overviewWindow = { start, end };
         } else if (view === 'account' || view === 'privacy-detail' || data.section === 'work') {
           const value = result.data as Row;
           if (value?.id !== id) throw new Error('Invalid record');
@@ -165,11 +178,27 @@
     if (selected.includes(id)) selected = selected.filter(value => value !== id);
     else if (selected.length < 25) selected = [...selected, id];
   }
+  function selectPage() {
+    const ids = rows.map(row => row.id).filter(rowId);
+    selected = [...new Set([...selected, ...ids])].slice(0, 25);
+  }
 </script>
 
-<header class="mb-7 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--border)] pb-5">
-  <h1 class="tk-display break-words text-3xl sm:text-4xl">{titles[data.section] ?? 'Administration'}</h1>
-  <Button variant="secondary" size="sm" onclick={refresh} disabled={busy || (section === 'work' && data.section === 'account' && !touched)}>Refresh</Button>
+<header class="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[var(--border)] pb-5">
+  <div>
+    <h1 class="tk-display break-words text-3xl sm:text-4xl">{titles[data.section] ?? 'Administration'}</h1>
+    {#if section === 'overview'}<p class="mt-2 text-sm text-[var(--muted)]">Registrations, Execution Sessions, and job activity.</p>{/if}
+  </div>
+  <div class="flex flex-wrap items-end gap-2">
+    {#if section === 'overview' && can(c.overview)}
+      <label class="block text-xs font-bold">Date range<Select class="mt-1" bind:value={range}>
+        <option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option>
+      </Select></label>
+    {/if}
+    <Button variant="secondary" size="sm" onclick={refresh} disabled={busy || (section === 'work' && data.section === 'account' && !touched)}>
+      <ArrowClockwiseIcon size={17} aria-hidden="true" />Refresh
+    </Button>
+  </div>
 </header>
 {#if notice}<p role="status" class="mb-4 text-tk-green">{notice}</p>{/if}
 {#if data.section === 'account'}
@@ -179,11 +208,7 @@
     {/each}
   </div>
 {/if}
-{#if section === 'overview' && can(c.overview)}
-  <label class="mb-5 block max-w-44 text-sm font-bold">Date range<Select class="mt-1" bind:value={range}>
-    <option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option>
-  </Select></label>
-{:else if section === 'users'}
+{#if section === 'users'}
   <div class="mb-4 grid items-end gap-3 sm:grid-cols-3">
     <label class="text-sm font-bold">Search users<Input class="mt-1" bind:value={search} oninput={reset} maxlength={200} placeholder="Name or email" autocomplete="off" /></label>
     <label class="text-sm font-bold">Account status<Select class="mt-1" bind:value={status} onchange={reset}>
@@ -193,8 +218,20 @@
       <option value="">Any</option><option value="true">Verified</option><option value="false">Unverified</option>
     </Select></label>
   </div>
+  <details class="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4">
+    <summary class="min-h-11 cursor-pointer py-3 text-sm font-semibold">Registration dates</summary>
+    <div class="grid gap-3 pb-4 sm:grid-cols-2">
+      <label class="text-sm font-bold">From (UTC)<Input class="mt-1" type="date" bind:value={from} onchange={reset} /></label>
+      <label class="text-sm font-bold">Through (UTC)<Input class="mt-1" type="date" bind:value={to} onchange={reset} /></label>
+    </div>
+  </details>
 {:else if ['audit', 'jobs', 'privacy'].includes(section)}
   <div class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    {#if section === 'jobs'}
+      <label class="text-sm font-bold">Default window<Select class="mt-1" bind:value={range} onchange={reset}>
+        <option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option>
+      </Select></label>
+    {/if}
     {#if section === 'audit'}
       <label class="text-sm font-bold">Actor ID<Input class="mt-1" bind:value={actorId} oninput={reset} maxlength={80} /></label>
       <label class="text-sm font-bold">Target ID<Input class="mt-1" bind:value={targetId} oninput={reset} maxlength={80} /></label>
@@ -207,7 +244,12 @@
         {#if section === 'jobs'}<option value="">All types</option>{/if}
         {#each section === 'jobs' ? ['auth_email', 'retention', 'data_export', 'account_delete'] : ['export', 'deletion'] as kind}<option value={kind}>{kind.replaceAll('_', ' ')}</option>{/each}
       </Select></label>
-      <label class="text-sm font-bold">Status<Input class="mt-1" bind:value={status} oninput={reset} maxlength={80} /></label>
+      <label class="text-sm font-bold">Status<Select class="mt-1" bind:value={status} onchange={reset}>
+        <option value="">All statuses</option>
+        {#each section === 'jobs' ? ['queued', 'running', 'completed', 'dead'] : ['queued', 'pending', 'scheduled', 'running', 'completed', 'failed', 'cancelled'] as state}
+          <option value={state}>{state === 'dead' ? 'Failed' : state}</option>
+        {/each}
+      </Select></label>
     {/if}
     <label class="text-sm font-bold">From (UTC)<Input class="mt-1" type="date" bind:value={from} onchange={reset} /></label>
     <label class="text-sm font-bold">Through (UTC)<Input class="mt-1" type="date" bind:value={to} onchange={reset} /></label>
@@ -219,7 +261,15 @@
     {#each [['project','Project'], ['sprint','Sprint'], ['chore','Chore'], ['work_type','Work Type'], ['focus_plan','Focus Plan'], ['execution_session','Execution Session']] as [kind, label]}<option value={kind}>{label}</option>{/each}
   </Select></label>
 {/if}
-{#if section === 'users' && bulk.length}<div class="mb-4"><AdminBulk ids={selected} operations={bulk} onDone={refresh} /></div>{/if}
+{#if section === 'users' && bulk.length}
+  <div class="mb-4 space-y-2">
+    <div class="flex flex-wrap gap-2">
+      <Button size="sm" variant="secondary" disabled={busy || !rows.length || selected.length >= 25 || rows.every(row => selected.includes(row.id))} onclick={selectPage}>Select this page</Button>
+      <Button size="sm" variant="ghost" disabled={!selected.length} onclick={() => { selected = []; }}>Clear selection</Button>
+    </div>
+    <AdminBulk ids={selected} operations={bulk} onDone={refresh} />
+  </div>
+{/if}
 {#if busy}
   <p class="tk-panel flex items-center gap-2 p-6" role="status"><Spinner size={18} /> Loading records…</p>
 {:else if failure}
@@ -232,17 +282,8 @@
     {:else}<Button size="sm" onclick={refresh}>Try again</Button>{/if}
   </div>
 {:else if section === 'overview'}
-  {#if overview}
-    <dl class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {#each metrics.filter(([key]) => typeof overview?.[key] === 'number') as [key, label]}
-        <div class="tk-panel p-5"><dt class="text-sm font-bold text-[var(--muted)]">{label}</dt>
-          <dd class="mt-2 font-mono text-3xl font-bold">{formatField(key, overview[key])}</dd>
-          {#if key === 'registrations' && can(c.users)}<a href="/admin/users" class="mt-3 inline-block text-sm font-bold text-[var(--accent-ink)]">Open directory</a>{/if}
-          {#if ['queuedJobs', 'failedJobs'].includes(key) && can(c.jobs)}<a href="/admin/operations" class="mt-3 inline-block text-sm font-bold text-[var(--accent-ink)]">Open operations</a>{/if}
-        </div>
-      {/each}
-    </dl>
-    <p class="mt-5 text-sm text-[var(--muted)]">Updated {formatField('asOfAt', overview.observedAt)} · Last worker signal {formatField('workerObservedAt', overview.latestWorkerSignalAt)}</p>
+  {#if overview && overviewWindow}
+    <AdminOverview totals={overview} start={overviewWindow.start} end={overviewWindow.end} grants={data.staff.capabilities} />
   {:else}<p class="tk-panel p-6">Choose a section from the admin navigation.</p>{/if}
 {:else if record}
   <section class="tk-panel p-5">

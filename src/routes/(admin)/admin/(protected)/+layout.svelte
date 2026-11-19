@@ -7,6 +7,13 @@
   import Logo from '$lib/components/brand/Logo.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import ThemeToggle from '$lib/components/theme/ThemeToggle.svelte';
+  import Avatar from '$lib/components/ui/Avatar.svelte';
+  import ChartBarIcon from 'phosphor-svelte/lib/ChartBarIcon';
+  import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon';
+  import QueueIcon from 'phosphor-svelte/lib/QueueIcon';
+  import LockKeyIcon from 'phosphor-svelte/lib/LockKeyIcon';
+  import ListChecksIcon from 'phosphor-svelte/lib/ListChecksIcon';
+  import ShieldCheckIcon from 'phosphor-svelte/lib/ShieldCheckIcon';
   import { adminMessage, adminRequest } from '$lib/api/admin/client';
   import { navItems, validStaff } from '$lib/api/admin/contract';
   let { data, children }: { data: LayoutData; children: Snippet } = $props();
@@ -15,6 +22,10 @@
   let message = $state('');
   let idleDeadline = $state<number>();
   let checking = false;
+  const icons = {
+    '': ChartBarIcon, users: UsersThreeIcon, operations: QueueIcon,
+    privacy: LockKeyIcon, audit: ListChecksIcon, staff: ShieldCheckIcon
+  };
 
   function access(event: Event) {
     if ((event as CustomEvent<number>).detail === 401) {
@@ -78,21 +89,27 @@
 
 <svelte:window onfocus={check} onpageshow={event => { if (event.persisted) { hidden = true; void check(); } }} />
 <a href="#admin-content" class="tk-skip-link">Skip to content</a>
-<div class="min-h-dvh lg:grid lg:grid-cols-[13rem_minmax(0,1fr)]">
-  <aside class="bg-[#152b49] p-5 text-white lg:sticky lg:top-0 lg:h-dvh">
+<div class="min-h-dvh bg-[var(--background)] lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
+  <aside class="bg-[#152b49] p-5 text-white lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto">
     <a href="/admin" aria-label="Taskiller Administration"><Logo inverse class="h-6 w-auto" /></a>
     <p class="my-5 text-xs font-bold uppercase tracking-[.16em] text-[#bfd2ec]">Administration</p>
-    <nav aria-label="Admin navigation" class="flex flex-wrap gap-1 lg:flex-col" data-sveltekit-preload-data="off">
+    <nav aria-label="Admin navigation" class="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1" data-sveltekit-preload-data="off">
       {#each navItems.filter(item => data.staff.capabilities.includes(item.capability)) as item}
         {@const href = item.path ? '/admin/' + item.path : '/admin'}
         {@const selected = page.url.pathname === href || (item.path !== '' && page.url.pathname.startsWith(href + '/'))}
-        <a {href} aria-current={selected ? 'page' : undefined} class="rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10" class:active-link={selected}>{item.label}</a>
+        {@const Icon = icons[item.path as keyof typeof icons]}
+        <a {href} aria-current={selected ? 'page' : undefined} class="flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-[#d6e3f5] transition-colors hover:bg-white/10 sm:px-3" class:active-link={selected}>
+          <Icon size={18} class="shrink-0" aria-hidden="true" />{item.label}
+        </a>
       {/each}
     </nav>
   </aside>
   <div class="min-w-0">
     <header class="flex flex-wrap items-center justify-end gap-3 border-b border-[var(--border)] bg-[var(--surface)] p-4">
-      <span class="mr-auto break-all text-sm font-bold">{data.staff.displayName}</span>
+      <div class="mr-auto flex min-w-0 items-center gap-2">
+        <Avatar seed={data.staff.staffId} size={32} />
+        <span class="break-words text-sm font-bold">{data.staff.displayName}</span>
+      </div>
       <ThemeToggle compact />
       <Button size="sm" variant="secondary" loading={leaving} onclick={logout}>Sign out</Button>
     </header>
@@ -104,5 +121,5 @@
 </div>
 
 <style>
-  .active-link { background: #ffffff1a; }
+  .active-link { background: #2a4467; color: #fff; }
 </style>

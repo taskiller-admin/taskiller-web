@@ -1,12 +1,13 @@
 import { createServer } from 'node:http';
 
 const id = '11111111-1111-4111-8111-111111111111';
-const staff = { staffId: id, displayName: 'Test Operator', capabilities: ['view_users', 'manage_accounts', 'view_overview'],
+const staff = { staffId: id, displayName: 'Test Operator', capabilities: ['view_users', 'manage_accounts', 'view_overview', 'view_jobs', 'view_audit'],
   expiresAt: '2099-01-01T00:00:00Z', idleExpiresAt: '2099-01-01T00:00:00Z' };
 const user = { id, displayName: 'Sample User', email: 'sample@example.invalid', lifecycle: 'active', emailVerified: true, createdAt: '2026-11-01T00:00:00Z' };
 
 createServer(async (req, res) => {
-  const path = new URL(req.url, 'http://localhost').pathname.replace('/api/v1/admin/', '');
+  const url = new URL(req.url, 'http://localhost');
+  const path = url.pathname.replace('/api/v1/admin/', '');
   const cookies = req.headers.cookie ?? '';
   const reply = (status, data, headers = {}) => {
     res.writeHead(status, { 'content-type': 'application/json', ...headers });
@@ -53,6 +54,15 @@ createServer(async (req, res) => {
     return reply(req.headers['if-match'] && req.headers['idempotency-key'] && body.reason?.comment ? 412 : 422,
       { code: 'conflict', title: 'Account changed' });
   }
-  if (path === 'overview') return reply(200, { registrations: 1, completedExecutionSessions: 0 });
+  if (path === 'overview') {
+    const start = Date.parse(url.searchParams.get('start'));
+    const end = Date.parse(url.searchParams.get('end'));
+    const days = Math.round((end - start) / 86_400_000);
+    return reply(200, {
+      registrations: days * 2, completedExecutionSessions: days * 3, accountsWithExecutionActivity: days,
+      queuedJobs: 4, failedJobs: 1, observedAt: new Date().toISOString()
+    });
+  }
+  if (path === 'jobs' || path === 'audit') return reply(200, { items: [], nextCursor: null });
   return reply(403, { title: 'Staff capability required' });
 }).listen(4188, '127.0.0.1');

@@ -21,9 +21,15 @@
       </thead>
       <tbody>
         {#each rows as row}
-          <tr class="border-t border-[var(--border)] align-top">
+          <tr class="border-t border-[var(--border)] align-top transition-colors hover:bg-[var(--surface-subtle)]">
             {#if toggle}<td class="p-3"><input type="checkbox" aria-label={'Select ' + (row.email ?? row.id)} checked={selected?.includes(row.id)} disabled={!rowId(row.id) || (!selected?.includes(row.id) && (selected?.length ?? 0) >= 25)} onchange={() => toggle?.(row.id)} /></td>{/if}
-            {#each fields as [key]}<td class="max-w-xs whitespace-pre-wrap break-words p-3">{formatField(key, row[key])}</td>{/each}
+            {#each fields as [key]}
+              <td class="max-w-xs whitespace-pre-wrap break-words p-3">
+                {#if ['state', 'lifecycle', 'outcome'].includes(key) && typeof row[key] === 'string'}
+                  <span class="inline-flex rounded-md bg-[var(--surface-strong)] px-2 py-1 text-xs font-bold capitalize">{formatField(key, row[key]).replaceAll('_', ' ').replace(/^dead$/, 'failed')}</span>
+                {:else}{formatField(key, row[key])}{/if}
+              </td>
+            {/each}
             {#if link || actions}
               <td class="p-3"><div class="flex min-w-24 flex-wrap items-center gap-2">
                 {#if link && rowId(row.id)}<a class="font-bold text-[var(--accent-ink)] underline underline-offset-4" href={link(row)}>View details</a>{/if}
