@@ -244,12 +244,15 @@
         {#if section === 'jobs'}<option value="">All types</option>{/if}
         {#each section === 'jobs' ? ['auth_email', 'retention', 'data_export', 'account_delete'] : ['export', 'deletion'] as kind}<option value={kind}>{kind.replaceAll('_', ' ')}</option>{/each}
       </Select></label>
-      <label class="text-sm font-bold">Status<Select class="mt-1" bind:value={status} onchange={reset}>
-        <option value="">All statuses</option>
-        {#each section === 'jobs' ? ['queued', 'running', 'completed', 'dead'] : ['queued', 'pending', 'scheduled', 'running', 'completed', 'failed', 'cancelled'] as state}
-          <option value={state}>{state === 'dead' ? 'Failed' : state}</option>
-        {/each}
-      </Select></label>
+      <div>
+        <label class="block text-sm font-bold" for="admin-list-status">Status</label>
+        <Select id="admin-list-status" class="mt-1" bind:value={status} onchange={reset}>
+          <option value="">All statuses</option>
+          {#each section === 'jobs' ? ['queued', 'running', 'completed', 'dead'] : ['queued', 'pending', 'scheduled', 'running', 'completed', 'failed', 'cancelled'] as state}
+            <option value={state}>{state === 'dead' ? 'Failed' : state}</option>
+          {/each}
+        </Select>
+      </div>
     {/if}
     <label class="text-sm font-bold">From (UTC)<Input class="mt-1" type="date" bind:value={from} onchange={reset} /></label>
     <label class="text-sm font-bold">Through (UTC)<Input class="mt-1" type="date" bind:value={to} onchange={reset} /></label>
