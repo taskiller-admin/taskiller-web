@@ -9,6 +9,7 @@
 
   let { enabled, enroll = false }: { enabled: boolean; enroll?: boolean } = $props();
   let token = $state('');
+  let linkToken = $state('');
   let username = $state('');
   let password = $state('');
   let challengeId = $state('');
@@ -22,7 +23,7 @@
   onMount(() => {
     if (!enroll) return;
     const url = new URL(location.href);
-    token = url.searchParams.get('token') ?? new URLSearchParams(url.hash.slice(1)).get('token') ?? '';
+    linkToken = url.searchParams.get('token') ?? new URLSearchParams(url.hash.slice(1)).get('token') ?? '';
     if (url.search || url.hash) replaceState(url.pathname, {});
   });
 
@@ -39,11 +40,12 @@
     try {
       if (!challengeId) {
         const { data } = await adminRequest<{ challengeId: string; secret?: string }>(enroll ? 'auth/enroll' : 'auth/login', {
-          method: 'POST', body: enroll ? { invitationToken: token, password } : { username, password }
+          method: 'POST', body: enroll ? { invitationToken: linkToken || token, password } : { username, password }
         });
         if (!data?.challengeId || (enroll && !data.secret)) throw new Error('Invalid challenge');
         password = '';
         token = '';
+        linkToken = '';
         challengeId = data.challengeId;
         setupKey = data.secret ?? '';
       } else {
@@ -80,7 +82,12 @@
       <form class="mt-6 space-y-4" onsubmit={submit} aria-busy={pending}>
         {#if !challengeId}
           {#if enroll}
-            <label class="block text-sm font-semibold">Invitation code<Input class="mt-2" type="password" bind:value={token} required autocomplete="off" /></label>
+            {#if linkToken}
+              <p role="status" class="text-sm font-semibold">Invitation ready.</p>
+              <Button variant="ghost" disabled={pending} onclick={() => { linkToken = ''; }}>Enter a different invitation code</Button>
+            {:else}
+              <label class="block text-sm font-semibold">Invitation code<Input class="mt-2" type="password" bind:value={token} required maxlength={200} autocomplete="off" /></label>
+            {/if}
           {:else}
             <label class="block text-sm font-semibold">Staff username<Input class="mt-2" bind:value={username} required autocomplete="username" /></label>
           {/if}
