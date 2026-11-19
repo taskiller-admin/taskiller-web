@@ -11,7 +11,7 @@ The web console is at `/admin`. Use the existing Vercel and Django deployments. 
 
 Configure the same browser origin in Django's staff origin and CSRF allowlists. Enroll the first Owner through the backend operator command before enabling access. Keep preview deployments disabled unless explicitly configured with a staging backend. Roll back by disabling writes, then access if needed.
 
-The relay uses `taskiller_staff`, `taskiller_staff_csrf`, and `taskiller_staff_challenge`. These cookies are scoped to the console and are distinct from product credentials. The service worker bypasses admin navigations and admin data. Staff invitations are returned once to the creating staff member for secure delivery. Invitation URLs put the token in the fragment.
+The relay uses `taskiller_staff`, `taskiller_staff_csrf`, and `taskiller_staff_challenge`. These cookies are scoped to the console and are distinct from product credentials. The service worker bypasses admin navigations and admin data. Staff invitation codes are displayed once. The recipient pastes the code into `/admin/enroll`.
 
 `openapi/admin.json` contains the admin operations and their referenced definitions from Django's canonical contract. Run `npm run api:admin:update` to refresh the snapshot and generated types. GitHub CI compares both snapshots against the canonical contract and verifies both generated files. Review permission names, cookie names, and command inputs when the backend changes.
 

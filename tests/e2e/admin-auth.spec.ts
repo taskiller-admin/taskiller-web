@@ -14,10 +14,9 @@ test('admin relay rejects unknown routes and cross-origin writes', async ({ requ
   })).status()).toBe(403);
 });
 
-test('staff enrollment accepts an existing password and clears the invitation URL', async ({ page }) => {
-  await page.goto('/admin/enroll#token=fixture-invite');
-  await expect(page).toHaveURL(/\/admin\/enroll$/);
-  await expect(page.getByText('Invitation ready.', { exact: true })).toBeVisible();
+test('staff enrollment accepts a pasted invitation and an existing password', async ({ page }) => {
+  await page.goto('/admin/enroll');
+  await page.getByLabel('Invitation code').fill('fixture-invite');
   await page.getByLabel('Password', { exact: true }).fill('existing9');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByText('FIXTUREKEY', { exact: true })).toBeVisible();

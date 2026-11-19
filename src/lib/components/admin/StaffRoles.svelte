@@ -32,14 +32,14 @@
   <div class="flex flex-wrap gap-2">
     <AdminCommand command={{ label: 'Invite staff', description: 'Create an invitation for ' + email + ' with role ' + (role?.name ?? roleId) + '. ' + summary, path: 'staff/invitations', body: { username: username.trim(), email: email.trim(), roles: [roleId] }, disabled: !username.trim() || !role || !/^\S+@\S+\.\S+$/.test(email.trim()) }} onDone={(message, data) => {
       const token = (data as { invitationToken?: string } | undefined)?.invitationToken;
-      invitation = typeof token === 'string' ? location.origin + '/admin/enroll#token=' + encodeURIComponent(token) : '';
+      invitation = typeof token === 'string' ? token : '';
       if (!invitation) onDone(message);
     }} onConflict={refresh} />
     {#if target}<AdminCommand command={{ label: 'Replace staff roles', description: 'Assign only ' + (role?.name ?? roleId) + ' to ' + (target.displayName ?? target.id) + '. ' + summary, path: 'staff/' + target.id + '/roles', method: 'PATCH', body: { roles: [roleId] }, etag, disabled: !etag || !role, danger: true }} {onDone} onConflict={refresh} />{/if}
   </div>
   {#if invitation}
     <div class="space-y-2" role="status">
-      <p>Share this single-use invitation with the intended staff member through a secure channel.</p>
+      <p>Share this single-use code securely. The staff member enters it at <a class="underline" href="/admin/enroll">/admin/enroll</a>.</p>
       <output class="block select-all break-all rounded-lg bg-[var(--surface-subtle)] p-3">{invitation}</output>
       <button type="button" class="min-h-11 underline" onclick={() => { invitation = ''; refresh(); }}>Dismiss invitation</button>
     </div>
