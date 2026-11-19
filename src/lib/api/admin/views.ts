@@ -48,7 +48,7 @@ export function rowActions(section: string, row: Row, allowed: string[], writes:
     if (row.lifecycle === 'active') add(c.suspend, { label: 'Suspend account', path: path + '/suspend', description: 'Suspend ' + target + ' and revoke all active sessions.', etag: version, disabled: !version, danger: true });
     if (row.lifecycle === 'suspended') add(c.reactivate, { label: 'Reactivate account', path: path + '/reactivate', description: 'Restore access for ' + target + '. Revoked sessions stay revoked.', etag: version, disabled: !version });
     if (row.lifecycle === 'active') add(c.recovery, { label: 'Request recovery email', path: path + '/recovery-email', description: 'Queue a recovery email for ' + target + '.', queued: true });
-    for (const [kind, label] of [['export', 'Request data export'], ['deletion', 'Schedule account deletion']]) {
+    for (const [kind, label] of [['export', 'Request data export'], ['deletion', 'Schedule account deletion']] as const) {
       add(c.privacy, { label, path: path + '/privacy/' + kind, description: label + ' for ' + target + '.', etag: version, disabled: !version, danger: kind === 'deletion', queued: true });
     }
     add(c.revoke, { label: 'Revoke all sessions', path: path + '/revoke-sessions', description: 'Sign ' + target + ' out on all devices.', danger: true });

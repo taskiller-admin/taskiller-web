@@ -69,7 +69,7 @@ export async function relay(event: RequestEvent, path: string) {
   }
   let body: Uint8Array<ArrayBuffer> | undefined;
   if (method !== 'GET') {
-    if (event.request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return problem(415, 'invalid_content_type', 'Expected JSON');
+    if (event.request.headers.get('content-type')?.split(';')[0]?.trim() !== 'application/json') return problem(415, 'invalid_content_type', 'Expected JSON');
     const reader = event.request.body?.getReader();
     if (!reader) return problem(400, 'invalid_body', 'Missing request body');
     const buffer = new Uint8Array(limit);
@@ -92,7 +92,7 @@ export async function relay(event: RequestEvent, path: string) {
   try {
     const response = await upstream(event, path, method, body);
     if (response.status >= 300 && response.status < 400) return problem(502, 'admin_upstream_redirect', 'Admin service returned an unexpected redirect');
-    const type = response.headers.get('content-type')?.split(';')[0].trim();
+    const type = response.headers.get('content-type')?.split(';')[0]?.trim();
     if (response.body && type !== 'application/json' && type !== 'application/problem+json') {
       return problem(502, 'admin_upstream_response', 'Admin service returned an unexpected response');
     }
@@ -102,7 +102,7 @@ export async function relay(event: RequestEvent, path: string) {
       if (value) headers.set(name, value);
     }
     for (const cookie of response.headers.getSetCookie()) {
-      const [pair, ...attributes] = cookie.split(';');
+      const [pair = '', ...attributes] = cookie.split(';');
       const index = pair.indexOf('=');
       if (index < 1 || !cookieNames().includes(pair.slice(0, index))) continue;
       const expiry = attributes.map(value => value.trim()).filter(value => /^(expires|max-age)=/i.test(value));

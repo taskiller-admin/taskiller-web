@@ -51,9 +51,9 @@
     staff: staffFields, sessions: sessionFields, activity: activityFields, work: workFields };
   const metrics: [keyof Overview, string][] = [['registrations', 'Registrations'], ['accountsWithExecutionActivity', 'Accounts with execution activity'],
     ['completedExecutionSessions', 'Completed Execution Sessions'], ['queuedJobs', 'Queued jobs'], ['failedJobs', 'Failed jobs']];
-  const can = (key: string) => data.staff.capabilities.includes(key);
+  const can = (key: string) => data.staff.capabilities.some(capability => capability === key);
   let bulk = $derived(data.writesEnabled && can(c.suspend) ?
-    [['suspend', c.suspend], ['reactivate', c.reactivate], ['revoke-sessions', c.revoke]].filter(([, cap]) => can(cap)).map(([op]) => op) : []);
+    (['suspend', 'reactivate', 'revoke-sessions'] as const).slice() : []);
   const tabs = [
     { key: 'account', name: 'Account', cap: c.users },
     { key: 'sessions', name: 'Devices & sessions', cap: c.sessions },

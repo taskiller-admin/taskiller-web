@@ -7,7 +7,8 @@
   let { ids, operations, onDone }: { ids: string[]; operations: string[]; onDone: () => void } = $props();
   let operation = $state('');
   let reason = $state('');
-  let preview = $state<{ eligibleCount: number; count: number; results: { targetId: string; eligible: boolean; code?: string }[] }>();
+  type Preview = { eligibleCount: number; count: number; results: { targetId: string; eligible: boolean; code?: string }[] };
+  let preview = $state<Preview>();
   let previewTargets = $state<{ id: string; etag?: string }[]>([]);
   let signature = $state('');
   let outcomes = $state<{ targetId: string; outcome: string; code?: string }[]>([]);
@@ -24,7 +25,7 @@
         const { etag } = await adminRequest('users/' + id);
         return { id, etag };
       }));
-      const { data } = await adminRequest<typeof preview>('bulk/preview', {
+      const { data } = await adminRequest<Preview>('bulk/preview', {
         method: 'POST', body: { action: operation, targets, reason: { reasonCode: 'staff_console', comment: reason.trim() } }
       });
       if (!data || !Number.isInteger(data.eligibleCount) || !Array.isArray(data.results)) throw new Error('Invalid preview');
