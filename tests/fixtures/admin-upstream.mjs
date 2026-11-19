@@ -4,6 +4,13 @@ const id = '11111111-1111-4111-8111-111111111111';
 const staff = { staffId: id, displayName: 'Test Operator', capabilities: ['view_users', 'manage_accounts', 'view_overview', 'view_jobs', 'view_audit'],
   expiresAt: '2099-01-01T00:00:00Z', idleExpiresAt: '2099-01-01T00:00:00Z' };
 const user = { id, displayName: 'Sample User', email: 'sample@example.invalid', lifecycle: 'active', emailVerified: true, createdAt: '2026-11-01T00:00:00Z' };
+const users = [user, {
+  ...user, id: '22222222-2222-4222-8222-222222222222', displayName: 'Historical Verified',
+  email: 'history-verified@example.invalid', createdAt: '2025-01-01T00:00:00Z'
+}, {
+  ...user, id: '33333333-3333-4333-8333-333333333333', displayName: 'Historical Unverified',
+  email: 'history-unverified@example.invalid', emailVerified: false, createdAt: '2024-01-01T00:00:00Z'
+}];
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -47,8 +54,18 @@ createServer(async (req, res) => {
   }
   if (path === 'auth/logout') return reply(204, null, { 'set-cookie': 'taskiller_staff=; Max-Age=0; Path=/api/v1/admin' });
   if (path === 'me') return reply(200, staff);
-  if (path === 'users/search') return reply(200, { items: body.query === user.email ? [user] : [], nextCursor: null });
-  if (path === 'users') return reply(200, { items: [user], nextCursor: null });
+  if (path === 'users' || path === 'users/search') {
+    const { query, start, end, verified, lifecycle, cursor } = path === 'users/search' ? body : Object.fromEntries(url.searchParams);
+    const matching = users.filter(row => {
+      const created = Date.parse(row.createdAt);
+      return (!query || row.email === query || row.displayName.toLowerCase().startsWith(query.toLowerCase()))
+        && (!start || created >= Date.parse(start)) && (!end || created < Date.parse(end))
+        && (verified === undefined || row.emailVerified === (verified === true || verified === 'true'))
+        && (!lifecycle || row.lifecycle === lifecycle);
+    });
+    const offset = cursor ? Number(cursor) : 0;
+    return reply(200, { items: matching.slice(offset, offset + 1), nextCursor: offset + 1 < matching.length ? String(offset + 1) : null });
+  }
   if (path === 'users/' + id) return reply(200, user, { etag: '"user:fixture:1"' });
   if (path === 'users/' + id + '/suspend') {
     return reply(req.headers['if-match'] && req.headers['idempotency-key'] && body.reason?.comment ? 412 : 422,

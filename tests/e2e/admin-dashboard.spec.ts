@@ -1,5 +1,52 @@
 import { expect, test } from '@playwright/test';
 
+for (const mode of ['listing', 'search'] as const) {
+  test(`Users ${mode} includes historical accounts and keeps optional filters across pages`, async ({ page }) => {
+    await page.context().addCookies([{ name: 'taskiller_staff', value: 'fixture-session', url: 'http://127.0.0.1:4173/admin' }]);
+    const directoryRequest = (search: boolean) => page.waitForRequest(request =>
+      new URL(request.url()).pathname === (search ? '/admin/api/users/search' : '/admin/api/users'));
+    const search = mode === 'search';
+    const query = search ? { query: 'Historical' } : {};
+    async function filters(action: () => Promise<unknown>, isSearch = search) {
+      const [request] = await Promise.all([directoryRequest(isSearch), action()]);
+      return isSearch ? request.postDataJSON() : Object.fromEntries(new URL(request.url()).searchParams);
+    }
+
+    expect(await filters(() => page.goto('/admin/users'), false)).toEqual({});
+    await expect(page.getByText('Sample User', { exact: true })).toBeVisible();
+    if (search) {
+      expect(await filters(() => page.getByLabel('Search users').fill('Historical'))).toEqual(query);
+      await expect(page.getByText('Historical Verified', { exact: true })).toBeVisible();
+    }
+    const nextPage = page.getByRole('button', { name: 'Next page' });
+    expect(await filters(() => nextPage.click())).toEqual({ ...query, cursor: '1' });
+    await expect(page.getByText(search ? 'Historical Unverified' : 'Historical Verified', { exact: true })).toBeVisible();
+    expect(await filters(() => page.getByRole('button', { name: 'Previous page' }).click())).toEqual(query);
+
+    await nextPage.click();
+    await expect(page.getByText(search ? 'Historical Unverified' : 'Historical Verified', { exact: true })).toBeVisible();
+    const verification = page.getByLabel('Email verification');
+    expect(await filters(() => verification.selectOption('false'))).toEqual({ ...query, verified: search ? false : 'false' });
+    await expect(page.getByText('Historical Unverified', { exact: true })).toBeVisible();
+    expect(await filters(() => verification.selectOption('true'))).toEqual({ ...query, verified: search ? true : 'true' });
+    await expect(page.getByText(search ? 'Historical Verified' : 'Sample User', { exact: true })).toBeVisible();
+    expect(await filters(() => verification.selectOption(''))).toEqual(query);
+
+    await page.getByText('All registration dates', { exact: true }).click();
+    const from = page.getByLabel('From (UTC)');
+    const before = page.getByLabel('Before (UTC)');
+    const start = '2024-01-01T00:00:00Z';
+    const end = '2025-01-01T00:00:00Z';
+    expect(await filters(() => from.fill('2024-01-01'))).toEqual({ ...query, start });
+    expect(await filters(() => nextPage.click())).toEqual({ ...query, start, cursor: '1' });
+    expect(await filters(() => before.fill('2025-01-01'))).toEqual({ ...query, start, end });
+    await expect(page.getByText('Historical Unverified', { exact: true })).toBeVisible();
+    await expect(nextPage).toBeHidden();
+    expect(await filters(() => from.fill(''))).toEqual({ ...query, end });
+    expect(await filters(() => before.fill(''))).toEqual(query);
+  });
+}
+
 test('overview charts use real backend windows and preserve job drill-down filters', async ({ page }) => {
   await page.context().addCookies([{ name: 'taskiller_staff', value: 'fixture-session', url: 'http://127.0.0.1:4173/admin' }]);
   await page.goto('/admin');

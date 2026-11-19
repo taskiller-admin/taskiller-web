@@ -1037,9 +1037,15 @@ export interface components {
             cursor?: string;
             /** @default 25 */
             limit: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Optional inclusive registration timestamp. Omit to include accounts of any age; no 90-day limit.
+             */
             start?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Optional exclusive registration timestamp; defaults to request time and is preserved by the cursor.
+             */
             end?: string;
             query?: string;
             /** @enum {string} */

@@ -83,12 +83,16 @@
     const id = data.id;
     const cursor = cursors.at(-1) ?? '';
     const query = search.trim();
-    const end = to && ['users', 'jobs', 'audit', 'privacy'].includes(view)
-      ? new Date(Math.min(Date.parse(to + 'T00:00:00Z') + 86_400_000, Date.parse(windowEnd))).toISOString()
-      : windowEnd;
-    const days = view === 'overview' || view === 'jobs' ? Number(range) : 30;
-    const start = from && ['users', 'jobs', 'audit', 'privacy'].includes(view) ? from + 'T00:00:00Z'
-      : new Date(Date.parse(end) - days * 86_400_000).toISOString();
+    let start = from ? from + 'T00:00:00Z' : '';
+    let end = to ? to + 'T00:00:00Z' : '';
+    if (view !== 'users') {
+      const customWindow = ['jobs', 'audit', 'privacy'].includes(view);
+      end = end && customWindow
+        ? new Date(Math.min(Date.parse(end) + 86_400_000, Date.parse(windowEnd))).toISOString()
+        : windowEnd;
+      const days = view === 'overview' || view === 'jobs' ? Number(range) : 30;
+      if (!start || !customWindow) start = new Date(Date.parse(end) - days * 86_400_000).toISOString();
+    }
     const filter = Object.fromEntries(Object.entries({
       start, end, cursor,
       ...(view === 'users' ? { lifecycle: status, verified } : {}),
@@ -121,7 +125,10 @@
         const searchRequest = view === 'users' && query !== '';
         if (searchRequest && query.length < 3) { failure = 'Enter at least three characters to search.'; return; }
         const result = await adminRequest<Overview | Page | Row>(searchRequest ? 'users/search' : resource + (params.size ? '?' + params : ''), {
-          signal: controller.signal, ...(searchRequest ? { method: 'POST' as const, body: { ...filter, query } } : {})
+          signal: controller.signal,
+          ...(searchRequest ? { method: 'POST' as const, body: {
+            ...filter, query, ...(filter.verified === undefined ? {} : { verified: filter.verified === 'true' })
+          } } : {})
         });
         if (controller.signal.aborted) return;
         if (view === 'overview') {
@@ -215,14 +222,14 @@
       <option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="pending_deletion">Pending deletion</option>
     </Select></label>
     <label class="text-sm font-bold">Email verification<Select class="mt-1" bind:value={verified} onchange={reset}>
-      <option value="">Any</option><option value="true">Verified</option><option value="false">Unverified</option>
+      <option value="">All</option><option value="true">Verified</option><option value="false">Unverified</option>
     </Select></label>
   </div>
   <details class="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4">
-    <summary class="min-h-11 cursor-pointer py-3 text-sm font-semibold">Registration dates</summary>
+    <summary class="min-h-11 cursor-pointer py-3 text-sm font-semibold">{from || to ? 'Registration dates filtered' : 'All registration dates'}</summary>
     <div class="grid gap-3 pb-4 sm:grid-cols-2">
       <label class="text-sm font-bold">From (UTC)<Input class="mt-1" type="date" bind:value={from} onchange={reset} /></label>
-      <label class="text-sm font-bold">Through (UTC)<Input class="mt-1" type="date" bind:value={to} onchange={reset} /></label>
+      <label class="text-sm font-bold">Before (UTC)<Input class="mt-1" type="date" bind:value={to} onchange={reset} /></label>
     </div>
   </details>
 {:else if ['audit', 'jobs', 'privacy'].includes(section)}
