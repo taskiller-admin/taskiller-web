@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { adminOpenapi } from './admin-openapi.mjs';
 
 async function loadEnvFile() {
   if (!existsSync('.env')) return;
@@ -35,6 +36,17 @@ const response = await fetch(url, { headers: { Accept: 'application/json' } });
 if (!response.ok) throw new Error(`OpenAPI fetch failed: ${response.status} ${response.statusText}`);
 
 const spec = await response.text();
-JSON.parse(spec);
-await writeFile('openapi/taskiller.json', `${spec.trim()}\n`);
-console.log(`Synced ${url} -> openapi/taskiller.json`);
+const source = JSON.parse(spec);
+const admin = process.argv.includes('--admin');
+const path = admin ? 'openapi/admin.json' : 'openapi/taskiller.json';
+if (admin) {
+  await writeFile(path, JSON.stringify(adminOpenapi(source), null, 2) + '\n');
+} else {
+  if (Object.keys(source.paths).some(path => path.startsWith('/api/v1/admin/'))) {
+    for (const path of Object.keys(source.paths)) if (path.startsWith('/api/v1/admin/')) delete source.paths[path];
+    for (const name of Object.keys(source.components?.schemas ?? {})) if (name.startsWith('Admin')) delete source.components.schemas[name];
+    delete source.components?.securitySchemes?.staffCookie;
+    await writeFile(path, JSON.stringify(source, null, 2) + '\n');
+  } else await writeFile(path, `${spec.trim()}\n`);
+}
+console.log(`Synced ${url} -> ${path}`);

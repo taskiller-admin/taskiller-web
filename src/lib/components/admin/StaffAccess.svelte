@@ -84,7 +84,8 @@
           {:else}
             <label class="block text-sm font-semibold">Staff username<Input class="mt-2" bind:value={username} required autocomplete="username" /></label>
           {/if}
-          <label class="block text-sm font-semibold">{enroll ? 'New password' : 'Password'}<Input class="mt-2" type="password" bind:value={password} required autocomplete={enroll ? 'new-password' : 'current-password'} /></label>
+          <label class="block text-sm font-semibold">Password<Input class="mt-2" type="password" bind:value={password} required maxlength={1024} autocomplete="current-password" aria-describedby={enroll ? 'staff-password-help' : undefined} /></label>
+          {#if enroll}<p id="staff-password-help" class="text-sm text-[var(--muted)]">Use your existing Django staff password if you already have one. For a new staff account, choose a password of at least 12 characters.</p>{/if}
         {:else}
           {#if setupKey}<p>Add this key to your authenticator app.</p><output class="tk-panel block break-all p-4 font-mono">{setupKey}</output>{/if}
           <label class="block text-sm font-semibold">{recovery ? 'Recovery code' : 'Authenticator code'}<Input class="mt-2" bind:value={code} autocomplete="one-time-code" inputmode={recovery ? 'text' : 'numeric'} required /></label>

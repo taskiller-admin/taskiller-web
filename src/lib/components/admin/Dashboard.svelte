@@ -45,7 +45,7 @@
   let notice = $state('');
   let section = $derived(data.section === 'account' ? tab : data.section === 'operations' ? 'jobs' : data.section);
   const titles: Record<string, string> = { overview: 'Overview', users: 'Users', account: 'User account',
-    operations: 'Operations', privacy: 'Privacy requests', audit: 'Audit log', staff: 'Staff & roles', work: 'Work detail' };
+    operations: 'Operations', privacy: 'Privacy requests', 'privacy-detail': 'Privacy request', audit: 'Audit log', staff: 'Staff & roles', work: 'Work detail' };
   const detailFields: [string, string][] = [...workFields, ['description', 'Description'], ['ownerId', 'Account'], ['parentId', 'Parent'], ['workItemId', 'Work item'], ['focusPlanId', 'Focus Plan'], ['priority', 'Priority'], ['estimatedEffortSeconds', 'Estimated seconds']];
   const fields = { users: userFields, jobs: jobFields, privacy: privacyFields, audit: auditFields,
     staff: staffFields, sessions: sessionFields, activity: activityFields, work: workFields };
@@ -82,6 +82,7 @@
       ...(view === 'users' ? { lifecycle: status, verified } : {}),
       ...(view === 'jobs' ? { type, state: status } : {}),
       ...(view === 'privacy' ? { type: type || 'export', state: status } : {}),
+      ...(view === 'privacy-detail' ? { type: data.kind ?? '' } : {}),
       ...(view === 'audit' ? { actor: actorId, target: targetId, action: type, outcome } : {}),
       ...(view === 'work' ? { kind: data.section === 'work' ? data.kind || 'chore' : workKind } : {})
     }).filter(([, value]) => value !== ''));
@@ -104,7 +105,7 @@
         const resource = view === 'account' ? 'users/' + id :
           view === 'work' ? (data.section === 'work' ? 'work/' + id : 'users/' + id + '/work') :
           ['sessions', 'activity'].includes(view) ? 'users/' + id + '/' + view :
-          view === 'privacy' ? 'privacy/requests' : view;
+          view === 'privacy' ? 'privacy/requests' : view === 'privacy-detail' ? 'privacy/requests/' + id : view;
         const searchRequest = view === 'users' && query !== '';
         if (searchRequest && query.length < 3) { failure = 'Enter at least three characters to search.'; return; }
         const result = await adminRequest<Overview | Page | Row>(searchRequest ? 'users/search' : resource + (params.size ? '?' + params : ''), {
@@ -114,7 +115,7 @@
         if (view === 'overview') {
           if (!result.data || typeof result.data !== 'object') throw new Error('Invalid overview');
           overview = result.data as Overview;
-        } else if (view === 'account' || data.section === 'work') {
+        } else if (view === 'account' || view === 'privacy-detail' || data.section === 'work') {
           const value = result.data as Row;
           if (value?.id !== id) throw new Error('Invalid record');
           record = value; etag = result.etag;
@@ -246,7 +247,7 @@
 {:else if record}
   <section class="tk-panel p-5">
     <dl class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {#each section === 'account' ? userFields : detailFields.filter(([key]) => key in record!) as [key, label]}
+      {#each section === 'account' ? userFields : section === 'privacy-detail' ? privacyFields : detailFields.filter(([key]) => key in record!) as [key, label]}
         <div><dt class="text-sm font-bold text-[var(--muted)]">{label}</dt><dd class="mt-1 break-words">{formatField(key, record[key])}</dd></div>
       {/each}
     </dl>
@@ -255,7 +256,7 @@
         <AdminCommand {command} onDone={done} onConflict={refresh} />
       {/each}
     </div>
-    {#if section === 'work' && data.writesEnabled && can(c.correctWork)}
+    {#if section === 'work' && data.writesEnabled && can(c.correctWork) && can(c.suspend)}
       {#key record.id}<WorkCorrection row={record} {etag} onDone={done} {refresh} />{/key}
     {/if}
   </section>
@@ -267,7 +268,10 @@
 {:else}
   {#if section === 'staff' && data.writesEnabled && roles.length}<div class="mb-4"><StaffRoles {rows} {roles} onDone={done} {refresh} /></div>{/if}
   <AdminTable {rows} fields={fields[section as keyof typeof fields] ?? []} label={section === 'jobs' ? 'Background jobs' : section}
-    link={section === 'users' ? row => '/admin/users/' + row.id : section === 'work' ? row => '/admin/work/' + row.id + '?kind=' + encodeURIComponent(String(row.kind ?? workKind)) : undefined}
+    link={section === 'users' ? row => '/admin/users/' + row.id
+      : section === 'work' ? row => '/admin/work/' + row.id + '?kind=' + encodeURIComponent(String(row.kind ?? workKind))
+      : section === 'privacy' ? row => '/admin/privacy/' + row.id + '?type=' + encodeURIComponent(String(row.type))
+      : undefined}
     actions={['sessions', 'jobs', 'privacy', 'staff'].includes(section) && data.writesEnabled ?
       row => rowActions(section, row, data.staff.capabilities, data.writesEnabled, data.id) : undefined}
     {selected} toggle={section === 'users' && bulk.length ? toggle : undefined} onDone={done} {refresh} />

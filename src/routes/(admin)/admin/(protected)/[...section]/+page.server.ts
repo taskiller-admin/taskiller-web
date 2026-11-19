@@ -8,6 +8,13 @@ export const load: PageServerLoad = async event => {
   const path = event.params.section;
   const account = /^users\/([a-zA-Z0-9_-]{1,80})$/.exec(path);
   const work = /^work\/([a-zA-Z0-9_-]{1,80})$/.exec(path);
+  const privacyId = /^privacy\/([a-zA-Z0-9_-]{1,80})$/.exec(path)?.[1];
+  if (privacyId) {
+    if (!staff.capabilities.includes(capabilities.privacy)) error(403, 'You do not have access to this request');
+    const kind = event.url.searchParams.get('type');
+    if (kind !== 'export' && kind !== 'deletion') error(400, 'Select a privacy request type');
+    return { section: 'privacy-detail', id: privacyId, kind };
+  }
   if (account || work) {
     if (!staff.capabilities.includes(work ? capabilities.privateWork : capabilities.users)) error(403, 'You do not have access to this record');
     const id = (work ?? account)?.[1];

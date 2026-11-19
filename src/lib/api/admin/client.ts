@@ -23,7 +23,7 @@ export async function adminRequest<T>(path: string, options: {
   if (!response.ok) {
     const error = new AdminProblem(response.status, data?.code ?? 'admin_request_failed',
       data?.detail ?? data?.title ?? 'The admin request could not be completed.');
-    if ((response.status === 401 && !path.startsWith('auth/')) ||
+    if ((response.status === 401 && (!path.startsWith('auth/') || error.code === 'admin_auth_required' || error.code === 'staff_session_invalid')) ||
       (response.status === 403 && !path.startsWith('auth/') && !['admin_step_up_required', 'step_up_required'].includes(error.code))) {
       window.dispatchEvent(new CustomEvent('taskiller:admin-access', { detail: response.status }));
     }

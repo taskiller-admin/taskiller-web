@@ -17,7 +17,7 @@ export interface paths {
          * AccountCommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_suspend_create"];
+        post: operations["adminSuspendUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -37,7 +37,7 @@ export interface paths {
          * AccountCommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_reactivate_create"];
+        post: operations["adminReactivateUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -57,7 +57,7 @@ export interface paths {
          * AccountCommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_recovery_email_create"];
+        post: operations["adminRecoveryEmail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -77,7 +77,7 @@ export interface paths {
          * AccountCommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_revoke_sessions_create"];
+        post: operations["adminRevokeUserSessions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -97,7 +97,7 @@ export interface paths {
          * CommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_jobs_retry_create"];
+        post: operations["adminRetryJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -117,7 +117,7 @@ export interface paths {
          * StaffInvitationView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_staff_invitations_create"];
+        post: operations["adminInviteStaff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -141,7 +141,7 @@ export interface paths {
          * StaffRolesView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        patch: operations["admin_staff_roles_partial_update"];
+        patch: operations["adminUpdateStaffRoles"];
         trace?: never;
     };
     "/api/v1/admin/staff/{target_id}/revoke-access": {
@@ -157,7 +157,7 @@ export interface paths {
          * CommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_staff_revoke_access_create"];
+        post: operations["adminRevokeStaffAccess"];
         delete?: never;
         options?: never;
         head?: never;
@@ -177,7 +177,7 @@ export interface paths {
          * CommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_privacy_export_create"];
+        post: operations["adminRequestExport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -197,7 +197,7 @@ export interface paths {
          * CommandView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_privacy_deletion_create"];
+        post: operations["adminRequestDeletion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -217,7 +217,7 @@ export interface paths {
          * WorkCorrectionView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_work_correct_create"];
+        post: operations["adminCorrectWork"];
         delete?: never;
         options?: never;
         head?: never;
@@ -237,7 +237,7 @@ export interface paths {
          * BulkPreviewView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_bulk_preview_create"];
+        post: operations["adminBulkPreview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -257,7 +257,7 @@ export interface paths {
          * BulkExecuteView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_bulk_execute_create"];
+        post: operations["adminBulkExecute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -435,7 +435,7 @@ export interface paths {
          * OverviewView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_overview_retrieve"];
+        get: operations["adminOverview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -455,7 +455,7 @@ export interface paths {
          * UsersView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_users_retrieve"];
+        get: operations["adminUsers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -477,7 +477,7 @@ export interface paths {
          * UserSearchView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        post: operations["admin_users_search_create"];
+        post: operations["adminSearchUsers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -495,7 +495,7 @@ export interface paths {
          * UserDetailView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_users_retrieve_2"];
+        get: operations["adminUserDetail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -515,7 +515,7 @@ export interface paths {
          * UserActivityView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_users_activity_retrieve"];
+        get: operations["adminUserActivity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -535,7 +535,7 @@ export interface paths {
          * UserSessionsView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_users_sessions_retrieve"];
+        get: operations["adminUserSessions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -555,7 +555,7 @@ export interface paths {
          * JobsView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_jobs_retrieve"];
+        get: operations["adminJobs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -575,7 +575,7 @@ export interface paths {
          * PrivacyRequestsView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_privacy_requests_retrieve"];
+        get: operations["adminPrivacyRequests"];
         put?: never;
         post?: never;
         delete?: never;
@@ -595,7 +595,7 @@ export interface paths {
          * PrivacyDetailView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_privacy_requests_retrieve_2"];
+        get: operations["adminPrivacyDetail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -615,7 +615,7 @@ export interface paths {
          * AuditView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_audit_retrieve"];
+        get: operations["adminAudit"];
         put?: never;
         post?: never;
         delete?: never;
@@ -635,7 +635,7 @@ export interface paths {
          * StaffView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_staff_retrieve"];
+        get: operations["adminStaff"];
         put?: never;
         post?: never;
         delete?: never;
@@ -655,7 +655,7 @@ export interface paths {
          * RolesView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_roles_list"];
+        get: operations["adminRoles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -675,7 +675,7 @@ export interface paths {
          * UserWorkView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_users_work_retrieve"];
+        get: operations["adminUserWork"];
         put?: never;
         post?: never;
         delete?: never;
@@ -695,7 +695,7 @@ export interface paths {
          * WorkDetailView
          * @description Dedicated staff console; product JWTs and Django Admin sessions are not accepted. All responses use Cache-Control: private, no-store. See docs/ADMIN_CONSOLE.md.
          */
-        get: operations["admin_work_retrieve"];
+        get: operations["adminWorkDetail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1237,7 +1237,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    admin_users_suspend_create: {
+    adminSuspendUser: {
         parameters: {
             query?: never;
             header: {
@@ -1383,7 +1383,7 @@ export interface operations {
             };
         };
     };
-    admin_users_reactivate_create: {
+    adminReactivateUser: {
         parameters: {
             query?: never;
             header: {
@@ -1529,7 +1529,7 @@ export interface operations {
             };
         };
     };
-    admin_users_recovery_email_create: {
+    adminRecoveryEmail: {
         parameters: {
             query?: never;
             header: {
@@ -1653,7 +1653,7 @@ export interface operations {
             };
         };
     };
-    admin_users_revoke_sessions_create: {
+    adminRevokeUserSessions: {
         parameters: {
             query?: never;
             header: {
@@ -1777,7 +1777,7 @@ export interface operations {
             };
         };
     };
-    admin_jobs_retry_create: {
+    adminRetryJob: {
         parameters: {
             query?: never;
             header: {
@@ -1901,7 +1901,7 @@ export interface operations {
             };
         };
     };
-    admin_staff_invitations_create: {
+    adminInviteStaff: {
         parameters: {
             query?: never;
             header: {
@@ -2023,7 +2023,7 @@ export interface operations {
             };
         };
     };
-    admin_staff_roles_partial_update: {
+    adminUpdateStaffRoles: {
         parameters: {
             query?: never;
             header: {
@@ -2169,7 +2169,7 @@ export interface operations {
             };
         };
     };
-    admin_staff_revoke_access_create: {
+    adminRevokeStaffAccess: {
         parameters: {
             query?: never;
             header: {
@@ -2315,7 +2315,7 @@ export interface operations {
             };
         };
     };
-    admin_users_privacy_export_create: {
+    adminRequestExport: {
         parameters: {
             query?: never;
             header: {
@@ -2439,7 +2439,7 @@ export interface operations {
             };
         };
     };
-    admin_users_privacy_deletion_create: {
+    adminRequestDeletion: {
         parameters: {
             query?: never;
             header: {
@@ -2585,7 +2585,7 @@ export interface operations {
             };
         };
     };
-    admin_work_correct_create: {
+    adminCorrectWork: {
         parameters: {
             query?: never;
             header: {
@@ -2731,7 +2731,7 @@ export interface operations {
             };
         };
     };
-    admin_bulk_preview_create: {
+    adminBulkPreview: {
         parameters: {
             query?: never;
             header: {
@@ -2841,7 +2841,7 @@ export interface operations {
             };
         };
     };
-    admin_bulk_execute_create: {
+    adminBulkExecute: {
         parameters: {
             query?: never;
             header: {
@@ -3809,7 +3809,7 @@ export interface operations {
             };
         };
     };
-    admin_overview_retrieve: {
+    adminOverview: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -3915,7 +3915,7 @@ export interface operations {
             };
         };
     };
-    admin_users_retrieve: {
+    adminUsers: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -4024,7 +4024,7 @@ export interface operations {
             };
         };
     };
-    admin_users_search_create: {
+    adminSearchUsers: {
         parameters: {
             query?: never;
             header: {
@@ -4134,7 +4134,7 @@ export interface operations {
             };
         };
     };
-    admin_users_retrieve_2: {
+    adminUserDetail: {
         parameters: {
             query?: never;
             header?: never;
@@ -4255,7 +4255,7 @@ export interface operations {
             };
         };
     };
-    admin_users_activity_retrieve: {
+    adminUserActivity: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -4363,7 +4363,7 @@ export interface operations {
             };
         };
     };
-    admin_users_sessions_retrieve: {
+    adminUserSessions: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -4471,7 +4471,7 @@ export interface operations {
             };
         };
     };
-    admin_jobs_retrieve: {
+    adminJobs: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -4579,7 +4579,7 @@ export interface operations {
             };
         };
     };
-    admin_privacy_requests_retrieve: {
+    adminPrivacyRequests: {
         parameters: {
             query: {
                 cursor?: string;
@@ -4688,7 +4688,7 @@ export interface operations {
             };
         };
     };
-    admin_privacy_requests_retrieve_2: {
+    adminPrivacyDetail: {
         parameters: {
             query: {
                 cursor?: string;
@@ -4799,7 +4799,7 @@ export interface operations {
             };
         };
     };
-    admin_audit_retrieve: {
+    adminAudit: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -4909,7 +4909,7 @@ export interface operations {
             };
         };
     };
-    admin_staff_retrieve: {
+    adminStaff: {
         parameters: {
             query?: {
                 cursor?: string;
@@ -5015,7 +5015,7 @@ export interface operations {
             };
         };
     };
-    admin_roles_list: {
+    adminRoles: {
         parameters: {
             query?: never;
             header?: never;
@@ -5116,7 +5116,7 @@ export interface operations {
             };
         };
     };
-    admin_users_work_retrieve: {
+    adminUserWork: {
         parameters: {
             query: {
                 cursor?: string;
@@ -5225,7 +5225,7 @@ export interface operations {
             };
         };
     };
-    admin_work_retrieve: {
+    adminWorkDetail: {
         parameters: {
             query: {
                 cursor?: string;

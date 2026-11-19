@@ -13,6 +13,8 @@ Configure the same browser origin in Django's staff origin and CSRF allowlists. 
 
 The relay uses `taskiller_staff`, `taskiller_staff_csrf`, and `taskiller_staff_challenge`. These cookies are scoped to the console and are distinct from product credentials. The service worker bypasses admin navigations and admin data. Staff invitations are returned once to the creating staff member for secure delivery. Invitation URLs put the token in the fragment.
 
-`openapi/admin.json` contains the admin operations and referenced schemas from the Django working contract. Keeping the admin snapshot separate allows the product drift check to continue using the deployed contract during parallel development. Generate its types with `npx --no-install openapi-typescript openapi/admin.json -o src/lib/api/admin/schema.d.ts`. GitHub CI verifies both generated files. When updating the admin contract, preserve the referenced schema closure and review cookie names, permissions, and command shapes with the backend.
+`openapi/admin.json` contains the admin operations and their referenced definitions from Django's canonical contract. Run `npm run api:admin:update` to refresh the snapshot and generated types. GitHub CI compares both snapshots against the canonical contract and verifies both generated files. Review permission names, cookie names, and command inputs when the backend changes.
+
+On Django, configure `TASKILLER_ADMIN_CONSOLE_ORIGINS` and the corresponding CSRF trusted origins for the exact console origin. Use `TASKILLER_ADMIN_CONSOLE_ENABLED` and `TASKILLER_ADMIN_CONSOLE_WRITES_ENABLED` to control access on the backend. Set up staff enrollment using the backend runbook.
 
 The browser suite uses a synthetic localhost admin upstream to exercise the relay without Django. Production readiness requires a later Django integration run with real staff credentials in staging, including MFA, CSRF, scoped reads, and an audited write.

@@ -1,6 +1,6 @@
 import type { components } from './schema';
 
-export type Staff = Pick<components['schemas']['AdminStaffMeResponse'], 'staffId' | 'displayName' | 'capabilities' | 'expiresAt'>;
+export type Staff = Pick<components['schemas']['AdminStaffMeResponse'], 'staffId' | 'displayName' | 'capabilities' | 'expiresAt' | 'idleExpiresAt'>;
 export type AdminSchema<Name extends keyof components['schemas']> = components['schemas'][Name];
 
 export type Row = Record<string, unknown> & { id: string };
@@ -30,5 +30,6 @@ export function validStaff(value: unknown): value is Staff {
   const row = value as Partial<Staff>;
   return typeof row.staffId === 'string' && typeof row.displayName === 'string' &&
     typeof row.expiresAt === 'string' && Number.isFinite(Date.parse(row.expiresAt)) &&
+    typeof row.idleExpiresAt === 'string' && Number.isFinite(Date.parse(row.idleExpiresAt)) &&
     Array.isArray(row.capabilities) && row.capabilities.every(value => typeof value === 'string');
 }

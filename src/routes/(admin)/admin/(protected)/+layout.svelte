@@ -13,6 +13,7 @@
   let leaving = $state(false);
   let hidden = $state(false);
   let message = $state('');
+  let idleDeadline = $state<number>();
   let checking = false;
 
   function access(event: Event) {
@@ -34,6 +35,8 @@
     try {
       const { data: staff } = await adminRequest<unknown>('me');
       if (!validStaff(staff)) throw new Error('Invalid staff response');
+      if (leaving) return;
+      idleDeadline = Date.parse(staff.idleExpiresAt);
       if (staff.staffId !== data.staff.staffId || staff.capabilities.slice().sort().join() !== data.staff.capabilities.slice().sort().join()) {
         hidden = true;
         await invalidateAll();
@@ -46,8 +49,17 @@
   }
 
   $effect(() => {
-    const remaining = Math.max(0, Date.parse(data.staff.expiresAt) - Date.now());
-    const timer = setTimeout(() => access(new CustomEvent('taskiller:admin-access', { detail: 401 })), Math.min(remaining, 2_147_483_647));
+    const absolute = Date.parse(data.staff.expiresAt);
+    const idle = Math.max(Date.parse(data.staff.idleExpiresAt), idleDeadline ?? 0);
+    const remaining = Math.max(0, Math.min(absolute, idle) - Date.now());
+    if (remaining > 2_147_483_000) return;
+    const timer = setTimeout(() => {
+      if (Date.now() >= absolute) access(new CustomEvent('taskiller:admin-access', { detail: 401 }));
+      else {
+        hidden = true;
+        void check();
+      }
+    }, remaining + 250);
     return () => clearTimeout(timer);
   });
 
@@ -64,7 +76,7 @@
   }
 </script>
 
-<svelte:window onfocus={check} />
+<svelte:window onfocus={check} onpageshow={event => { if (event.persisted) { hidden = true; void check(); } }} />
 <a href="#admin-content" class="tk-skip-link">Skip to content</a>
 <div class="min-h-dvh lg:grid lg:grid-cols-[13rem_minmax(0,1fr)]">
   <aside class="bg-[#152b49] p-5 text-white lg:sticky lg:top-0 lg:h-dvh">

@@ -13,8 +13,8 @@ async function loadStaff(event: RequestEvent) {
   if (!response.ok) error(503, 'Admin service unavailable');
   const staff: unknown = await response.json().catch(() => null);
   if (!validStaff(staff)) error(502, 'Invalid staff session response');
-  const { staffId, displayName, capabilities, expiresAt } = staff;
-  return { staffId, displayName, capabilities, expiresAt };
+  const { staffId, displayName, capabilities, expiresAt, idleExpiresAt } = staff;
+  return { staffId, displayName, capabilities, expiresAt, idleExpiresAt };
 }
 
 export async function requireStaff(event: RequestEvent) {

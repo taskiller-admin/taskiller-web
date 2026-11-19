@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { adminOpenapi } from './admin-openapi.mjs';
 
 async function loadEnvFile() {
   if (!existsSync('.env')) return;
@@ -91,3 +92,13 @@ if (JSON.stringify(canonical(projected)) !== JSON.stringify(canonical(localCompa
 }
 
 console.log(`Frontend OpenAPI surface is compatible with ${url}`);
+
+const admin = JSON.parse(await readFile('openapi/admin.json', 'utf8'));
+const remoteAdmin = adminOpenapi(remote);
+// The public document title and version do not change the staff interface.
+delete admin.info;
+delete remoteAdmin.info;
+if (JSON.stringify(canonical(admin)) !== JSON.stringify(canonical(remoteAdmin))) {
+  throw new Error(`Admin OpenAPI contract drifted. Run npm run api:admin:update and review the diff. Source: ${url}`);
+}
+console.log(`Admin OpenAPI contract matches ${url}`);

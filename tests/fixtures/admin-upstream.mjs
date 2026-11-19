@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const staff = { staffId: id, displayName: 'Test Operator', capabilities: ['view_users', 'manage_accounts', 'view_overview'],
-  expiresAt: '2099-01-01T00:00:00Z' };
+  expiresAt: '2099-01-01T00:00:00Z', idleExpiresAt: '2099-01-01T00:00:00Z' };
 const user = { id, displayName: 'Sample User', email: 'sample@example.invalid', lifecycle: 'active', emailVerified: true, createdAt: '2026-11-01T00:00:00Z' };
 
 createServer(async (req, res) => {
@@ -26,6 +26,17 @@ createServer(async (req, res) => {
   }
   if (path === 'auth/login' && body.username === 'operator' && body.password === 'fixture-password') {
     return reply(200, { challengeId: id }, { 'set-cookie': 'taskiller_staff_challenge=fixture-challenge; Path=/api/v1/admin' });
+  }
+  if (path === 'auth/enroll' && body.invitationToken === 'fixture-invite' && body.password === 'existing9') {
+    return reply(200, { challengeId: id, secret: 'FIXTUREKEY' }, {
+      'set-cookie': 'taskiller_staff_challenge=fixture-enroll; Path=/api/v1/admin'
+    });
+  }
+  if (path === 'auth/enroll/confirm' && cookies.includes('taskiller_staff_challenge=fixture-enroll')
+      && body.challengeId === id && body.code === '123456') {
+    return reply(200, { enrolled: true, recoveryCodes: ['fixture-recovery-code'] }, {
+      'set-cookie': 'taskiller_staff_challenge=; Max-Age=0; Path=/api/v1/admin'
+    });
   }
   if (path === 'auth/mfa' && cookies.includes('taskiller_staff_challenge=fixture-challenge') && body.challengeId === id && body.code === '123456') {
     return reply(200, staff, { 'set-cookie': ['taskiller_staff=fixture-session; Path=/api/v1/admin', 'taskiller_staff_challenge=; Max-Age=0; Path=/api/v1/admin'] });

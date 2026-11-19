@@ -40,7 +40,10 @@
         method: command.method ?? 'POST', body, key, etag: command.etag
       });
       dialog.close();
-      onDone(command.queued || ['queued', 'scheduled'].includes(data?.status ?? '') ? 'Request queued.' : 'Change confirmed.', data);
+      const message = command.path.endsWith('/recovery-email') ? 'Recovery email request accepted. Delivery is unconfirmed.'
+        : data?.status === 'scheduled' ? 'Request scheduled.'
+        : data?.status === 'queued' ? 'Request queued.' : 'Change confirmed.';
+      onDone(message, data);
     } catch (cause) {
       if (cause instanceof AdminProblem && ['admin_step_up_required', 'step_up_required'].includes(cause.code)) {
         needsMfa = true;
