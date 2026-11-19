@@ -22,10 +22,20 @@ export default defineConfig({
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }
   ],
-  webServer: {
+  webServer: [{
+    command: 'node tests/fixtures/admin-upstream.mjs',
+    url: 'http://127.0.0.1:4188/health',
+    reuseExistingServer: false
+  }, {
     command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
     url: `${baseURL}/healthz`,
     timeout: 180_000,
-    reuseExistingServer: !process.env.CI
-  }
+    reuseExistingServer: false,
+    env: {
+      TASKILLER_ADMIN_ENABLED: 'true',
+      TASKILLER_ADMIN_WRITES: 'true',
+      TASKILLER_ADMIN_API_ORIGIN: 'http://127.0.0.1:4188',
+      TASKILLER_ADMIN_PUBLIC_ORIGIN: baseURL
+    }
+  }]
 });

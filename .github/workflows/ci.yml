@@ -43,6 +43,8 @@ jobs:
           cp src/lib/api/generated/schema.d.ts /tmp/schema.d.ts
           npm run api:generate
           diff -u /tmp/schema.d.ts src/lib/api/generated/schema.d.ts
+          npx --no-install openapi-typescript openapi/admin.json -o /tmp/admin-schema.d.ts
+          diff -u src/lib/api/admin/schema.d.ts /tmp/admin-schema.d.ts
 
       - name: Svelte and TypeScript check
         run: npm run check
